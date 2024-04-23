@@ -1,3 +1,3 @@
-# Nautilus NFT Marketplace: Front End Interface
+# Humble Interface
 
-An open source repository for Nautilus front end interface. Nautilus is a NFT Marketplace on Voi Network.
+An open source repository for Humble frontend interface. Humble is a decentralized exchange.
