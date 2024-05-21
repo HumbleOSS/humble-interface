@@ -184,3 +184,11 @@ export interface StakeI {
   staked: string;
   totalStaked: string;
 }
+
+/* Indexer Types */
+
+export interface BalanceI {
+  accountId: string;
+  balance: string;
+  contractId: number;
+}

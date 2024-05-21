@@ -476,6 +476,19 @@ const spec = {
         type: "uint256",
       },
     },
+    // nt200 withdraw
+    {
+      name: "withdraw",
+      args: [
+        {
+          name: "amount",
+          type: "uint64",
+        },
+      ],
+      returns: {
+        type: "uint256",
+      },
+    },
   ],
   events: [
     {
@@ -650,12 +663,19 @@ const FarmCard: FC<FarmCardProps> = ({ farm, round, timestamp }) => {
           sk: new Uint8Array(0),
         }
       );
+      ci.setFee(3000); // 2000u added to simulate Staker_harvest
       Promise.all([
         ci.staked(farm.poolId, activeAccount?.address || ""),
         ci.rewardsAvailable(farm.poolId, activeAccount?.address || ""),
+        ci.Staker_harvest(farm.poolId),
       ]).then((r: any[]) => {
-        const [stakedR, rewardsR] = r;
+        const [stakedR, rewardsR, harvestR] = r;
         if (!stakedR.success || !rewardsR.success) return;
+        if (!harvestR.success) {
+          setStaked("0");
+          setRewards("0");
+          return;
+        }
         const staked = stakedR.returnValue;
         const stakedBn = new BigNumber(staked).div(
           new BigNumber(10).pow(tokenB.decimals)
@@ -664,68 +684,72 @@ const FarmCard: FC<FarmCardProps> = ({ farm, round, timestamp }) => {
         const rewardsBn = new BigNumber(rewards).div(
           new BigNumber(10).pow(tokenA.decimals)
         );
+        const [[userRewards], [totalRewards]] = harvestR.returnValue;
+        const userRewardsBN = new BigNumber(userRewards).div(
+          new BigNumber(10).pow(tokenA.decimals)
+        );
         setStaked(stakedBn.toFixed(0));
-        setRewards(rewardsBn.toFixed(tokenA.decimals));
+        setRewards(userRewardsBN.toFixed(tokenA.decimals));
       });
     }
   };
-  const handleUnstake = async () => {
-    if (!activeAccount) return;
-    try {
-      const { algodClient, indexerClient } = getAlgorandClients();
-      const ci = new CONTRACT(
-        CTCINFO_STAKR_200,
-        algodClient,
-        indexerClient,
-        spec,
-        {
-          addr: activeAccount?.address || "",
-          sk: new Uint8Array(0),
-        }
-      );
-      const builder = {
-        stakr200: new CONTRACT(
-          CTCINFO_STAKR_200,
-          algodClient,
-          indexerClient,
-          spec,
-          {
-            addr: activeAccount.address,
-            sk: new Uint8Array(0),
-          },
-          true,
-          false,
-          true
-        ),
-      };
-      const buildN = [
-        builder.stakr200.Staker_withdraw(
-          farm.poolId,
-          BigInt(new BigNumber(1).times(1e6).toFixed(0))
-        ),
-      ];
-      const buildP = (await Promise.all(buildN)).map(({ obj }) => obj);
-      ci.setExtraTxns(buildP);
-      ci.setEnableGroupResourceSharing(true);
-      ci.setFee(3000);
-      const customR = await ci.custom();
-      if (!customR.success) throw new Error(customR.error);
-      await toast.promise(
-        signTransactions(
-          customR.txns.map(
-            (txn: any) => new Uint8Array(Buffer.from(txn, "base64"))
-          )
-        ).then(sendTransactions),
-        {
-          pending: "Harvesting...",
-          success: "Harvested!",
-        }
-      );
-    } catch (e: any) {
-      console.log(e);
-      toast.error(e.message);
-    }
-  };
+  // const handleUnstake = async () => {
+  //   if (!activeAccount) return;
+  //   try {
+  //     const { algodClient, indexerClient } = getAlgorandClients();
+  //     const ci = new CONTRACT(
+  //       CTCINFO_STAKR_200,
+  //       algodClient,
+  //       indexerClient,
+  //       spec,
+  //       {
+  //         addr: activeAccount?.address || "",
+  //         sk: new Uint8Array(0),
+  //       }
+  //     );
+  //     const builder = {
+  //       stakr200: new CONTRACT(
+  //         CTCINFO_STAKR_200,
+  //         algodClient,
+  //         indexerClient,
+  //         spec,
+  //         {
+  //           addr: activeAccount.address,
+  //           sk: new Uint8Array(0),
+  //         },
+  //         true,
+  //         false,
+  //         true
+  //       ),
+  //     };
+  //     const buildN = [
+  //       builder.stakr200.Staker_withdraw(
+  //         farm.poolId,
+  //         BigInt(new BigNumber(1).times(1e6).toFixed(0))
+  //       ),
+  //     ];
+  //     const buildP = (await Promise.all(buildN)).map(({ obj }) => obj);
+  //     ci.setExtraTxns(buildP);
+  //     ci.setEnableGroupResourceSharing(true);
+  //     ci.setFee(3000);
+  //     const customR = await ci.custom();
+  //     if (!customR.success) throw new Error(customR.error);
+  //     await toast.promise(
+  //       signTransactions(
+  //         customR.txns.map(
+  //           (txn: any) => new Uint8Array(Buffer.from(txn, "base64"))
+  //         )
+  //       ).then(sendTransactions),
+  //       {
+  //         pending: "Harvesting...",
+  //         success: "Harvested!",
+  //       }
+  //     );
+  //   } catch (e: any) {
+  //     console.log(e);
+  //     toast.error(e.message);
+  //   }
+  // };
   const handleExit = async () => {
     if (!activeAccount || !staked) return;
     try {
@@ -754,14 +778,35 @@ const FarmCard: FC<FarmCardProps> = ({ farm, round, timestamp }) => {
           false,
           true
         ),
-      };
-      const buildN = [
-        builder.stakr200.Staker_withdraw(
-          farm.poolId,
-          BigInt(new BigNumber(staked).times(1e6).toFixed(0))
+        wnt200: new CONTRACT(
+          TOKEN_WVOI1,
+          algodClient,
+          indexerClient,
+          spec,
+          {
+            addr: activeAccount.address,
+            sk: new Uint8Array(0),
+          },
+          true,
+          false,
+          true
         ),
+      };
+      const stakedR = await ci.staked(
+        farm.poolId,
+        activeAccount?.address || ""
+      );
+      if (!stakedR.success) throw new Error(stakedR.error);
+
+      const staked = stakedR.returnValue;
+      const buildN = [
+        builder.stakr200.Staker_withdraw(farm.poolId, staked),
         builder.stakr200.Staker_harvest(farm.poolId),
       ];
+      // if wvoi withdraw staked
+      if ([TOKEN_WVOI1].includes(farm.stakeToken)) {
+        buildN.push(builder.wnt200.withdraw(staked));
+      }
       const buildP = (await Promise.all(buildN)).map(({ obj }) => obj);
       ci.setExtraTxns(buildP);
       ci.setEnableGroupResourceSharing(true);
@@ -1117,14 +1162,6 @@ const FarmCard: FC<FarmCardProps> = ({ farm, round, timestamp }) => {
               </PairTokens>
             </PairInfo>
             <PairIds>
-              {/*<Field>
-                <FieldLabel>ID:</FieldLabel>
-                <FieldValue>{farm.stakeToken}</FieldValue>
-              </Field>
-              <Field>
-                <FieldLabel>ID:</FieldLabel>
-                <FieldValue>{farm.rewardsToken}</FieldValue>
-              </Field>*/}
               <Field>
                 <FieldLabel>
                   {timestamp > farm.end ? "Ended" : "Ends"}
@@ -1195,9 +1232,9 @@ const FarmCard: FC<FarmCardProps> = ({ farm, round, timestamp }) => {
           <AccordionActions>
             <ButtonGroup size="small">
               {false ? farm?.poolId : null}
-              {<Button onClick={handleApprove}>Approve</Button>}
+              {false ? <Button onClick={handleApprove}>Approve</Button> : null}
               <Button onClick={handleStake}>Stake</Button>
-              <Button onClick={handleUnstake}>Unstake</Button>
+              {/*<Button onClick={handleUnstake}>Unstake</Button>*/}
               <Button onClick={handleHarvest}>Claim</Button>
               <Button onClick={handleExit}>Exit</Button>
             </ButtonGroup>

@@ -1,6 +1,6 @@
 {
   "name": "nautilus-app",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.0",
   "description": "",
   "main": "index.tsx",
   "scripts": {
@@ -40,7 +40,7 @@
     "react-router-dom": "^6.22.1",
     "react-toastify": "^10.0.4",
     "styled-components": "^6.1.8",
-    "ulujs": "^0.3.5",
+    "ulujs": "^0.7.12",
     "usehooks-ts": "^2.15.0"
   },
   "devDependencies": {

@@ -96,6 +96,18 @@ const SecondaryButtonContainer = styled(Button)`
   background: var(--Color-Accent-CTA-Background-Default, #ffbe1d);
 `;
 
+const ExplorerButtonContainer = styled(Button)`
+  display: flex;
+  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: var(--Radius-750, 20px);
+  background: blueviolet;
+`;
+
 const ButtonBody = styled.div`
   display: flex;
   justify-content: center;
@@ -239,6 +251,7 @@ const SwapInLabel = styled.div`
 interface TokenIconProps {
   theme: "light" | "dark";
 }
+
 const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
   return theme === "light" ? (
     <svg
@@ -304,6 +317,7 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
 interface ModalPatterProps {
   theme: "light" | "dark";
 }
+
 const ModalPattern: FC<ModalPatterProps> = ({ theme }) => {
   return theme == "light" ? (
     <svg
@@ -462,6 +476,7 @@ interface SwapSuccessfulModalProps {
   swapOut: string;
   tokIn: string;
   tokOut: string;
+  txId: string;
 }
 
 const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
@@ -472,6 +487,7 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   swapOut,
   tokIn,
   tokOut,
+  txId,
 }) => {
   const navigate = useNavigate();
   /* Theme */
@@ -551,6 +567,17 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                 <ButtonLabel>Add Liquidity</ButtonLabel>
               </ButtonBody>
             </SecondaryButtonContainer>
+            <ExplorerButtonContainer
+              onClick={() => {
+                window.open(
+                  `https://voitest.blockpack.app/#/explorer/transaction/${txId}/global-state-delta`
+                );
+              }}
+            >
+              <ButtonBody>
+                <ButtonLabel>View on Explorer</ButtonLabel>
+              </ButtonBody>
+            </ExplorerButtonContainer>
           </ModalBody>
         </ModalBodyContainer>
       </DialogContent>

@@ -545,7 +545,7 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
           .toFixed(0)
       );
 
-      ci.setPaymentAmount(0.157 * 1e6);
+      ci.setPaymentAmount(0.157 * 1e6 + 1e6);
       const _reachp_0R = await ci._reachp_0([
         0,
         ZERO_ADDRESS,

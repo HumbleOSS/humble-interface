@@ -4,7 +4,7 @@ import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet";
 import { CircularProgress } from "@mui/material";
-import { CONTRACT, abi, arc200, swap200 } from "ulujs";
+import { CONTRACT, abi, arc200, swap200, swap } from "ulujs";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import { getAlgorandClients } from "../../wallets";
 import { useSearchParams } from "react-router-dom";
@@ -388,25 +388,29 @@ const PoolRemove = () => {
   useEffect(() => {
     if (!pool) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new swap200(pool.poolId, algodClient, indexerClient);
+    const ci = new swap(pool.poolId, algodClient, indexerClient);
     ci.Info().then((info: any) => {
-      setInfo(
-        ((info: any) => ({
-          lptBals: info[0],
-          poolBals: info[1],
-          protoInfo: ((pi: any) => ({
-            protoFee: Number(pi[0]),
-            lpFee: Number(pi[1]),
-            totFee: Number(pi[2]),
-            protoAddr: pi[3],
-            locked: pi[4],
-          }))(info[2]),
-          protoBals: info[3],
-          tokA: Number(info[4]),
-          tokB: Number(info[5]),
-        }))(info.returnValue)
-      );
+      setInfo(info.returnValue);
     });
+    // const ci = new swap200(pool.poolId, algodClient, indexerClient);
+    // ci.Info().then((info: any) => {
+    //   setInfo(
+    //     ((info: any) => ({
+    //       lptBals: info[0],
+    //       poolBals: info[1],
+    //       protoInfo: ((pi: any) => ({
+    //         protoFee: Number(pi[0]),
+    //         lpFee: Number(pi[1]),
+    //         totFee: Number(pi[2]),
+    //         protoAddr: pi[3],
+    //         locked: pi[4],
+    //       }))(info[2]),
+    //       protoBals: info[3],
+    //       tokA: Number(info[4]),
+    //       tokB: Number(info[5]),
+    //     }))(info.returnValue)
+    //   );
+    // });
   }, [pool]);
 
   const [poolBalance, setPoolBalance] = useState<BigInt>();
@@ -426,7 +430,7 @@ const PoolRemove = () => {
   const [poolShare, setPoolShare] = useState<string>("0");
   useEffect(() => {
     if (!activeAccount || !pool || !info || !poolBalance) return;
-    const newShare = (100 * Number(poolBalance)) / Number(info.lptBals[1]);
+    const newShare = (100 * Number(poolBalance)) / Number(info.lptBals.lpMinted);
     setPoolShare(newShare.toFixed(2));
   }, [activeAccount, pool, info, poolBalance]);
 
@@ -445,7 +449,7 @@ const PoolRemove = () => {
       sk: new Uint8Array(0),
     });
     const share = (Number(poolShare) * Number(fromAmount)) / 100;
-    const withdrawAmount = Math.round((Number(info.lptBals[1]) * share) / 100);
+    const withdrawAmount = Math.round((Number(info.lptBals.lpMinted) * share) / 100);
     ci.setFee(4000);
     ci.Provider_withdraw(1, withdrawAmount, [0, 0]).then(
       (Provider_withdrawR: any) => {
@@ -480,14 +484,14 @@ const PoolRemove = () => {
     if (!info || !token || !token2) return;
     if (info.tokA === token?.tokenId) {
       return (
-        (Number(info.poolBals[0]) * 10 ** token2.decimals) /
-        Number(info.poolBals[1]) /
+        (Number(info.poolBals.A) * 10 ** token2.decimals) /
+        Number(info.poolBals.B) /
         10 ** token.decimals
       ).toFixed(token.decimals);
     } else {
       return (
-        (Number(info.poolBals[1]) * 10 ** token.decimals) /
-        Number(info.poolBals[0]) /
+        (Number(info.poolBals.B) * 10 ** token.decimals) /
+        Number(info.poolBals.A) /
         10 ** token2.decimals
       ).toFixed(token2.decimals);
     }
@@ -811,7 +815,7 @@ const PoolRemove = () => {
       const withdrawAmount =
         fromAmount === "100"
           ? poolBalance
-          : Math.round((Number(info.lptBals[1]) * withdrawShare) / 100);
+          : Math.round((Number(info.lptBals.lpMinted) * withdrawShare) / 100);
 
       const Provider_withdrawR = await ci.Provider_withdraw(
         1,

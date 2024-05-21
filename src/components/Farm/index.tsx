@@ -217,15 +217,10 @@ const Farm = () => {
   return !isLoading ? (
     <PoolRoot className={isDarkTheme ? "dark" : "light"}>
       {activeAccount && userStake && userStake.length > 0 ? (
-        <FarmLiquidity
-          farms={farms}
-          pools={pools}
-          tokens={tokens}
-          stake={userStake}
-        />
+        <FarmLiquidity farms={farms} pools={pools} stake={userStake} />
       ) : null}
 
-      <FarmList farms={farms} pools={pools} tokens={tokens} />
+      <FarmList farms={farms} />
       <ViewMoreButton>
         <ButtonLabelContainer>
           <DropdownIcon />

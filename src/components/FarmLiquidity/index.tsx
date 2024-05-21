@@ -1,53 +1,14 @@
 import styled from "@emotion/styled";
-import React, { FC, useEffect } from "react";
+import React, { FC } from "react";
 import { RootState } from "../../store/store";
-import { useDispatch, useSelector } from "react-redux";
-import { ARC200TokenI, FarmI, PoolI, PositionI, StakeI } from "../../types";
+import { useSelector } from "react-redux";
+import { FarmI, PoolI, PositionI, StakeI } from "../../types";
 import { arc200 } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { useWallet } from "@txnlab/use-wallet";
-import { Link, useNavigate } from "react-router-dom";
-import { tokenSymbol } from "../../utils/dex";
+import { useNavigate } from "react-router-dom";
 import { Stack } from "@mui/material";
 import FarmCard from "../FarmCard";
-
-const Button = styled.div`
-  cursor: pointer;
-`;
-
-const BaseButton = styled(Button)`
-  display: flex;
-  padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  border-radius: var(--Radius-600, 13px);
-`;
-
-const CreateTokenButton = styled(BaseButton)`
-  background: var(--Color-Accent-CTA-Background-Default, #2958ff);
-`;
-
-const CreateButtonInner = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-`;
-
-const CreateButtonLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 120%; /* 16.8px */
-  //
-`;
 
 const Columns = styled.div`
   display: flex;
@@ -240,16 +201,10 @@ const PoolIcon = () => {
 interface FarmLiquidityProps {
   farms: FarmI[];
   pools: PoolI[];
-  tokens: ARC200TokenI[];
   stake: StakeI[];
 }
 
-const FarmLiquidity: FC<FarmLiquidityProps> = ({
-  pools,
-  tokens,
-  stake,
-  farms,
-}) => {
+const FarmLiquidity: FC<FarmLiquidityProps> = ({ pools, stake, farms }) => {
   const navigate = useNavigate();
   const { activeAccount } = useWallet();
   /* Theme */
@@ -294,16 +249,6 @@ const FarmLiquidity: FC<FarmLiquidityProps> = ({
       <YourLiquidityRoot className={isDarkTheme ? "dark" : "light"}>
         <HeadingRow className="heading-row">
           <SectionTitle>Farm Liquidity</SectionTitle>
-          <CreateTokenButton
-            onClick={() => {
-              navigate(`/farm/create`);
-            }}
-          >
-            <CreateButtonInner>
-              <CreateButtonLabel>Create farm</CreateButtonLabel>
-              {<PoolIcon />}
-            </CreateButtonInner>
-          </CreateTokenButton>
         </HeadingRow>
         <Columns>
           <Heading>

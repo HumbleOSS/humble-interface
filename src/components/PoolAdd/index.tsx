@@ -6,7 +6,7 @@ import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet";
 import { CircularProgress, Stack } from "@mui/material";
-import { CONTRACT, abi, arc200, swap200 } from "ulujs";
+import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { TOKEN_VIA, TOKEN_WVOI1 } from "../../constants/tokens";
 import { getAlgorandClients } from "../../wallets";
 import TokenInput from "../TokenInput";
@@ -608,6 +608,7 @@ const Swap = () => {
   useEffect(() => {
     dispatch(getTokens() as unknown as UnknownAction);
   }, [dispatch]);
+
   /* Pools */
   const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
   const poolsStatus = useSelector((state: RootState) => state.pools.status);
@@ -703,6 +704,7 @@ const Swap = () => {
   //   setToken(tokenOptions[0]);
   // }, [token, tokenOptions]);
 
+  // EFFECT: get eligible pools
   const eligiblePools = useMemo(() => {
     return pools.filter((p: PoolI) => {
       return (
@@ -717,61 +719,74 @@ const Swap = () => {
 
   // EFFECT
   useEffect(() => {
-    setPool(eligiblePools[0]);
-    setReady(true);
+    if (paramPoolId) {
+      const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
+      if (pool) {
+        setPool(pool);
+        setReady(true);
+      }
+    } else if (eligiblePools.length > 0) {
+      // pick a pool (highest tvl)
+      const { algodClient, indexerClient } = getAlgorandClients();
+      new swap(0, algodClient, indexerClient)
+        .selectPool(eligiblePools, null, null, "round")
+        .then((pool: any) => {
+          if (!pool) return;
+          setPool(pool);
+          setReady(true);
+        });
+    }
   }, [eligiblePools]);
 
-  const [info, setInfo] = useState<any>();
+  console.log({ pool, eligiblePools });
 
-  // EFFECT
+  const [info, setInfo] = useState<any>();
+  // EFFECT: set pool info
   useEffect(() => {
     if (!pool) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new swap200(pool.poolId, algodClient, indexerClient);
+    const { tokA, tokB } = pool;
+    const token = tokens.find((t: ARC200TokenI) => t.tokenId === tokA);
+    const token2 = tokens.find((t: ARC200TokenI) => t.tokenId === tokB);
+    if (!token || !token2) return;
+    const A = { ...token, tokenId: tokenId(token) };
+    const B = { ...token2, tokenId: tokenId(token2) };
+    //new swap(0, algodClient, indexerClient)
+    //  .selectPool(eligiblePools, A, B)
+    //  .then((pool: any) => {
+    //    if (!pool) return;
+    const ci = new swap(pool.poolId, algodClient, indexerClient);
     ci.Info().then((info: any) => {
-      setInfo(
-        ((info: any) => ({
-          lptBals: info[0],
-          poolBals: info[1],
-          protoInfo: ((pi: any) => ({
-            protoFee: Number(pi[0]),
-            lpFee: Number(pi[1]),
-            totFee: Number(pi[2]),
-            protoAddr: pi[3],
-            locked: pi[4],
-          }))(info[2]),
-          protoBals: info[3],
-          tokB: Number(info[4]),
-          tokA: Number(info[5]),
-        }))(info.returnValue)
-      );
+      setInfo(info.returnValue);
     });
   }, [pool, on]);
 
   console.log("info", info);
 
   const [poolBalance, setPoolBalance] = useState<BigInt>();
-
   // EFFECT
   useEffect(() => {
     if (!activeAccount || !pool) return;
+    console.log({ activeAccount, pool });
     const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new arc200(pool?.poolId, algodClient, indexerClient);
-    ci.arc200_balanceOf(activeAccount.address).then(
-      (arc200_balanceOfR: any) => {
+    new arc200(pool.poolId, algodClient, indexerClient)
+      .arc200_balanceOf(activeAccount.address)
+      .then((arc200_balanceOfR: any) => {
         if (arc200_balanceOfR.success) {
           setPoolBalance(arc200_balanceOfR.returnValue);
         }
-      }
-    );
+      });
   }, [activeAccount, pool, on]);
+
+  console.log("poolBalance", poolBalance);
 
   const [poolShare, setPoolShare] = useState<string>("0");
 
   // EFFECT
   useEffect(() => {
     if (!activeAccount || !pool || !info || !poolBalance) return;
-    const newShare = (100 * Number(poolBalance)) / Number(info.lptBals[1]);
+    const newShare =
+      (100 * Number(poolBalance)) / Number(info.lptBals.lpMinted);
     setPoolShare(newShare.toFixed(2));
   }, [activeAccount, pool, info, poolBalance]);
 
@@ -854,7 +869,7 @@ const Swap = () => {
     }
     const newShare = (
       (100 * (Number(poolBalance || 0) + Number(expectedOutcome))) /
-      (Number(info.lptBals[1]) + Number(expectedOutcome))
+      (Number(info.lptBals.lpMinted) + Number(expectedOutcome))
     ).toFixed(2);
     setNewShare(newShare);
   }, [expectedOutcome, poolBalance, info]);
@@ -867,12 +882,12 @@ const Swap = () => {
     if (!info || !token || !token2) return;
     if (info.tokA === tokenId(token)) {
       return (
-        (Number(info.poolBals[1]) / Number(info.poolBals[0])) *
+        (Number(info.poolBals.B) / Number(info.poolBals.A)) *
         10 ** (token.decimals - token2.decimals)
       );
     } else if (info.tokB === tokenId(token)) {
       return (
-        (Number(info.poolBals[0]) / Number(info.poolBals[1])) *
+        (Number(info.poolBals.A) / Number(info.poolBals.B)) *
         10 ** (token.decimals - token2.decimals)
       );
     }
@@ -900,8 +915,7 @@ const Swap = () => {
       !info
     )
       return;
-    if (info.poolBals[0] === BigInt(0) || info.poolBals[1] === BigInt(0))
-      return;
+    if (info.poolBals.A === BigInt(0) || info.poolBals.B === BigInt(0)) return;
     if (focus === "from") {
       const toAmountBN = new BigNumber(fromAmount.replace(/,/g, ""));
       if (toAmountBN.isNaN()) return;
@@ -924,8 +938,7 @@ const Swap = () => {
   useEffect(() => {
     if (!pool || !token || !token2 || !toAmount || focus !== "to" || !!info)
       return;
-    if (info.poolBals[0] === BigInt(0) || info.poolBals[1] === BigInt(0))
-      return;
+    if (info.poolBals.A === BigInt(0) || info.poolBals.B === BigInt(0)) return;
     const { algodClient, indexerClient } = getAlgorandClients();
     const acc = {
       addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
@@ -1286,10 +1299,162 @@ const Swap = () => {
           },
         };
       };
+      const makeArc200 = (ctcInfo: number) => {
+        const acc = {
+          addr: activeAccount?.address || "",
+          sk: new Uint8Array(0),
+        };
+        return new CONTRACT(
+          ctcInfo,
+          algodClient,
+          indexerClient,
+          abi.arc200,
+          acc
+        );
+      };
 
       // pick a pool
       const pool = eligiblePools.slice(-1)[0];
       const { poolId, tokA, tokB } = pool;
+
+      // handle special cases
+      for (const tok of [tokA, tokB]) {
+        switch (tok) {
+          case TOKEN_VIA:
+            const ci = makeArc200(tok);
+            // ensure pool balance box
+            const hasBalanceR = await ci.hasBalance(
+              algosdk.getApplicationAddress(poolId)
+            );
+            const hasAllowanceR = await ci.hasAllowance(
+              activeAccount.address,
+              algosdk.getApplicationAddress(poolId)
+            );
+            if (!hasBalanceR.success || !hasAllowanceR.success)
+              throw new Error("Failed to check balance or allowance");
+            const hasBalance = hasBalanceR.returnValue;
+            const hasAllowance = hasAllowanceR.returnValue;
+            // TODO use builder to combine into single txngroup
+            if (hasBalance === 0) {
+              ci.setPaymentAmount(28500);
+              const arc200_transferR = await ci.arc200_transfer(
+                algosdk.getApplicationAddress(poolId),
+                0
+              );
+              if (!arc200_transferR.success) throw new Error("Transfer failed");
+              await signTransactions(
+                arc200_transferR.txns.map(
+                  (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+                )
+              ).then(sendTransactions);
+            }
+            if (hasAllowance === 0) {
+              ci.setPaymentAmount(28100);
+              const arc200_approveR = await ci.arc200_approve(
+                algosdk.getApplicationAddress(poolId),
+                0
+              );
+              if (!arc200_approveR.success) throw new Error("Approve failed");
+              await signTransactions(
+                arc200_approveR.txns.map(
+                  (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+                )
+              ).then(sendTransactions);
+            }
+            break;
+          case TOKEN_WVOI1: {
+            // ensure wvoi balance
+            const ci = makeCi(tok);
+            const hasBoxR = await ci.hasBox([
+              1,
+              [
+                ...decodeAddress(activeAccount.address).publicKey,
+                ...new Uint8Array(Buffer.from("0".repeat(64), "hex")),
+              ],
+            ]);
+            console.log({ hasBoxR });
+            if (!hasBoxR.success)
+              throw new Error("Failed to check balance box");
+            if (hasBoxR.success && hasBoxR.returnValue === 0) {
+              ci.setPaymentAmount(28500);
+              const createBalanceBoxR = await ci.createBalanceBox(
+                algosdk.getApplicationAddress(poolId)
+              );
+              if (!createBalanceBoxR.success)
+                throw new Error("Transfer failed");
+              await toast.promise(
+                signTransactions(
+                  createBalanceBoxR.txns.map(
+                    (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+                  )
+                ).then(sendTransactions),
+                {
+                  pending: "Pending transaction setting up pool balance box",
+                }
+              );
+            }
+            // if return value is 0 then create balance box
+            const hasBoxR2 = await ci.hasBox([
+              1,
+              [
+                ...decodeAddress(algosdk.getApplicationAddress(poolId))
+                  .publicKey,
+                ...new Uint8Array(Buffer.from("0".repeat(64), "hex")),
+              ],
+            ]);
+            console.log({ hasBoxR2 });
+            if (!hasBoxR2.success)
+              throw new Error("Failed to check balance box");
+            if (hasBoxR2.success && hasBoxR2.returnValue === 0) {
+              ci.setPaymentAmount(28500);
+              const arc200_transferR = await ci.arc200_transfer(
+                algosdk.getApplicationAddress(poolId),
+                0
+              );
+              if (!arc200_transferR.success) throw new Error("Transfer failed");
+              await signTransactions(
+                arc200_transferR.txns.map(
+                  (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+                )
+              ).then(sendTransactions);
+            }
+            // arc200 approve addr pool
+            const hasBoxR3 = await ci.hasBox([
+              0,
+              [
+                ...decodeAddress(activeAccount.address).publicKey,
+                ...decodeAddress(algosdk.getApplicationAddress(poolId))
+                  .publicKey,
+              ],
+            ]);
+            console.log({ hasBoxR3 });
+            if (!hasBoxR3.success)
+              throw new Error("Failed to check balance box");
+            if (hasBoxR3.success && hasBoxR3.returnValue === 0) {
+              ci.setPaymentAmount(28100);
+              const createBalanceBoxR = await ci.arc200_approve(
+                algosdk.getApplicationAddress(poolId),
+                0
+              );
+              if (!createBalanceBoxR.success)
+                throw new Error("Failed to create balance box");
+              await toast.promise(
+                signTransactions(
+                  createBalanceBoxR.txns.map(
+                    (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+                  )
+                ).then(sendTransactions),
+                {
+                  pending: `Pending transaction to approve wVOI spend`,
+                  success: `Pool setup for ${tokenSymbol(token2)} complete!`,
+                }
+              );
+            }
+          }
+          default:
+            break;
+        }
+      }
 
       // ----------------------------------------
       // ensure pool has tokens to create future boxes
@@ -1432,35 +1597,35 @@ const Swap = () => {
       console.log("Ensuring allowance box for tokA");
 
       do {
-        // const arc200_approveR = await ciTokA.arc200_approve(
-        //   algosdk.getApplicationAddress(poolId),
-        //   0
-        // );
-        // console.log({ arc200_approveR });
-        // if (!arc200_approveR.success) {
-        //   ciTokA.setPaymentAmount(28100);
-        //   const arc200_approveR = await ciTokA.arc200_approve(
-        //     algosdk.getApplicationAddress(poolId),
-        //     0
-        //   );
-        //   console.log({ arc200_approveR });
-        //   if (!arc200_approveR.success) {
-        //     throw new Error("Approve failed");
-        //   }
-        //   await toast.promise(
-        //     signTransactions(
-        //       arc200_approveR.txns.map(
-        //         (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-        //       )
-        //     ).then(sendTransactions),
-        //     {
-        //       pending: `Pending transaction to spend ${tokenSymbol(
-        //         token2
-        //       )} in pool`,
-        //       success: `${tokenSymbol(token2)} pool spending setup complete!`,
-        //     }
-        //   );
-        // }
+        const arc200_approveR = await ciTokA.arc200_approve(
+          algosdk.getApplicationAddress(poolId),
+          0
+        );
+        console.log({ arc200_approveR });
+        if (!arc200_approveR.success) {
+          ciTokA.setPaymentAmount(28100);
+          const arc200_approveR = await ciTokA.arc200_approve(
+            algosdk.getApplicationAddress(poolId),
+            0
+          );
+          console.log({ arc200_approveR });
+          if (!arc200_approveR.success) {
+            throw new Error("Approve failed");
+          }
+          await toast.promise(
+            signTransactions(
+              arc200_approveR.txns.map(
+                (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+              )
+            ).then(sendTransactions),
+            {
+              pending: `Pending transaction to spend ${tokenSymbol(
+                token2
+              )} in pool`,
+              success: `${tokenSymbol(token2)} pool spending setup complete!`,
+            }
+          );
+        }
       } while (0);
       console.log("tokA allowance box ok");
 
@@ -1482,40 +1647,55 @@ const Swap = () => {
             algosdk.getApplicationAddress(poolId),
             0
           );
-          if (arc200_approveR.success) {
-            ensureTokBApproval = true;
-          }
+          if (!arc200_approveR.success) throw new Error("ApproveB failed");
+          ensureTokBApproval = true;
+          await toast.promise(
+            signTransactions(
+              arc200_approveR.txns.map(
+                (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+              )
+            ).then(sendTransactions),
+            {
+              pending: `Pending transaction to spend ${tokenSymbol(
+                token2
+              )} in pool`,
+              success: `${tokenSymbol(token2)} pool spending setup complete!`,
+            }
+          );
         }
         // ---
-        // const arc200_approveR2 = await ciTokB.arc200_approve(
-        //   algosdk.getApplicationAddress(poolId),
-        //   0
-        // );
-        // console.log({ arc200_approveR2 });
-        // if (!arc200_approveR2.success) {
-        //   ciTokB.setPaymentAmount(28100);
-        //   const arc200_approveR = await ciTokB.arc200_approve(
-        //     algosdk.getApplicationAddress(poolId),
-        //     0
-        //   );
-        //   console.log({ arc200_approveR });
-        //   if (!arc200_approveR.success) {
-        //     return new Error("Approve failed");
-        //   }
-        //   await toast.promise(
-        //     signTransactions(
-        //       arc200_approveR.txns.map(
-        //         (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-        //       )
-        //     ).then(sendTransactions),
-        //     {
-        //       pending: `Pending transaction to spend ${tokenSymbol(
-        //         token2
-        //       )} in pool`,
-        //       success: `${tokenSymbol(token2)} pool spending setup complete!`,
-        //     }
-        //   );
-        // }
+
+        // add for old arc200 tokens
+
+        const arc200_approveR2 = await ciTokB.arc200_approve(
+          algosdk.getApplicationAddress(poolId),
+          0
+        );
+        console.log({ arc200_approveR2 });
+        if (!arc200_approveR2.success) {
+          ciTokB.setPaymentAmount(28100);
+          const arc200_approveR = await ciTokB.arc200_approve(
+            algosdk.getApplicationAddress(poolId),
+            0
+          );
+          console.log({ arc200_approveR });
+          if (!arc200_approveR.success) {
+            return new Error("Approve failed");
+          }
+          await toast.promise(
+            signTransactions(
+              arc200_approveR.txns.map(
+                (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+              )
+            ).then(sendTransactions),
+            {
+              pending: `Pending transaction to spend ${tokenSymbol(
+                token2
+              )} in pool`,
+              success: `${tokenSymbol(token2)} pool spending setup complete!`,
+            }
+          );
+        }
       } while (0);
 
       // ----------------------------------------
@@ -1562,6 +1742,8 @@ const Swap = () => {
 
       const ci = makeCi(poolId);
 
+      console.log({ token });
+
       // determine the direction
       if (pool.tokA === tokenId(token)) {
         console.log("depositAForB");
@@ -1582,24 +1764,32 @@ const Swap = () => {
         ci.setFee(5000);
         const Provider_depositR = await ci.Provider_deposit(1, [inA, inB], 0);
         console.log({ Provider_depositR });
+
         if (!Provider_depositR.success)
           return new Error("Add liquidity simulation failed");
+
         const Provider_deposit = Provider_depositR.returnValue;
 
         const builder = makeBuilder(poolId, tokA, tokB);
         const poolAddr = algosdk.getApplicationAddress(poolId);
 
         const buildN = [];
-        let extraPaymentAmount = 0;
+        let extraPaymentAmount = 28500;
+
+        // include wnt deposit if network token (MUST BE FIRST)
+        if ([0].includes(token.tokenId)) {
+          extraPaymentAmount += 28500 + Number(inA);
+          buildN.push(builder.arc200.tokA.deposit(inA));
+        }
+
+        buildN.push(builder.arc200.tokA.arc200_transfer(poolAddr, 0));
+        buildN.push(builder.arc200.tokB.arc200_transfer(poolAddr, 0));
+
         if (ensureTokBApproval) {
           extraPaymentAmount += 28100;
           buildN.push(builder.arc200.tokB.arc200_approve(poolAddr, 0));
         }
-        // include wnt deposit if network token
-        if ([0].includes(token.tokenId)) {
-          extraPaymentAmount += 28500;
-          buildN.push(builder.arc200.tokA.deposit(inA));
-        }
+
         buildN.push(
           ...[
             builder.arc200.tokA.arc200_approve(poolAddr, inA),
@@ -1608,19 +1798,31 @@ const Swap = () => {
           ]
         );
         const buildP = (await Promise.all(buildN)).map((res: any) => res.obj);
-        ciTokA.setFee(4000);
-        if ([0, TOKEN_WVOI1].includes(token.tokenId)) ciTokA.setBeaconId(tokA);
-        // Include PaymentTxn if network token
-        if (token.tokenId === 0) {
-          ciTokA.setPaymentAmount(Number(inA) + extraPaymentAmount);
+
+        console.log({ buildP });
+
+        // use ciTokA
+
+        let customR;
+        if ([0, TOKEN_VIA].includes(token.tokenId)) {
+          const ci = makeCi(tokA);
+          ci.setFee(4000);
+          ci.setPaymentAmount(extraPaymentAmount);
+          ci.setAccounts([poolAddr]);
+          ci.setEnableGroupResourceSharing(true);
+          ci.setExtraTxns(buildP);
+          customR = await ci.custom();
         } else {
-          ciTokA.setPaymentAmount(extraPaymentAmount);
+          ci.setFee(4000);
+          ci.setPaymentAmount(extraPaymentAmount);
+          ci.setAccounts([poolAddr]);
+          ci.setEnableGroupResourceSharing(true);
+          ci.setExtraTxns(buildP);
+          customR = await ci.custom();
         }
-        ciTokA.setAccounts([poolAddr]);
-        ciTokA.setEnableGroupResourceSharing(true);
-        ciTokA.setExtraTxns(buildP);
-        const customR = await ciTokA.custom();
+
         console.log({ customR });
+
         if (!customR.success)
           return new Error("Add liquidity group simulation failed");
         await toast.promise(
