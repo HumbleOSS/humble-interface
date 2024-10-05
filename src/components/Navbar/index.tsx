@@ -15,6 +15,14 @@ import { toast } from "react-toastify";
 import ConnectWallet from "../ConnectWallet";
 import SettingMenu from "../SettingMenu";
 
+const Logo = styled.img`
+  width: auto;
+  height: 32px;
+  @media (max-width: 600px) {
+    height: 24px; // Smaller size for mobile devices
+  }
+`;
+
 const MobileNavRoot = styled(Box)`
   position: fixed;
   bottom: 24px;
@@ -300,14 +308,7 @@ const Navbar = () => {
       >
         <NavContainer>
           <Link to="/">
-            <img
-              style={{
-                width: "auto",
-                height: "32px",
-              }}
-              src="/logo.png"
-              alt="Humble Swap Logo"
-            />
+            <Logo src="/logo.png" alt="Humble Swap Logo" />
           </Link>
           <NavButtonGroup sx={{ display: { xs: "none", md: "flex" } }}>
             {[
