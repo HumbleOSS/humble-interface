@@ -289,7 +289,6 @@ const PoolRemove = () => {
   /* Pools */
   const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
 
-  console.log({ pools, tokens });
   /* Params */
   const [sp] = useSearchParams();
   const paramPoolId = sp.get("poolId");
@@ -363,7 +362,6 @@ const PoolRemove = () => {
     if (!activeAccount || !pool) return;
     const { algodClient, indexerClient } = getAlgorandClients();
     const ci = new arc200(pool?.poolId, algodClient, indexerClient);
-    console.log({ activeAccount });
     ci.arc200_balanceOf(activeAccount.address).then(
       (arc200_balanceOfR: any) => {
         if (arc200_balanceOfR.success) {
@@ -380,8 +378,6 @@ const PoolRemove = () => {
       (100 * Number(poolBalance)) / Number(info.lptBals.lpMinted);
     setPoolShare(newShare.toFixed(2));
   }, [activeAccount, pool, info, poolBalance]);
-
-  console.log("poolShare", poolShare);
 
   const [expectedOutcome, setExpectedOutcome] = useState<string>();
   useEffect(() => {
@@ -405,8 +401,6 @@ const PoolRemove = () => {
     );
   }, [activeAccount, pool, info, fromAmount]);
 
-  console.log("expectedOutcome", expectedOutcome);
-
   const [newShare, setNewShare] = useState<string>();
   useEffect(() => {
     if (poolShare === "100.00") {
@@ -420,10 +414,6 @@ const PoolRemove = () => {
     const newShare = (Number(poolShare) * (100 - Number(fromAmount))) / 100;
     setNewShare(newShare.toFixed(2));
   }, [poolShare, fromAmount]);
-
-  console.log("newShare", newShare);
-
-  console.log("fromAmount", fromAmount);
 
   const isValid = !!token && !!token2 && !!fromAmount;
 
@@ -553,8 +543,6 @@ const PoolRemove = () => {
         };
       };
 
-      console.log({ info });
-
       const { poolId } = pool;
       const tokA = info.tokA;
       const tokB = info.tokB;
@@ -645,10 +633,16 @@ const PoolRemove = () => {
       //
       // experimental withdraw extra wrapped tokens
       //
+
+      const accountAssets = await indexerClient
+        .lookupAccountAssets(activeAccount.address)
+        .do();
+
       do {
         for (const tok of [tokA, tokB]) {
           const token = tokens?.find((t) => t.contractId === tok);
           if (!token) continue;
+          const assetId = Number(token.tokenId);
           const tokBuilder =
             tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
           const tokCi = tok === tokA ? ciA : ciB;
@@ -660,9 +654,19 @@ const PoolRemove = () => {
             .dividedBy(new BigNumber(10).pow(6))
             .toFixed(6)} ${token.symbol}`;
           const note = new TextEncoder().encode(msg);
+          const condOptin =
+            assetId !== 0 &&
+            !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
+              ? {
+                  xaid: assetId,
+                  snd: activeAccount.address,
+                  arcv: activeAccount.address,
+                }
+              : {};
           const txnO = (await tokBuilder.withdraw(arc200_balanceOf)).obj;
           buildN.push({
             ...txnO,
+            ...condOptin,
             note,
           });
         }
@@ -698,20 +702,27 @@ const PoolRemove = () => {
           if (!token) continue;
           const symbol = token.symbol;
           const decimals = token.decimals;
+          const assetId = Number(token.tokenId);
           const constructor =
             tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
           const withdrawAmount = Provider_withdraw[tok === tokA ? 0 : 1];
-
           const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
             .dividedBy(new BigNumber(10).pow(6))
             .toFixed(decimals)} ${symbol}`;
           const note = new TextEncoder().encode(msg);
+          const condOptin =
+            assetId !== 0 &&
+            !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
+              ? {
+                  xaid: assetId,
+                  snd: activeAccount.address,
+                  arcv: activeAccount.address,
+                }
+              : {};
           const txnO = (await constructor.withdraw(withdrawAmount)).obj;
-
-          console.log({ token, symbol, decimals, withdrawAmount, txnO });
-
           buildN.push({
             ...txnO,
+            ...condOptin,
             note,
           });
         }
