@@ -86,7 +86,7 @@ const useDebouncedCallback = (
   callback: (value: string) => void,
   delay: number
 ) => {
-  const debouncedFn = useCallback(debounce(callback, delay), []);
+  const debouncedFn = useCallback(debounce(callback, delay), [callback, delay]);
   return debouncedFn;
 };
 
