@@ -452,13 +452,7 @@ const PoolRemove = () => {
     //setToken2(Array.from(options)[0]);
   }, [tokens, pools, token, token2]);
 
-  const buttonLabel = useMemo(() => {
-    if (isValid) {
-      return "Remove liquidity";
-    } else {
-      return "Remove liquidity";
-    }
-  }, [isValid]);
+  const buttonLabel = "Remove liquidity";
 
   const handleRemoveLiquidity = async () => {
     //if (!isValid || !token || !token2 || !pool) return;
