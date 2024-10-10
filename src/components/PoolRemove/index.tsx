@@ -1,11 +1,10 @@
 import styled from "@emotion/styled";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import { CONTRACT, abi, arc200, swap200, swap } from "ulujs";
-import { TOKEN_AUSDC, TOKEN_WVOI1 } from "../../constants/tokens";
+import { CircularProgress } from "@mui/material";
+import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { useSearchParams } from "react-router-dom";
 import { ARC200TokenI, PoolI } from "../../types";
@@ -16,6 +15,80 @@ import DiscreteSlider from "../DiscreteSlider";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import BigNumber from "bignumber.js";
+import debounce from "lodash/debounce";
+
+const SwapHeadingContainer = styled.div`
+  width: 100%;
+`;
+
+const SwapHeading = styled.div`
+  color: var(--Color-Neutral-Element-Primary, #0c0c10);
+  leading-trim: both;
+  text-edge: cap;
+  font-feature-settings: "clig" off, "liga" off;
+  /* Heading/Display 2 */
+  font-family: "Plus Jakarta Sans";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%; /* 21.6px */
+  &.dark {
+    color: var(--Color-Neutral-Element-Primary, #fff);
+  }
+`;
+
+const SwapRoot = styled.div`
+  display: flex;
+  padding: var(--Spacing-1000, 40px);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--Spacing-800, 24px);
+  border-radius: var(--Radius-800, 24px);
+  &.light {
+    border: 1px solid
+      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+    background: var(
+      --Color-Canvas-Transparent-white-950,
+      rgba(255, 255, 255, 0.95)
+    );
+  }
+  &.dark {
+    border: 1px solid var(--Color-Brand-Primary, #41137e);
+    background: var(--Color-Canvas-Transparent-white-950, #070709);
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  }
+  @media screen and (min-width: 600px) {
+    width: 630px;
+  }
+`;
+
+const BaseButton = styled.div`
+  cursor: pointer;
+`;
+
+const Button = styled(BaseButton)`
+  display: flex;
+  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: var(--Radius-750, 20px);
+  background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
+  &.active {
+    border-radius: var(--Radius-700, 16px);
+    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  }
+`;
+
+const useDebouncedCallback = (
+  callback: (value: string) => void,
+  delay: number
+) => {
+  const debouncedFn = useCallback(debounce(callback, delay), []);
+  return debouncedFn;
+};
 
 const spec = {
   name: "pool",
@@ -201,71 +274,6 @@ const spec = {
   events: [],
 };
 
-const SwapHeadingContainer = styled.div`
-  width: 100%;
-`;
-
-const SwapHeading = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  /* Heading/Display 2 */
-  font-family: "Plus Jakarta Sans";
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 120%; /* 21.6px */
-  &.dark {
-    color: var(--Color-Neutral-Element-Primary, #fff);
-  }
-`;
-
-const SwapRoot = styled.div`
-  display: flex;
-  padding: var(--Spacing-1000, 40px);
-  flex-direction: column;
-  align-items: center;
-  gap: var(--Spacing-800, 24px);
-  border-radius: var(--Radius-800, 24px);
-  &.light {
-    border: 1px solid
-      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
-    background: var(
-      --Color-Canvas-Transparent-white-950,
-      rgba(255, 255, 255, 0.95)
-    );
-  }
-  &.dark {
-    border: 1px solid var(--Color-Brand-Primary, #41137e);
-    background: var(--Color-Canvas-Transparent-white-950, #070709);
-    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-  }
-  @media screen and (min-width: 600px) {
-    width: 630px;
-  }
-`;
-
-const BaseButton = styled.div`
-  cursor: pointer;
-`;
-
-const Button = styled(BaseButton)`
-  display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  align-self: stretch;
-  border-radius: var(--Radius-750, 20px);
-  background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
-  &.active {
-    border-radius: var(--Radius-700, 16px);
-    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
-  }
-`;
-
 const PoolRemove = () => {
   /* Theme */
   const isDarkTheme = useSelector(
@@ -337,12 +345,7 @@ const PoolRemove = () => {
     }
   }, [pools, tokens, paramPoolId]);
 
-  console.log({ pool, token, token2 });
-
-  const [accInfo, setAccInfo] = React.useState<any>(null);
-  const [focus, setFocus] = useState<"from" | "to">("from");
   const [fromAmount, setFromAmount] = React.useState<any>("0");
-  const [toAmount, setToAmount] = React.useState<any>("");
   const [on, setOn] = useState(false);
 
   const [info, setInfo] = useState<any>();
@@ -369,7 +372,6 @@ const PoolRemove = () => {
       }
     );
   }, [activeAccount, pool]);
-  console.log({ poolBalance });
 
   const [poolShare, setPoolShare] = useState<string>("0");
   useEffect(() => {
@@ -422,65 +424,6 @@ const PoolRemove = () => {
   console.log("newShare", newShare);
 
   console.log("fromAmount", fromAmount);
-
-  const rate = useMemo(() => {
-    if (!info || !token || !token2) return;
-    if (info.tokA === token?.tokenId) {
-      return (
-        (Number(info.poolBals.A) * 10 ** token2.decimals) /
-        Number(info.poolBals.B) /
-        10 ** token.decimals
-      ).toFixed(token.decimals);
-    } else {
-      return (
-        (Number(info.poolBals.B) * 10 ** token.decimals) /
-        Number(info.poolBals.A) /
-        10 ** token2.decimals
-      ).toFixed(token2.decimals);
-    }
-  }, [info, token, token2]);
-
-  console.log("rate", rate);
-
-  useEffect(() => {
-    if (!pool || !token || !token2 || !toAmount || focus !== "to") return;
-    const { algodClient, indexerClient } = getAlgorandClients();
-    const acc = {
-      addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
-      sk: new Uint8Array(0),
-    };
-    const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, acc);
-    ci.setFee(4000);
-    if (token.tokenId === pool?.tokA) {
-      ci.Trader_swapBForA(1, Number(toAmount) * 10 ** token2.decimals, 0).then(
-        (r: any) => {
-          console.log({ r });
-          if (r.success) {
-            const fromAmount = (
-              Number(r.returnValue[0]) /
-              10 ** token2.decimals
-            ).toLocaleString();
-            console.log({ fromAmount });
-            setFromAmount(fromAmount);
-          }
-        }
-      );
-    } else if (token.tokenId === pool?.tokB) {
-      ci.Trader_swapAForB(1, Number(fromAmount) * 10 ** token.decimals, 0).then(
-        (r: any) => {
-          console.log({ r });
-          if (r.success) {
-            const fromAmount = (
-              Number(r.returnValue[1]) /
-              10 ** token.decimals
-            ).toLocaleString();
-            console.log({ fromAmount });
-            setFromAmount(fromAmount);
-          }
-        }
-      );
-    }
-  }, [pool, token, token2, toAmount, focus]);
 
   const isValid = !!token && !!token2 && !!fromAmount;
 
@@ -828,6 +771,10 @@ const PoolRemove = () => {
     }
   };
 
+  const debouncedSetFromAmount = useDebouncedCallback((value: string) => {
+    setFromAmount(value);
+  }, 300);
+
   const isLoading = !pools || !tokens;
 
   return !isLoading ? (
@@ -872,8 +819,7 @@ const PoolRemove = () => {
       </div>
       <DiscreteSlider
         onChange={(v) => {
-          // TODO debounce here
-          setFromAmount(v.toString());
+          debouncedSetFromAmount(v.toString());
         }}
       />
       <div
