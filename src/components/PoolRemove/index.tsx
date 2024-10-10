@@ -345,7 +345,7 @@ const PoolRemove = () => {
     }
   }, [pools, tokens, paramPoolId]);
 
-  const [fromAmount, setFromAmount] = React.useState<any>("0");
+  const [fromAmount, setFromAmount] = React.useState<string>("0");
   const [on, setOn] = useState(false);
 
   const [info, setInfo] = useState<any>();
