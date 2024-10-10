@@ -703,7 +703,7 @@ const PoolRemove = () => {
           const symbol = token.symbol;
           const decimals = token.decimals;
           const assetId = Number(token.tokenId);
-          const constructor =
+          const tokenContract =
             tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
           const withdrawAmount = Provider_withdraw[tok === tokA ? 0 : 1];
           const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
