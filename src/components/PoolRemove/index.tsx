@@ -794,6 +794,8 @@ const PoolRemove = () => {
         )
       );
 
+      // TODO toast here
+
       // await toast.promise(
       //   signTransactions(
       //     customR.txns.map(
