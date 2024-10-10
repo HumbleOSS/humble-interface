@@ -811,10 +811,6 @@ const PoolRemove = () => {
       const ciA = makeCi(tokA);
       const ciB = makeCi(tokB);
 
-      // get token ids
-
-      console.log({ ci, poolId, tokA, tokB });
-
       ci.setFee(4000);
       // get reserves
       // const reserveR = await ci.reserve(activeAccount.address);
@@ -855,29 +851,76 @@ const PoolRemove = () => {
 
       const buildN = [];
 
-      // experimental withdraw extra wVOI
+      //
+      // TODO use api
+      //
+      const tokens = [
+        {
+          contractId: 390001,
+          name: "Wrapped Voi",
+          symbol: "wVOI",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "1.000000",
+          tokenId: "0",
+          verified: null,
+          mintRound: 0,
+          globalState: {},
+        },
+        {
+          contractId: 413153,
+          name: "Aramid ALGO",
+          symbol: "aAlgo",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "1.00100099766100213213",
+          tokenId: "302189",
+          verified: null,
+          mintRound: 894792,
+          globalState: {},
+        },
+        {
+          contractId: 395614,
+          name: "aUSDC",
+          symbol: "aUSDC",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "75.15856933383736351197",
+          tokenId: "302190",
+          verified: 1,
+          mintRound: 0,
+          globalState: {},
+        },
+      ];
 
+      //
+      // experimental withdraw extra wrapped tokens
+      //
       do {
-        if ([TOKEN_WVOI1].includes(tokA) || [TOKEN_WVOI1].includes(tokB)) {
-          let constructor;
-          let arc200_balanceOf = BigInt(0);
-          if (tokA === TOKEN_WVOI1) {
-            arc200_balanceOf = (
-              await ciA.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokA;
-          } else {
-            arc200_balanceOf = (
-              await ciB.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokB;
-          }
-          if (arc200_balanceOf === BigInt(0)) break;
+        for (const tok of [tokA, tokB]) {
+          const token = tokens?.find((t) => t.contractId === tok);
+          if (!token) continue;
+          const tokBuilder =
+            tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
+          const tokCi = tok === tokA ? ciA : ciB;
+          const arc200_balanceOf = (
+            await tokCi.arc200_balanceOf(activeAccount.address)
+          ).returnValue;
+          if (arc200_balanceOf === BigInt(0)) continue;
           const msg = `Withdraw ${new BigNumber(arc200_balanceOf.toString())
             .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6)} wVOI`;
+            .toFixed(6)} ${token.symbol}`;
           const note = new TextEncoder().encode(msg);
-          const txnO = (await constructor.withdraw(arc200_balanceOf)).obj;
+          const txnO = (await tokBuilder.withdraw(arc200_balanceOf)).obj;
           buildN.push({
             ...txnO,
             note,
@@ -885,55 +928,9 @@ const PoolRemove = () => {
         }
       } while (0);
 
-      // experimental withdraw extra aUSD
-
-      do {
-        if ([TOKEN_AUSDC].includes(tokA) || [TOKEN_AUSDC].includes(tokB)) {
-          let constructor;
-          let arc200_balanceOf = BigInt(0);
-          if (tokA === TOKEN_AUSDC) {
-            arc200_balanceOf = (
-              await ciA.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokA;
-          } else {
-            arc200_balanceOf = (
-              await ciB.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokB;
-          }
-          if (arc200_balanceOf === BigInt(0)) break;
-          const accountAssets = await indexerClient
-            .lookupAccountAssets(algosdk.getApplicationAddress(TOKEN_AUSDC))
-            .do();
-          const [asset] = accountAssets.assets;
-          const { ["asset-id"]: assetId } = asset;
-          const msg = `Withdraw ${new BigNumber(arc200_balanceOf.toString())
-            .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6)} aUSDC`;
-          const note = new TextEncoder().encode(msg);
-          const accountAssets2 = await indexerClient
-            .lookupAccountAssets(activeAccount.address)
-            .do();
-          const condOptin = !!accountAssets2.assets.find(
-            (a: any) => a["asset-id"] === TOKEN_AUSDC
-          )
-            ? {
-                xaid: assetId,
-                snd: activeAccount.address,
-                arcv: activeAccount.address,
-              }
-            : {};
-          const txnO = (await constructor.withdraw(arc200_balanceOf)).obj;
-          buildN.push({
-            ...txnO,
-            ...condOptin,
-            note,
-          });
-        }
-      } while (0);
-
+      //
       // remove liquidity
+      //
 
       do {
         const txnO = (
@@ -951,68 +948,107 @@ const PoolRemove = () => {
         });
       } while (0);
 
-      // if Provider_withdraw includes wVOI add withdraw wVOI
-      if ([TOKEN_WVOI1].includes(tokA) || [TOKEN_WVOI1].includes(tokB)) {
-        let constructor;
-        let withdrawAmount = BigInt(0);
-        if (tokA === TOKEN_WVOI1) {
-          withdrawAmount = Provider_withdraw[0];
-          constructor = builder.arc200.tokA;
-        } else {
-          withdrawAmount = Provider_withdraw[1];
-          constructor = builder.arc200.tokB;
+      //
+      // If Provider_withdraw includes wrapped token withdraw
+      //
+
+      do {
+        for (const tok of [tokA, tokB]) {
+          const token = tokens?.find((t) => t.contractId === tok);
+          if (!token) continue;
+          const symbol = token.symbol;
+          const decimals = token.decimals;
+          const constructor =
+            tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
+          const withdrawAmount = Provider_withdraw[tok === tokA ? 0 : 1];
+
+          // let constructor;
+          // let withdrawAmount = BigInt(0);
+          // if (tokA === TOKEN_WVOI1) {
+          //   withdrawAmount = Provider_withdraw[0];
+          //   constructor = builder.arc200.tokA;
+          // } else {
+          //   withdrawAmount = Provider_withdraw[1];
+          //   constructor = builder.arc200.tokB;
+          // }
+
+          const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
+            .dividedBy(new BigNumber(10).pow(6))
+            .toFixed(decimals)} ${symbol}`;
+          const note = new TextEncoder().encode(msg);
+          const txnO = (await constructor.withdraw(withdrawAmount)).obj;
+
+          console.log({ token, symbol, decimals, withdrawAmount, txnO });
+
+          buildN.push({
+            ...txnO,
+            note,
+          });
         }
-        const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
-          .dividedBy(new BigNumber(10).pow(6))
-          .toFixed(6)} wVOI`;
-        const note = new TextEncoder().encode(msg);
-        const txnO = (await constructor.withdraw(withdrawAmount)).obj;
-        buildN.push({
-          ...txnO,
-          note,
-        });
-      }
+      } while (0);
+
+      // if Provider_withdraw includes wVOI add withdraw wVOI
+      // if ([TOKEN_WVOI1].includes(tokA) || [TOKEN_WVOI1].includes(tokB)) {
+      //   let constructor;
+      //   let withdrawAmount = BigInt(0);
+      //   if (tokA === TOKEN_WVOI1) {
+      //     withdrawAmount = Provider_withdraw[0];
+      //     constructor = builder.arc200.tokA;
+      //   } else {
+      //     withdrawAmount = Provider_withdraw[1];
+      //     constructor = builder.arc200.tokB;
+      //   }
+      //   const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
+      //     .dividedBy(new BigNumber(10).pow(6))
+      //     .toFixed(6)} wVOI`;
+      //   const note = new TextEncoder().encode(msg);
+      //   const txnO = (await constructor.withdraw(withdrawAmount)).obj;
+      //   buildN.push({
+      //     ...txnO,
+      //     note,
+      //   });
+      // }
 
       // TODO check for aUSD, generalize
       // if Provider_withdraw includes aUSD like token add withdraw withdraw aUSD
-      if ([TOKEN_AUSDC].includes(tokA) || [TOKEN_AUSDC].includes(tokB)) {
-        let constructor;
-        let withdrawAmount = BigInt(0);
-        if ([TOKEN_AUSDC].includes(tokA)) {
-          constructor = builder.arc200.tokA;
-          withdrawAmount = Provider_withdraw[0];
-        } else {
-          constructor = builder.arc200.tokB;
-          withdrawAmount = Provider_withdraw[1];
-        }
-        const accountAssets = await indexerClient
-          .lookupAccountAssets(algosdk.getApplicationAddress(TOKEN_AUSDC))
-          .do();
-        const [asset] = accountAssets.assets;
-        const { ["asset-id"]: assetId } = asset;
-        const accountAssets2 = await indexerClient
-          .lookupAccountAssets(activeAccount.address)
-          .do();
-        const condOptin = !!accountAssets2.assets.find(
-          (a: any) => a["asset-id"] === TOKEN_AUSDC
-        )
-          ? {
-              xaid: assetId,
-              snd: activeAccount.address,
-              arcv: activeAccount.address,
-            }
-          : {};
-        const txnO = (await constructor.withdraw(withdrawAmount)).obj;
-        const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
-          .dividedBy(new BigNumber(10).pow(6))
-          .toFixed(6)}  aUSDC`;
-        const note = new TextEncoder().encode(msg);
-        buildN.push({
-          ...txnO,
-          ...condOptin,
-          note,
-        });
-      }
+      // if ([TOKEN_AUSDC].includes(tokA) || [TOKEN_AUSDC].includes(tokB)) {
+      //   let constructor;
+      //   let withdrawAmount = BigInt(0);
+      //   if ([TOKEN_AUSDC].includes(tokA)) {
+      //     constructor = builder.arc200.tokA;
+      //     withdrawAmount = Provider_withdraw[0];
+      //   } else {
+      //     constructor = builder.arc200.tokB;
+      //     withdrawAmount = Provider_withdraw[1];
+      //   }
+      //   const accountAssets = await indexerClient
+      //     .lookupAccountAssets(algosdk.getApplicationAddress(TOKEN_AUSDC))
+      //     .do();
+      //   const [asset] = accountAssets.assets;
+      //   const { ["asset-id"]: assetId } = asset;
+      //   const accountAssets2 = await indexerClient
+      //     .lookupAccountAssets(activeAccount.address)
+      //     .do();
+      //   const condOptin = !!accountAssets2.assets.find(
+      //     (a: any) => a["asset-id"] === TOKEN_AUSDC
+      //   )
+      //     ? {
+      //         xaid: assetId,
+      //         snd: activeAccount.address,
+      //         arcv: activeAccount.address,
+      //       }
+      //     : {};
+      //   const txnO = (await constructor.withdraw(withdrawAmount)).obj;
+      //   const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
+      //     .dividedBy(new BigNumber(10).pow(6))
+      //     .toFixed(6)}  aUSDC`;
+      //   const note = new TextEncoder().encode(msg);
+      //   buildN.push({
+      //     ...txnO,
+      //     ...condOptin,
+      //     note,
+      //   });
+      // }
 
       ci.setAccounts([poolAddr]);
       ci.setEnableGroupResourceSharing(true);
