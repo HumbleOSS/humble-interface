@@ -775,6 +775,22 @@ const PoolRemove = () => {
     setFromAmount(value);
   }, 300);
 
+  const handleClick = () => {
+    const amount = parseFloat(fromAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.info("Please enter a valid amount greater than 0");
+      return;
+    }
+    // REM impossible until proven wrong
+    // if (amount > parseFloat(poolShare)) {
+    //   toast.info("Amount exceeds your current share");
+    //   return;
+    // }
+    if (!on) {
+      handleRemoveLiquidity();
+    }
+  };
+
   const isLoading = !pools || !tokens;
 
   return !isLoading ? (
@@ -868,18 +884,7 @@ const PoolRemove = () => {
                 ?.decimals || 0)
           : "-"}
       </div>
-      <Button
-        className="active"
-        onClick={() => {
-          if (fromAmount === "0") {
-            toast.info("Please enter a valid amount");
-            return;
-          }
-          if (!on) {
-            handleRemoveLiquidity();
-          }
-        }}
-      >
+      <Button className="active" onClick={handleClick}>
         {!on ? (
           buttonLabel
         ) : (
