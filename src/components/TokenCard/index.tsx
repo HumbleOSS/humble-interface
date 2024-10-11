@@ -41,9 +41,6 @@ const PoolCardRoot = styled.div`
   border-radius: var(--Radius-500, 12px);
   border: 1px solid
     var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
-  /*
-  background: var(--Color-Canvas-Transparent-white-900, #070709);
-  */
 `;
 
 const PoolCardRow = styled.div`
