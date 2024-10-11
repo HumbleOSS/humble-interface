@@ -12,7 +12,7 @@ import {
   updateToken,
 } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
-import { Fade, Skeleton } from "@mui/material";
+import { Fade, Skeleton, Tooltip } from "@mui/material";
 import { CONTRACT, abi } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
@@ -20,203 +20,10 @@ import BigNumber from "bignumber.js";
 import { stringToColorCode } from "../../utils/string";
 import algosdk from "algosdk";
 import { toast } from "react-toastify";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
-
-const spec = {
-  name: "pool",
-  desc: "pool",
-  methods: [
-    {
-      name: "custom",
-      args: [],
-      returns: {
-        type: "void",
-      },
-    },
-    {
-      name: "Info",
-      args: [],
-      returns: {
-        type: "((uint256,uint256),(uint256,uint256),(uint256,uint256,uint256,address,byte),(uint256,uint256),uint64,uint64)",
-      },
-      readonly: true,
-    },
-    {
-      name: "Provider_deposit",
-      args: [
-        { type: "byte" },
-        { type: "(uint256,uint256)" },
-        { type: "uint256" },
-      ],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Provider_withdraw",
-      args: [
-        { type: "byte" },
-        { type: "uint256" },
-        { type: "(uint256,uint256)" },
-      ],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "Provider_withdrawA",
-      args: [{ type: "uint256" }],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Provider_withdrawB",
-      args: [{ type: "uint256" }],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Trader_swapAForB",
-      args: [{ type: "byte" }, { type: "uint256" }, { type: "uint256" }],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "Trader_swapBForA",
-      args: [{ type: "byte" }, { type: "uint256" }, { type: "uint256" }],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "arc200_approve",
-      desc: "Approve spender for a token",
-      args: [
-        {
-          type: "address",
-          name: "spender",
-          desc: "The address of the spender",
-        },
-        {
-          type: "uint256",
-          name: "value",
-          desc: "The amount of tokens to approve",
-        },
-      ],
-      returns: {
-        type: "bool",
-        desc: "Success",
-      },
-    },
-    {
-      name: "arc200_balanceOf",
-      desc: "Returns the current balance of the owner of the token",
-      readonly: true,
-      args: [
-        {
-          type: "address",
-          name: "owner",
-          desc: "The address of the owner of the token",
-        },
-      ],
-      returns: {
-        type: "uint256",
-        desc: "The current balance of the holder of the token",
-      },
-    },
-    {
-      name: "arc200_transfer",
-      desc: "Transfers tokens",
-      readonly: false,
-      args: [
-        {
-          type: "address",
-          name: "to",
-          desc: "The destination of the transfer",
-        },
-        {
-          type: "uint256",
-          name: "value",
-          desc: "Amount of tokens to transfer",
-        },
-      ],
-      returns: {
-        type: "bool",
-        desc: "Success",
-      },
-    },
-    {
-      name: "createBalanceBox",
-      desc: "Creates a balance box",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "void",
-      },
-    },
-    //createAllowanceBox(address,address)void
-    {
-      name: "createAllowanceBox",
-      desc: "Creates an allowance box",
-      args: [
-        {
-          type: "address",
-        },
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "void",
-      },
-    },
-    //createBalanceBoxes(address)void
-    {
-      name: "createBalanceBoxes",
-      desc: "Creates a balance box",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "void",
-      },
-    },
-    // hasBox((byte,byte[64]))byte
-    {
-      name: "hasBox",
-      desc: "Checks if the account has a box",
-      args: [
-        {
-          type: "(byte,byte[64])",
-        },
-      ],
-      returns: {
-        type: "byte",
-      },
-    },
-    {
-      name: "reserve",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "(uint256,uint256)",
-      },
-      readonly: true,
-    },
-  ],
-  events: [
-    // Address, Bals, Bals, Bals
-    {
-      name: "SwapEvent",
-      args: [
-        { type: "address" },
-        { type: "(uin256,uint256)" },
-        { type: "(uin256,uint256)" },
-        { type: "(uin256,uint256)" },
-      ],
-    },
-  ],
-};
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -435,6 +242,12 @@ const PairIconPlaceholder = () => {
   );
 };
 
+const TokenIcon = styled.img`
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+`;
+
 const PairInfoContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -596,28 +409,70 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
           return !!p && [p.tokA, p.tokB].includes(token.contractId);
         });
   }, [pools]);
+  const isWVOI = [TOKEN_WVOI1].includes(token.contractId);
+  const displayTokenId = token.tokenId || token.contractId;
+  const externalLink = token.tokenId
+    ? `https://explorer.voi.network/explorer/asset/${displayTokenId}/transactions`
+    : `https://explorer.voi.network/explorer/application/${displayTokenId}/transactions`;
+  const badge = isWVOI ? (
+    <Tooltip title="Trusted by Nautilus" placement="top-end" arrow>
+      <VerifiedUserIcon fontSize="small" sx={{ color: "gold" }} />
+    </Tooltip>
+  ) : token.verified > 0 ? (
+    token.verified > 1 ? (
+      <Tooltip title="Trusted by Nautilus" placement="top-end" arrow>
+        <VerifiedUserIcon fontSize="small" sx={{ color: "gold" }} />
+      </Tooltip>
+    ) : (
+      <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
+        <VerifiedUserIcon fontSize="small" />
+      </Tooltip>
+    )
+  ) : (
+    ""
+  );
+  const icon = isWVOI ? (
+    <TokenIcon
+      src={`https://asset-verification.nautilus.sh/icons/0.png`}
+      alt={`VOI icon`}
+    />
+  ) : token.verified > 0 ? (
+    <TokenIcon
+      src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
+      alt={`${token.symbol} icon`}
+    />
+  ) : (
+    <CryptoIconPlaceholder
+      color={stringToColorCode(algosdk.getApplicationAddress(token.contractId))}
+    />
+  );
+
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
         <PoolCardRow>
           <Col1>
             <Col1Row1>
-              <CryptoIconPlaceholder
-                color={stringToColorCode(
-                  algosdk.getApplicationAddress(token.contractId)
-                )}
-              />
+              {icon}
               <PairInfoContainer>
                 <PairInfo>
                   <PairTokens>
                     <PairTokenLabel>{token.symbol}</PairTokenLabel>
+                    {badge}
                   </PairTokens>
                 </PairInfo>
                 <PairIds>
-                  <Field>
-                    <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{token.contractId}</FieldValue>
-                  </Field>
+                  {!isWVOI ? (
+                    <>
+                      <Field>
+                        <FieldLabel>ID:</FieldLabel>
+                        <FieldValue>{displayTokenId}</FieldValue>
+                      </Field>
+                      <StyledLink to={externalLink} target="_blank  ">
+                        <OpenInNewIcon fontSize="small" />
+                      </StyledLink>
+                    </>
+                  ) : null}
                   {/*<Field>
                   <FieldLabel>ID:</FieldLabel>
                   <FieldValue>{pool.tokB}</FieldValue>
@@ -676,25 +531,27 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </Col5>
           ) : (
             <Col5>
-              <StyledLink
-                to={""}
-                style={{
-                  width: "100%",
-                }}
-              >
-                <AddButton
-                  onClick={async () => {
-                    await getToken(token.contractId);
-                    navigate(
-                      `/pool/create?tokBId=0&tokAId=${token?.contractId}`
-                    );
+              {!isWVOI ? (
+                <StyledLink
+                  to={""}
+                  style={{
+                    width: "100%",
                   }}
                 >
-                  <ButtonLabelContainer>
-                    <AddButtonLabel>Create Pool</AddButtonLabel>
-                  </ButtonLabelContainer>
-                </AddButton>
-              </StyledLink>
+                  <AddButton
+                    onClick={async () => {
+                      await getToken(token.contractId);
+                      navigate(
+                        `/pool/create?tokBId=0&tokAId=${token?.contractId}`
+                      );
+                    }}
+                  >
+                    <ButtonLabelContainer>
+                      <AddButtonLabel>Create Pool</AddButtonLabel>
+                    </ButtonLabelContainer>
+                  </AddButton>
+                </StyledLink>
+              ) : null}
             </Col5>
           )}
         </PoolCardRow>
