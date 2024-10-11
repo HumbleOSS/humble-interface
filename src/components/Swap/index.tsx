@@ -1347,9 +1347,7 @@ const Swap = () => {
                   <RateValue>
                     <RateMain className={isDarkTheme ? "dark" : "light"}>
                       {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
-                      {lhs > 1 ? 1 : rate?.toFixed(6)}
-                      {` `}
-                      {tokenSymbol(token2)}
+                      {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
                     </RateMain>
                     <RateSub>
                       {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
