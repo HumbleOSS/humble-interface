@@ -398,8 +398,8 @@ const PairIcon = styled.div`
   display: flex;
   gap: 10px;
   border-radius: 50px;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
 `;
 
 const PairIconLeft = styled(PairIcon)``;

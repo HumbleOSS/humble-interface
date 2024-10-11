@@ -33,8 +33,6 @@ import { tokenId, tokenSymbol } from "../../utils/dex";
 import BigNumber from "bignumber.js";
 import { CTCINFO_DEFAULT_LP } from "../../constants/dex";
 import SwapSuccessfulModal from "../modals/SwapSuccessfulModal";
-import { hasBalance } from "ulujs/types/arc200";
-import { max } from "moment";
 import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import axios from "axios";
 import ProgressBar from "../ProgressBar";
@@ -97,6 +95,42 @@ const spec = {
       name: "Trader_swapBForA",
       args: [{ type: "byte" }, { type: "uint256" }, { type: "uint256" }],
       returns: { type: "(uint256,uint256)" },
+    },
+    // Trader_exactSwapAForB(byte,uint256,uint256)(uint256,uint256)
+    {
+      name: "Trader_exactSwapAForB",
+      args: [
+        {
+          type: "byte",
+        },
+        {
+          type: "uint256",
+        },
+        {
+          type: "uint256",
+        },
+      ],
+      returns: {
+        type: "(uint256,uint256)",
+      },
+    },
+    // Trader_exactSwapBForA(byte,uint256,uint256)(uint256,uint256)
+    {
+      name: "Trader_exactSwapBForA",
+      args: [
+        {
+          type: "byte",
+        },
+        {
+          type: "uint256",
+        },
+        {
+          type: "uint256",
+        },
+      ],
+      returns: {
+        type: "(uint256,uint256)",
+      },
     },
     {
       name: "arc200_approve",
@@ -280,12 +314,18 @@ const SpinnerIcon = () => {
 };
 
 const SwapRoot = styled.div`
+  transition: all 0.5s;
   display: flex;
-  padding: var(--Spacing-1000, 40px);
+  padding: 0px;
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+  @media screen and (min-width: 600px) {
+    transition: all 1s;
+    width: 630px;
+    padding: 40px;
+    /*
   &.light {
     border: 1px solid
       var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
@@ -294,13 +334,12 @@ const SwapRoot = styled.div`
       rgba(255, 255, 255, 0.95)
     );
   }
-  &.dark {
-    border: 1px solid var(--Color-Brand-Primary, #41137e);
-    background: var(--Color-Canvas-Transparent-white-950, #070709);
-    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-  }
-  @media screen and (min-width: 600px) {
-    width: 630px;
+  */
+    &.dark {
+      border: 1px solid var(--Color-Brand-Primary, #41137e);
+      background: var(--Color-Canvas-Transparent-white-950, #070709);
+      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    }
   }
 `;
 
@@ -332,8 +371,13 @@ const Button = styled(BaseButton)`
 `;
 
 const SummaryContainer = styled.div`
+  padding: 40px;
+  border-radius: 24px;
+  border: #41137e;
+  background: #070709;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+
   display: flex;
-  padding: 0px var(--Spacing-900, 32px);
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
@@ -527,20 +571,13 @@ const Swap = () => {
         setPools(data.pools);
       });
   }, []);
-  console.log({ pools, pools2, poolsStatus, tokenStatus });
 
   const [sp] = useSearchParams();
   const paramPoolId = sp.get("poolId") || CTCINFO_DEFAULT_LP;
 
   console.log({ paramPoolId });
 
-  const {
-    //providers,
-    activeAccount,
-    signTransactions,
-    //sendTransactions,
-    //getAccountInfo,
-  } = useWallet();
+  const { activeAccount, signTransactions } = useWallet();
 
   // confirmation modal
 
@@ -557,12 +594,14 @@ const Swap = () => {
   useEffect(() => {
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=tokens`
+        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
       )
       .then(({ data }) => {
         setTokens(data.tokens);
       });
   }, []);
+
+  console.log({ tokens2 });
 
   // don't remember what this is used for
 
@@ -620,7 +659,9 @@ const Swap = () => {
         totalSupply: BigInt(10_000_000_000 * 1e6),
       },
       ...tokens.filter((t: ARC200TokenI) => poolTokens.includes(t.tokenId)),
-    ].filter((t: ARC200TokenI) => t.tokenId !== token2?.tokenId);
+    ].filter(
+      (t: ARC200TokenI) => t.tokenId !== token2?.tokenId && t.symbol !== "wVOI"
+    );
     tokenOptions.sort((a, b) => a.tokenId - b.tokenId);
     setTokenOptions(tokenOptions);
   }, [token2, tokens, pools]);
@@ -668,15 +709,16 @@ const Swap = () => {
     };
     const res = swap.rate(info, A, B);
     const res2 = swap.rate(info, B, A);
-    return res < 0.000001 ? [res2, 1, 1 / res2, true] : [1, 1 / res, res, true];
+    return [1, 1 / res, res, true];
+    //res < 0.000001 ? [res2, 1, 1 / res2, true] : [1, 1 / res, res, true];
   }, [info, token, token2]);
 
   console.log("rate", rate);
 
   const invRate = useMemo(() => {
-    if (!rate) return;
+    if (!rate || !rateReady) return;
     return 1 / rate;
-  }, [rate, token2]);
+  }, [rate, rateReady, token2]);
 
   console.log("invRate", invRate);
 
@@ -792,16 +834,24 @@ const Swap = () => {
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
           .toFixed(0)
       );
-      ci.Trader_swapAForB(1, toAmountBI, 0).then((r: any) => {
-        if (r.success) {
-          const fromAmountBN = new BigNumber(r.returnValue[1]);
-          if (fromAmountBN.isNaN()) return;
-          const fromAmount = fromAmountBN
-            .dividedBy(new BigNumber(10).pow(token.decimals))
-            .toFixed(token.decimals);
-          setFromAmount(fromAmount);
+      ci.Trader_exactSwapBForA(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
+        (r: any) => {
+          console.log({ r });
+          if (r.success) {
+            console.log(
+              "r",
+              r,
+              BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[1]
+            );
+            const diff = BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[1];
+            const fromAmountBN = new BigNumber(diff.toString()).dividedBy(
+              new BigNumber(10).pow(token.decimals)
+            );
+            console.log("fromAmountBN", fromAmountBN.toString());
+            setFromAmount(fromAmountBN.toFixed(token.decimals));
+          }
         }
-      });
+      );
     } else if (pool.tokA === tokenId(token)) {
       const toAmountBN = new BigNumber(toAmount);
       if (toAmountBN.isNaN()) return;
@@ -811,16 +861,24 @@ const Swap = () => {
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
           .toFixed(0)
       );
-      ci.Trader_swapBForA(1, toAmountBI, 0).then((r: any) => {
-        if (r.success) {
-          const fromAmountBN = new BigNumber(r.returnValue[0]);
-          if (fromAmountBN.isNaN()) return;
-          const fromAmount = fromAmountBN
-            .dividedBy(new BigNumber(10).pow(token.decimals))
-            .toFixed(token.decimals);
-          setFromAmount(fromAmount);
+      ci.Trader_exactSwapAForB(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
+        (r: any) => {
+          console.log({ r });
+          if (r.success) {
+            console.log(
+              "r",
+              r,
+              BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[0]
+            );
+            const diff = BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[0];
+            const fromAmountBN = new BigNumber(diff.toString()).dividedBy(
+              new BigNumber(10).pow(token.decimals)
+            );
+            console.log("fromAmountBN", fromAmountBN.toString());
+            setFromAmount(fromAmountBN.toFixed(token.decimals));
+          }
         }
-      });
+      );
     }
   }, [pool, token, token2, toAmount, focus, eligiblePools]);
 
@@ -878,11 +936,13 @@ const Swap = () => {
           totalSupply: BigInt(10_000_000_000 * 1e6),
         },
         ...tokenOptions2,
-      ];
+      ].filter((t: ARC200TokenI) => t.symbol !== "wVOI");
       newTokenOptions2.sort((a, b) => a.tokenId - b.tokenId);
       setTokenOptions2(newTokenOptions2);
     } else {
-      const newTokenOptions2 = [...tokenOptions2];
+      const newTokenOptions2 = [...tokenOptions2].filter(
+        (t: ARC200TokenI) => t.symbol !== "wVOI"
+      );
       newTokenOptions2.sort((a, b) => a.tokenId - b.tokenId);
       setTokenOptions2(newTokenOptions2);
     }
@@ -1108,6 +1168,7 @@ const Swap = () => {
         swapR.txns.map((t: string) => new Uint8Array(Buffer.from(t, "base64")))
       );
 
+      // TODO show toast
       // const stxns = await toast.promise(
       //   signTransactions(
       //     swapR.txns.map(
@@ -1197,6 +1258,31 @@ const Swap = () => {
     return () => clearTimeout(timeout);
   }, [progress]);
 
+  console.log({ token, token2 });
+
+  const [tokAInfo, setTokAInfo] = useState<any>();
+  useEffect(() => {
+    if (!token || !tokens2) return;
+    const tokA = tokens2.find(
+      (t) =>
+        t.contractId === token.tokenId || `${t.tokenId}` === `${token.tokenId}`
+    );
+    if (!tokA) return;
+    setTokAInfo(tokA);
+  }, [token, tokens2]);
+
+  const [tokBInfo, setTokBInfo] = useState<any>();
+  useEffect(() => {
+    if (!token2 || !tokens2) return;
+    const tokB = tokens2.find(
+      (t) =>
+        t.contractId === token2.tokenId ||
+        `${t.tokenId}` === `${token2.tokenId}`
+    );
+    if (!tokB) return;
+    setTokBInfo(tokB);
+  }, [token2, tokens2]);
+
   return !isLoading ? (
     <>
       <SwapRoot className={isDarkTheme ? "dark" : "light"}>
@@ -1216,6 +1302,7 @@ const Swap = () => {
               token?.tokenId ||
               0
             }
+            tokInfo={tokAInfo}
           />
           <img
             onClick={() => {
@@ -1245,6 +1332,7 @@ const Swap = () => {
               token2?.tokenId ||
               0
             }
+            tokInfo={tokBInfo}
           />
         </SwapContainer>
         {!!token2 ? (
@@ -1258,21 +1346,14 @@ const Swap = () => {
                   </RateLabel>
                   <RateValue>
                     <RateMain className={isDarkTheme ? "dark" : "light"}>
-                      {lhs === 1
-                        ? 1
-                        : lhs?.toFixed(Math.min(6, token?.decimals || 0))}{" "}
-                      {tokenSymbol(token)} ={" "}
-                      {lhs > 1
-                        ? 1
-                        : Math.round(rate)?.toFixed(
-                            Math.min(6, token2?.decimals || 0)
-                          )}
+                      {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
+                      {lhs > 1 ? 1 : rate?.toFixed(6)}
                       {` `}
                       {tokenSymbol(token2)}
                     </RateMain>
                     <RateSub>
                       {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
-                      {invRate?.toFixed(token?.decimals)} {tokenSymbol(token)}
+                      {invRate?.toFixed(6)} {tokenSymbol(token)}
                     </RateSub>
                   </RateValue>
                 </RateContainer>
