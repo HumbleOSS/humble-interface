@@ -452,7 +452,9 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
   } else {
     icon = (
       <CryptoIconPlaceholder
-        color={stringToColorCode(algosdk.getApplicationAddress(token.contractId))}
+        color={stringToColorCode(
+          algosdk.getApplicationAddress(token.contractId)
+        )}
       />
     );
   }
@@ -477,7 +479,12 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
                         <FieldLabel>ID:</FieldLabel>
                         <FieldValue>{displayTokenId}</FieldValue>
                       </Field>
-                      <a href={externalLink} target="_blank" rel="noopener noreferrer">
+                      <a
+                        style={{ textDecoration: "none", color: "inherit" }}
+                        href={externalLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <OpenInNewIcon fontSize="small" />
                       </a>
                     </>

@@ -47,7 +47,7 @@ const Col1 = styled.div`
 const Col1Row1 = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 10px;
 `;
 
 const PairInfo = styled.div`
@@ -398,7 +398,7 @@ const PairIcon = styled.div`
   display: flex;
   gap: 10px;
   border-radius: 50px;
-  width: 20px
+  width: 20px;
   height: 20px;
 `;
 
