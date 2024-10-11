@@ -440,22 +440,28 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
   ) : (
     ""
   );
-  const icon = isWVOI ? (
-    <TokenIcon
-      src={`https://asset-verification.nautilus.sh/icons/0.png`}
-      alt={`VOI icon`}
-    />
-  ) : token.verified > 0 ? (
-    <TokenIcon
-      src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
-      alt={`${token.symbol} icon`}
-    />
-  ) : (
-    <CryptoIconPlaceholder
-      color={stringToColorCode(algosdk.getApplicationAddress(token.contractId))}
-    />
-  );
-
+  let icon = null;
+  if (isWVOI) {
+    icon = (
+      <TokenIcon
+        src={`https://asset-verification.nautilus.sh/icons/0.png`}
+        alt={`VOI icon`}
+      />
+    );
+  } else if (token.verified > 0) {
+    icon = (
+      <TokenIcon
+        src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
+        alt={`${token.symbol} icon`}
+      />
+    );
+  } else {
+    icon = (
+      <CryptoIconPlaceholder
+        color={stringToColorCode(algosdk.getApplicationAddress(token.contractId))}
+      />
+    );
+  }
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
