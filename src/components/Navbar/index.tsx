@@ -350,7 +350,7 @@ const Navbar = () => {
           </NavButtonGroup>
           <AccountButtonGroup>
             <ConnectWallet />
-            <SettingMenu />
+            {/*<SettingMenu />*/}
           </AccountButtonGroup>
         </NavContainer>
       </NavRoot>
