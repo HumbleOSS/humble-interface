@@ -423,23 +423,20 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
   const externalLink = token.tokenId
     ? `https://explorer.voi.network/explorer/asset/${displayTokenId}/transactions`
     : `https://explorer.voi.network/explorer/application/${displayTokenId}/transactions`;
-  const badge = isWVOI ? (
-    <Tooltip title="Trusted by Nautilus" placement="top-end" arrow>
-      <VerifiedUserIcon fontSize="small" sx={{ color: "gold" }} />
-    </Tooltip>
-  ) : token.verified > 0 ? (
-    token.verified > 1 ? (
+  let badge = null;
+  if (isWVOI || token.verified > 1) {
+    badge = (
       <Tooltip title="Trusted by Nautilus" placement="top-end" arrow>
         <VerifiedUserIcon fontSize="small" sx={{ color: "gold" }} />
       </Tooltip>
-    ) : (
+    );
+  } else if (token.verified > 0) {
+    badge = (
       <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
         <VerifiedUserIcon fontSize="small" />
       </Tooltip>
-    )
-  ) : (
-    ""
-  );
+    );
+  }
   let icon = null;
   if (isWVOI) {
     icon = (
