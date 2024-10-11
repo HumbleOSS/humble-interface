@@ -391,7 +391,7 @@ const SwapButtonLabel = styled.div`
 const PairIconContainer = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: -8px;
+  margin-left: -8px;
 `;
 
 const PairIcon = styled.div`
