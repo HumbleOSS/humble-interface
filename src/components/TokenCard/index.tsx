@@ -60,7 +60,6 @@ const Col1 = styled.div`
 const Col1Row1 = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: var(--Spacing-200, 4px);
   gap: 10px;
 `;
 
