@@ -480,9 +480,9 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
                         <FieldLabel>ID:</FieldLabel>
                         <FieldValue>{displayTokenId}</FieldValue>
                       </Field>
-                      <StyledLink to={externalLink} target="_blank  ">
+                      <a href={externalLink} target="_blank" rel="noopener noreferrer">
                         <OpenInNewIcon fontSize="small" />
-                      </StyledLink>
+                      </a>
                     </>
                   ) : null}
                   {/*<Field>
