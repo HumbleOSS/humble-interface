@@ -20,7 +20,9 @@ const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 
 const PoolRoot = styled.div`
   display: flex;
+  /*
   padding: var(--Spacing-1000, 40px);
+  */
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-800, 24px);
@@ -38,12 +40,6 @@ const PoolRoot = styled.div`
     background: var(--Color-Canvas-Transparent-white-950, #070709);
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
   }
-  width: 100%;
-  /*
-  @media screen and (min-width: 600px) {
-    width: 630px;
-  }
-    */
 `;
 
 const ViewMoreButton = styled.div`
@@ -168,39 +164,9 @@ const Pool = () => {
   useEffect(() => {
     fetchPools();
   }, []);
-  // const uniqPools = useMemo(() => {
-  //   if (!tokens || !pools) return [];
-  //   const fPools = [...pools].sort((a, b) => a.round - b.round);
-  //   const uPools = new Map();
-  //   for (const pool of fPools) {
-  //     const key =
-  // s       pool.tokA > pool.tokB
-  //         ? `${pool.tokB}-${pool.tokA}`
-  //         : `${pool.tokA}-${pool.tokB}`;
-  //     const tokenA = tokens.find((t) => t.contractId === pool.tokA);
-  //     const tokenB = tokens.find((t) => t.contractId === pool.tokB);
-  //     if (!uPools.has(key)) {
-  //       uPools.set(key, {
-  //         ...pool,
-  //         key,
-  //         tokenA,
-  //         tokenB,
-  //       });
-  //     }
-  //   }
-  //   return Array.from(uPools.values());
-  // }, [tokens, pools]);
   const uniqPools = pools;
   const filteredPools = useMemo(() => {
-    const badPools: number[] = [
-      24585187, // VOI/TACOS old
-      23223146, // VOI/VRC200 old
-      47613814, // VOI/VIA 2nd
-      48698951, // VOI/VIA 3rd
-      24584694, // VOI/VOICE old
-      24590736, // VOI/VIA old
-      36051940, // VOI/TACOS 2nd
-    ];
+    const badPools: number[] = [];
     return uniqPools.filter(
       (p) => !badPools.includes(p.contractId) && applyFilter(p, filter)
     );

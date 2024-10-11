@@ -11,7 +11,9 @@ import ProgressBar from "../ProgressBar";
 
 const TokenRoot = styled.div`
   display: flex;
+  /*
   padding: var(--Spacing-1000, 40px);
+  */
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-800, 24px);

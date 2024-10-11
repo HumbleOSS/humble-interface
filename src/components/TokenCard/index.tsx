@@ -12,7 +12,7 @@ import {
   updateToken,
 } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
-import { Fade, Skeleton, Tooltip } from "@mui/material";
+import { Box, Fade, Skeleton, Stack, Tooltip } from "@mui/material";
 import { CONTRACT, abi } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
@@ -22,6 +22,7 @@ import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import { display, minWidth } from "@mui/system";
 
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 
@@ -40,7 +41,9 @@ const PoolCardRoot = styled.div`
   border-radius: var(--Radius-500, 12px);
   border: 1px solid
     var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
+  /*
   background: var(--Color-Canvas-Transparent-white-900, #070709);
+  */
 `;
 
 const PoolCardRow = styled.div`
@@ -61,6 +64,7 @@ const Col1Row1 = styled.div`
   display: flex;
   align-items: flex-start;
   gap: var(--Spacing-200, 4px);
+  gap: 10px;
 `;
 
 const PairInfo = styled.div`
@@ -127,7 +131,9 @@ const FieldValue = styled.div`
 interface CryptoIconPlaceholderProps {
   color?: string;
 }
-const CryptoIconPlaceholder: FC<CryptoIconPlaceholderProps> = ({ color }) => {
+export const CryptoIconPlaceholder: FC<CryptoIconPlaceholderProps> = ({
+  color,
+}) => {
   return (
     <svg
       width="32"
@@ -299,7 +305,7 @@ const APRLabel = styled.div`
   line-height: 120%; /* 16.8px */
 `;
 
-const Col3 = styled.div`
+const Col3 = styled(Box)`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
   flex-direction: column;
@@ -307,7 +313,7 @@ const Col3 = styled.div`
   gap: 8px;
 `;
 
-const Col4 = styled.div`
+const Col4 = styled(Box)`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
   flex-direction: column;
@@ -322,7 +328,7 @@ const APRLabelContainer = styled.div`
   align-items: center;
 `;
 
-const Col5 = styled.div`
+const Col5 = styled(Box)`
   display: flex;
   height: 65px;
   flex-direction: column;
@@ -409,7 +415,10 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
           return !!p && [p.tokA, p.tokB].includes(token.contractId);
         });
   }, [pools]);
-  const isWVOI = [TOKEN_WVOI1].includes(token.contractId);
+  const isWVOIf = (contractId: number) => {
+    return [TOKEN_WVOI1].includes(contractId);
+  };
+  const isWVOI = isWVOIf(token.contractId);
   const displayTokenId = token.tokenId || token.contractId;
   const externalLink = token.tokenId
     ? `https://explorer.voi.network/explorer/asset/${displayTokenId}/transactions`
@@ -450,8 +459,8 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
-        <PoolCardRow>
-          <Col1>
+        <PoolCardRow style={{ gap: "10px" }}>
+          <Col1 style={{ minWidth: "32px" }}>
             <Col1Row1>
               {icon}
               <PairInfoContainer>
@@ -481,19 +490,19 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
               </PairInfoContainer>
             </Col1Row1>
           </Col1>
-          <Col3>
+          <Col3 sx={{ display: { xs: "none", sm: "flex" } }}>
             <TVLLabel>
               {!!token.price && token.pools.length > 0
                 ? Number(token.price).toFixed(6)
                 : ""}
             </TVLLabel>
           </Col3>
-          <Col3>
+          <Col3 sx={{ display: { xs: "none", sm: "flex" } }}>
             <VolumeLabel>
               {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
             </VolumeLabel>
           </Col3>
-          <Col4>
+          <Col4 sx={{ display: { xs: "none", sm: "flex" } }}>
             <APRLabelContainer>
               <APRLabel>
                 {tokenPools.length > 0 ? tokenPools.length : ""}
@@ -501,34 +510,58 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </APRLabelContainer>
           </Col4>
           {tokenPools.length > 0 ? (
-            <Col5>
-              <StyledLink
-                to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
-                style={{
-                  width: "100%",
-                }}
-              >
-                <AddButton>
-                  <ButtonLabelContainer>
-                    <AddButtonLabel>Pools</AddButtonLabel>
-                  </ButtonLabelContainer>
-                </AddButton>
-              </StyledLink>
-              <StyledLink
-                to={`/swap?poolId=${
-                  tokenPools[0]?.contractId || tokenPools[0]?.poolId || 0
-                }`}
-                style={{
-                  width: "100%",
-                }}
-              >
-                <SwapButton>
-                  <ButtonLabelContainer>
-                    <SwapButtonLabel>Swap</SwapButtonLabel>
-                  </ButtonLabelContainer>
-                </SwapButton>
-              </StyledLink>
-            </Col5>
+            <>
+              <Col5 sx={{ display: { xs: "none", sm: "flex" } }}>
+                <StyledLink
+                  to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
+                  style={{
+                    width: "100%",
+                  }}
+                >
+                  <AddButton>
+                    <ButtonLabelContainer>
+                      <AddButtonLabel>Pools</AddButtonLabel>
+                    </ButtonLabelContainer>
+                  </AddButton>
+                </StyledLink>
+                <StyledLink
+                  to={`/swap?poolId=${
+                    tokenPools[0]?.contractId || tokenPools[0]?.poolId || 0
+                  }`}
+                  style={{
+                    width: "100%",
+                  }}
+                >
+                  <SwapButton>
+                    <ButtonLabelContainer>
+                      <SwapButtonLabel>Swap</SwapButtonLabel>
+                    </ButtonLabelContainer>
+                  </SwapButton>
+                </StyledLink>
+              </Col5>
+              <Stack sx={{ flexGrow: 1, display: { xs: "flex", sm: "none" } }}>
+                <Field style={{ justifyContent: "space-between" }}>
+                  <FieldLabel>Price:</FieldLabel>
+                  <FieldValue>
+                    {!!token.price && token.pools.length > 0
+                      ? Number(token.price).toFixed(6)
+                      : ""}
+                  </FieldValue>
+                </Field>
+                <Field style={{ justifyContent: "space-between" }}>
+                  <FieldLabel>TVL:</FieldLabel>
+                  <FieldValue>
+                    {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
+                  </FieldValue>
+                </Field>
+                <Field style={{ justifyContent: "space-between" }}>
+                  <FieldLabel>Pools:</FieldLabel>
+                  <FieldValue>
+                    {tokenPools.length > 0 ? tokenPools.length : ""}
+                  </FieldValue>
+                </Field>
+              </Stack>
+            </>
           ) : (
             <Col5>
               {!isWVOI ? (
@@ -555,6 +588,34 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </Col5>
           )}
         </PoolCardRow>
+        <Stack direction="row" sx={{ display: { xs: "flex", sm: "none" } }}>
+          <StyledLink
+            to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
+            style={{
+              width: "100%",
+            }}
+          >
+            <AddButton>
+              <ButtonLabelContainer>
+                <AddButtonLabel>Pools</AddButtonLabel>
+              </ButtonLabelContainer>
+            </AddButton>
+          </StyledLink>
+          <StyledLink
+            to={`/swap?poolId=${
+              tokenPools[0]?.contractId || tokenPools[0]?.poolId || 0
+            }`}
+            style={{
+              width: "100%",
+            }}
+          >
+            <SwapButton>
+              <ButtonLabelContainer>
+                <SwapButtonLabel>Swap</SwapButtonLabel>
+              </ButtonLabelContainer>
+            </SwapButton>
+          </StyledLink>
+        </Stack>
       </PoolCardRoot>
     </Fade>
   );
