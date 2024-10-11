@@ -834,6 +834,7 @@ const Swap = () => {
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
           .toFixed(0)
       );
+      // TODO consider using larger number
       ci.Trader_exactSwapBForA(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
         (r: any) => {
           console.log({ r });
@@ -861,6 +862,7 @@ const Swap = () => {
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
           .toFixed(0)
       );
+      // TODO consider using larger number
       ci.Trader_exactSwapAForB(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
         (r: any) => {
           console.log({ r });
