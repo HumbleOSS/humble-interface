@@ -9,6 +9,7 @@ import { stringToColorCode } from "../../utils/string";
 import algosdk from "algosdk";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { display } from "@mui/system";
+import { TOKEN_WVOI1 } from "../../constants/tokens";
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -520,6 +521,10 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   ) : (
     ""
   );
+  const displayTokAId =
+    `${pool.tokAId}` === `${TOKEN_WVOI1}` ? "0" : `${pool.tokAId}`;
+  const displayTokBId =
+    `${pool.tokBId}` === `${TOKEN_WVOI1}` ? "0" : `${pool.tokBId}`;
   console.log({ pool, balance, tokens, tokA, tokB });
   return (
     <Fade in={true} timeout={1500}>
@@ -546,11 +551,11 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 <PairIds sx={{ display: { xs: "none", md: "flex" } }}>
                   <Field>
                     <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{pool.tokAId}</FieldValue>
+                    <FieldValue>{displayTokAId}</FieldValue>
                   </Field>
                   <Field>
                     <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{pool.tokBId}</FieldValue>
+                    <FieldValue>{displayTokBId}</FieldValue>
                   </Field>
                 </PairIds>
                 {!balance ? (
