@@ -22,7 +22,6 @@ import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import { display, minWidth } from "@mui/system";
 
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 
@@ -55,12 +54,14 @@ const Col1 = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+  flex-grow: 1;
 `;
 
 const Col1Row1 = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  width: 100px;
 `;
 
 const PairInfo = styled.div`
@@ -131,26 +132,28 @@ export const CryptoIconPlaceholder: FC<CryptoIconPlaceholderProps> = ({
   color,
 }) => {
   return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="32" height="32" rx="16" fill={color || "#FFBE1D"} />
-      <path
-        d="M4 16C4 12.2725 4 10.4087 4.60896 8.93853C5.42092 6.97831 6.97831 5.42092 8.93853 4.60896C10.4087 4 12.2725 4 16 4C19.7275 4 21.5913 4 23.0615 4.60896C25.0217 5.42092 26.5791 6.97831 27.391 8.93853C28 10.4087 28 12.2725 28 16C28 19.7275 28 21.5913 27.391 23.0615C26.5791 25.0217 25.0217 26.5791 23.0615 27.391C21.5913 28 19.7275 28 16 28C12.2725 28 10.4087 28 8.93853 27.391C6.97831 26.5791 5.42092 25.0217 4.60896 23.0615C4 21.5913 4 19.7275 4 16Z"
-        fill="white"
-        fill-opacity="0.01"
-      />
-      <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
-        d="M12.6187 7.38128C12.9604 7.72299 12.9604 8.27701 12.6187 8.61872L8.61872 12.6187C8.27701 12.9604 7.72299 12.9604 7.38128 12.6187C7.03957 12.277 7.03957 11.723 7.38128 11.3813L11.3813 7.38128C11.723 7.03957 12.277 7.03957 12.6187 7.38128ZM18.6187 7.38128C18.9604 7.72299 18.9604 8.27701 18.6187 8.61872L8.61872 18.6187C8.27701 18.9604 7.72299 18.9604 7.38128 18.6187C7.03957 18.277 7.03957 17.723 7.38128 17.3813L17.3813 7.38128C17.723 7.03957 18.277 7.03957 18.6187 7.38128ZM24.6187 7.38128C24.9604 7.72299 24.9604 8.27701 24.6187 8.61872L8.61872 24.6187C8.27701 24.9604 7.72299 24.9604 7.38128 24.6187C7.03957 24.277 7.03957 23.723 7.38128 23.3813L23.3813 7.38128C23.723 7.03957 24.277 7.03957 24.6187 7.38128ZM24.6187 13.3813C24.9604 13.723 24.9604 14.277 24.6187 14.6187L14.6187 24.6187C14.277 24.9604 13.723 24.9604 13.3813 24.6187C13.0396 24.277 13.0396 23.723 13.3813 23.3813L23.3813 13.3813C23.723 13.0396 24.277 13.0396 24.6187 13.3813ZM24.6187 19.3813C24.9604 19.723 24.9604 20.277 24.6187 20.6187L20.6187 24.6187C20.277 24.9604 19.723 24.9604 19.3813 24.6187C19.0396 24.277 19.0396 23.723 19.3813 23.3813L23.3813 19.3813C23.723 19.0396 24.277 19.0396 24.6187 19.3813Z"
-        fill="#F6F6F8"
-      />
-    </svg>
+    <div style={{ flexShrink: 0 }}>
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect width="32" height="32" rx="16" fill={color || "#FFBE1D"} />
+        <path
+          d="M4 16C4 12.2725 4 10.4087 4.60896 8.93853C5.42092 6.97831 6.97831 5.42092 8.93853 4.60896C10.4087 4 12.2725 4 16 4C19.7275 4 21.5913 4 23.0615 4.60896C25.0217 5.42092 26.5791 6.97831 27.391 8.93853C28 10.4087 28 12.2725 28 16C28 19.7275 28 21.5913 27.391 23.0615C26.5791 25.0217 25.0217 26.5791 23.0615 27.391C21.5913 28 19.7275 28 16 28C12.2725 28 10.4087 28 8.93853 27.391C6.97831 26.5791 5.42092 25.0217 4.60896 23.0615C4 21.5913 4 19.7275 4 16Z"
+          fill="white"
+          fill-opacity="0.01"
+        />
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M12.6187 7.38128C12.9604 7.72299 12.9604 8.27701 12.6187 8.61872L8.61872 12.6187C8.27701 12.9604 7.72299 12.9604 7.38128 12.6187C7.03957 12.277 7.03957 11.723 7.38128 11.3813L11.3813 7.38128C11.723 7.03957 12.277 7.03957 12.6187 7.38128ZM18.6187 7.38128C18.9604 7.72299 18.9604 8.27701 18.6187 8.61872L8.61872 18.6187C8.27701 18.9604 7.72299 18.9604 7.38128 18.6187C7.03957 18.277 7.03957 17.723 7.38128 17.3813L17.3813 7.38128C17.723 7.03957 18.277 7.03957 18.6187 7.38128ZM24.6187 7.38128C24.9604 7.72299 24.9604 8.27701 24.6187 8.61872L8.61872 24.6187C8.27701 24.9604 7.72299 24.9604 7.38128 24.6187C7.03957 24.277 7.03957 23.723 7.38128 23.3813L23.3813 7.38128C23.723 7.03957 24.277 7.03957 24.6187 7.38128ZM24.6187 13.3813C24.9604 13.723 24.9604 14.277 24.6187 14.6187L14.6187 24.6187C14.277 24.9604 13.723 24.9604 13.3813 24.6187C13.0396 24.277 13.0396 23.723 13.3813 23.3813L23.3813 13.3813C23.723 13.0396 24.277 13.0396 24.6187 13.3813ZM24.6187 19.3813C24.9604 19.723 24.9604 20.277 24.6187 20.6187L20.6187 24.6187C20.277 24.9604 19.723 24.9604 19.3813 24.6187C19.0396 24.277 19.0396 23.723 19.3813 23.3813L23.3813 19.3813C23.723 19.0396 24.277 19.0396 24.6187 19.3813Z"
+          fill="#F6F6F8"
+        />
+      </svg>
+    </div>
   );
 };
 
@@ -257,12 +260,13 @@ const PairInfoContainer = styled.div`
   gap: 4px;
 `;
 
-const Col2 = styled.div`
+const Col2 = styled(Box)`
   display: flex;
   height: 32px;
   padding: var(--Spacing-400, 8px) 0px;
   align-items: baseline;
   gap: 10px;
+  flex-grow: 1;
 `;
 
 const TVLLabel = styled.div`
@@ -307,6 +311,7 @@ const Col3 = styled(Box)`
   flex-direction: column;
   align-items: baseline;
   gap: 8px;
+  flex-grow: 1;
 `;
 
 const Col4 = styled(Box)`
@@ -316,6 +321,7 @@ const Col4 = styled(Box)`
   justify-content: center;
   align-items: baseline;
   gap: 8px;
+  flex-grow: 1;
 `;
 
 const APRLabelContainer = styled.div`
@@ -396,9 +402,9 @@ interface TokenCardProps {
   token: any;
 }
 const TokenCard: FC<TokenCardProps> = ({ token }) => {
+  console.log({ token });
   const navigate = useNavigate();
   const pools = useSelector((state: RootState) => state.pools.pools);
-  console.log({ pools, token });
   /* Theme */
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -461,7 +467,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
         <PoolCardRow style={{ gap: "10px" }}>
-          <Col1 style={{ minWidth: "32px" }}>
+          <Col1>
             <Col1Row1>
               {icon}
               <PairInfoContainer>
@@ -472,37 +478,31 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
                   </PairTokens>
                 </PairInfo>
                 <PairIds>
+                  <Field>
+                    <FieldLabel>ID:</FieldLabel>
+                    <FieldValue>{!isWVOI ? displayTokenId : "0"}</FieldValue>
+                  </Field>
                   {!isWVOI ? (
-                    <>
-                      <Field>
-                        <FieldLabel>ID:</FieldLabel>
-                        <FieldValue>{displayTokenId}</FieldValue>
-                      </Field>
-                      <a
-                        style={{ textDecoration: "none", color: "inherit" }}
-                        href={externalLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <OpenInNewIcon fontSize="small" />
-                      </a>
-                    </>
+                    <a
+                      style={{ textDecoration: "none", color: "inherit" }}
+                      href={externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <OpenInNewIcon fontSize="small" />
+                    </a>
                   ) : null}
-                  {/*<Field>
-                  <FieldLabel>ID:</FieldLabel>
-                  <FieldValue>{pool.tokB}</FieldValue>
-                </Field>*/}
                 </PairIds>
               </PairInfoContainer>
             </Col1Row1>
           </Col1>
-          <Col3 sx={{ display: { xs: "none", sm: "flex" } }}>
+          <Col2 sx={{ display: { xs: "none", sm: "flex" } }}>
             <TVLLabel>
-              {!!token.price && token.pools.length > 0
+              {!!token.price //&& token.pools.length > 0
                 ? Number(token.price).toFixed(6)
-                : ""}
+                : " "}
             </TVLLabel>
-          </Col3>
+          </Col2>
           <Col3 sx={{ display: { xs: "none", sm: "flex" } }}>
             <VolumeLabel>
               {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
@@ -511,7 +511,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
           <Col4 sx={{ display: { xs: "none", sm: "flex" } }}>
             <APRLabelContainer>
               <APRLabel>
-                {tokenPools.length > 0 ? tokenPools.length : ""}
+                {tokenPools.length > 0 ? tokenPools.length : "1"}
               </APRLabel>
             </APRLabelContainer>
           </Col4>

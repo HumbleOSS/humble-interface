@@ -93,15 +93,16 @@ const Column = styled.div`
 `;
 
 const ColumnPair = styled(Column)`
-  width: 234px;
+  flex-grow: 1;
+  width: 100px;
 `;
 
 const ColumnTVL = styled(Column)`
-  width: 97px;
+  flex-grow: 1;
 `;
 
 const ColumnVolume = styled(Column)`
-  width: 98px;
+  flex-grow: 1;
 `;
 
 const ColumnAPR = styled(Column)``;
@@ -630,7 +631,6 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
                 <ColumnPair>
                   <ColumnLabel>Token</ColumnLabel>
                 </ColumnPair>
-
                 <ColumnTVL>
                   <ColumnLabel>Price</ColumnLabel>
                   <InfoCircleIcon />
