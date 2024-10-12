@@ -510,9 +510,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
           </Col3>
           <Col4 sx={{ display: { xs: "none", sm: "flex" } }}>
             <APRLabelContainer>
-              <APRLabel>
-                {tokenPools.length > 0 ? tokenPools.length : "1"}
-              </APRLabel>
+              <APRLabel>{tokenPools.length}</APRLabel>
             </APRLabelContainer>
           </Col4>
           {tokenPools.length > 0 ? (
