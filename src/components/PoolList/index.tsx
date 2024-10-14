@@ -53,8 +53,6 @@ const HeadingRow = styled(Box)`
 `;
 
 const SectionTitle = styled.h2`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   /* Heading/Display 2 */
   font-family: "Plus Jakarta Sans";
@@ -64,13 +62,15 @@ const SectionTitle = styled.h2`
   line-height: 120%; /* 21.6px */
 `;
 
-const Columns = styled(Box)`
+const Columns =  styled(Box)<{ smHidden?: boolean }>`
   display: flex;
   padding: 1px 0px;
   justify-content: center;
   align-items: baseline;
   gap: 10px;
-  align-self: stretch;
+  @media screen and (max-width: 600px) {
+    ${(props) => props.smHidden && "display:none;"}
+  }
 `;
 
 const Heading = styled(Box)`
@@ -102,10 +102,8 @@ const ColumnVolume = styled(Column)`
 
 const ColumnAPR = styled(Column)``;
 
-const ColumnLabel = styled.div`
-  color: var(--Color-Brand-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
+ const ColumnLabel = styled.div`
+  /* color: var(--Color-Brand-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 13px;
@@ -130,6 +128,9 @@ const BaseButton = styled(Button)`
 
 const CreateTokenButton = styled(BaseButton)`
   background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  :hover{
+    background: var(--Color-Accent-CTA-Background-Default, hsl(226.37681159420288, 93.66515837104073%, 50%));
+  }
 `;
 
 const CreateButtonInner = styled.div`
@@ -137,12 +138,11 @@ const CreateButtonInner = styled.div`
   justify-content: center;
   align-items: center;
   gap: 8px;
+  color: var(--Color-Neutral-Element-Primary, #fff);
 `;
 
 const CreateButtonLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 14px;
@@ -162,21 +162,21 @@ const InfoCircleIcon = () => {
     >
       <path
         d="M7.99992 14.6673C11.6666 14.6673 14.6666 11.6673 14.6666 8.00065C14.6666 4.33398 11.6666 1.33398 7.99992 1.33398C4.33325 1.33398 1.33325 4.33398 1.33325 8.00065C1.33325 11.6673 4.33325 14.6673 7.99992 14.6673Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M8 8V11.3333"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M7.99634 5.33398H8.00233"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -187,30 +187,14 @@ const InfoCircleIcon = () => {
 
 const PoolIcon = () => {
   return (
-    <svg
-      width="23"
-      height="24"
-      viewBox="0 0 23 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M14.3231 15.6665C14.3231 19.3865 11.3122 22.3974 7.59224 22.3974C3.87224 22.3974 0.861328 19.3865 0.861328 15.6665C0.861328 11.9465 3.87224 8.93555 7.59224 8.93555C7.76679 8.93555 7.93042 8.94648 8.11588 8.95739C11.4213 9.2083 14.0613 11.8483 14.3122 15.1537C14.3122 15.3174 14.3231 15.4811 14.3231 15.6665Z"
-        stroke="white"
-        stroke-width="1.5"
-        stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <path
-        d="M21.5778 8.40081C21.5778 12.1208 18.5669 15.1318 14.8469 15.1318H14.3123C14.0614 11.8263 11.4214 9.18626 8.11597 8.93535V8.40081C8.11597 4.68081 11.1269 1.66992 14.8469 1.66992C18.5669 1.66992 21.5778 4.68081 21.5778 8.40081Z"
-        fill="white"
-        stroke-width="1.5"
-        stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1.29028 16.8359H11.6129" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3.58187 13.1621H9.32128C11.1587 13.1621 11.6129 13.6163 11.6129 15.4331V19.6757C11.6129 21.4924 11.1587 21.9466 9.32128 21.9466H3.58187C1.74445 21.9466 1.29028 21.4924 1.29028 19.6757V15.4331C1.29028 13.6163 1.74445 13.1621 3.58187 13.1621Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M21.9355 14.7109C21.9355 18.7058 18.7046 21.9367 14.7097 21.9367L15.7936 20.1303" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1.29028 8.51682C1.29028 4.52198 4.52125 1.29102 8.51609 1.29102L7.43223 3.09747" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18.3227 10.5813C20.8881 10.5813 22.9678 8.50163 22.9678 5.93618C22.9678 3.37072 20.8881 1.29102 18.3227 1.29102C15.7572 1.29102 13.6775 3.37072 13.6775 5.93618C13.6775 8.50163 15.7572 10.5813 18.3227 10.5813Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
+    
   );
 };
 
@@ -290,7 +274,7 @@ const PoolList: FC<PoolListProps> = ({
         <HeadingRow className="heading-row2" style={{ paddingBottom: "32px" }}>
           <Search onChange={onFilter} />
         </HeadingRow>
-        <Columns>
+        <Columns smHidden={true}>
           <Heading sx={{ display: { xs: "none", md: "flex" } }}>
             <ColumnPair>
               <ColumnLabel>Pair</ColumnLabel>

@@ -5,8 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
 import PoolPosition from "../PoolPosition";
 import PoolList from "../PoolList";
-import { getPools } from "../../store/poolSlice";
-import { UnknownAction } from "@reduxjs/toolkit";
 import { BalanceI, IndexerPoolI, PoolI, PositionI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import axios from "axios";
@@ -27,6 +25,7 @@ const PoolRoot = styled.div`
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+
   &.light {
     border: 1px solid
       var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
@@ -34,11 +33,17 @@ const PoolRoot = styled.div`
       --Color-Canvas-Transparent-white-950,
       rgba(255, 255, 255, 0.95)
     );
+    @media screen and (min-width: 600px) {
+      padding: var(--Spacing-1000, 40px);
+    }
   }
   &.dark {
     border: 1px solid var(--Color-Brand-Primary, #41137e);
-    background: var(--Color-Canvas-Transparent-white-950, #070709);
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    @media screen and (min-width: 600px) {
+      background: var(--Color-Canvas-Transparent-white-950, #070709);
+      padding: var(--Spacing-1000, 40px);
+    }
   }
 `;
 
@@ -86,8 +91,6 @@ const Button = styled.div`
 
 const ButtonLabel = styled(Button)`
   color: var(--Color-Brand-White, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 22px;
@@ -233,7 +236,9 @@ const Pool = () => {
   }, [activeAccount]);
 
   return (
-    <div>
+    <div
+    // style={{maxWidth:"100vw", background:"red",overflow:"hidden"}}
+    >
       {activeAccount && filteredPositions.length > 0 ? (
         <ButtonGroup sx={{ mb: 5 }} fullWidth>
           {filteredPositions.length > 0 ? (

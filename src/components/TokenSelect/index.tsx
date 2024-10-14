@@ -1,7 +1,6 @@
 import * as React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -9,7 +8,12 @@ import { ARC200TokenI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { tokenSymbol } from "../../utils/dex";
-
+const Wrapper=styled.div`
+  width:86%;
+  @media screen and (min-width: 640px) {
+    width: fit-content;
+  } 
+`
 const TokenButton = styled.div`
   display: flex;
   padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
@@ -17,6 +21,8 @@ const TokenButton = styled.div`
   justify-content: center;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  
   border-radius: var(--Radius-600, 13px);
   &.light {
     background: var(--Color-Accent-Primary-Background-Default, #41137e);
@@ -34,11 +40,12 @@ const TokenButtonGroup = styled.div`
   justify-content: center;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  cursor: pointer;
+
 `;
 
 const TokenButtonLabel = styled.div`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 14px;
@@ -105,8 +112,6 @@ const ContentBody = styled.div`
 
 const ContentText = styled.div`
   color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
@@ -185,7 +190,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   };
   //const [selectedIndex, setSelectedIndex] = React.useState(0);
   return (
-    <div>
+    <Wrapper>
       <TokenButton
         className={isDarkTheme ? "dark" : "light"}
         aria-label="more"
@@ -194,9 +199,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
         onClick={handleClick}
+        style={{
+          width:"100%"
+        }}
       >
         <TokenButtonGroup>
-          <TokenButtonLabel className={isDarkTheme ? "dark" : "light"}>
+          <TokenButtonLabel  className={isDarkTheme ? "dark" : "light"}>
             {tokenSymbol(token)}
           </TokenButtonLabel>
           <ArrowDownwardIcon />
@@ -269,7 +277,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
             </StyledMenuItem>
           ))}
       </Menu>
-    </div>
+    </Wrapper>
   );
 };
 

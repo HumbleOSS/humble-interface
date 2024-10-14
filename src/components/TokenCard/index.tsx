@@ -47,6 +47,10 @@ const PoolCardRow = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   align-self: stretch;
+  flex-direction: column;
+  @media screen and (min-width: 600px) {
+    flex-direction: row;
+  }
 `;
 
 const Col1 = styled.div`
@@ -60,10 +64,34 @@ const Col1 = styled.div`
 const Col1Row1 = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  width: 100px;
+  /* gap: 10px;
+  width: 100px; */
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--Spacing-200, 4px);
+  border-bottom: 1px solid #ffffff5c;
+  @media screen and (min-width: 600px) {
+    width: fit-content;
+    justify-content: start;
+    border-bottom: none;
+  }
 `;
-
+const LabelWrapper = styled.div`
+  align-items: center;
+  gap: 2px;
+  display: flex;
+  @media screen and (min-width: 600px) {
+    display: none;
+  }
+`;
+const Label = styled.div`
+  font-family: "Plus Jakarta Sans";
+  color: var(--Color-Neutral-Element-Primary, #fff);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 120%; /* 15.6px */
+`;
 const PairInfo = styled.div`
   display: flex;
   flex-direction: column;
@@ -88,8 +116,6 @@ const PairTokens = styled.div`
 
 const PairTokenLabel = styled.div`
   color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
@@ -187,21 +213,21 @@ const InfoCircleIcon = () => {
     >
       <path
         d="M7.99992 14.6673C11.6666 14.6673 14.6666 11.6673 14.6666 8.00065C14.6666 4.33398 11.6666 1.33398 7.99992 1.33398C4.33325 1.33398 1.33325 4.33398 1.33325 8.00065C1.33325 11.6673 4.33325 14.6673 7.99992 14.6673Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M8 8V11.3333"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M7.99634 5.33398H8.00233"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -271,8 +297,6 @@ const Col2 = styled(Box)`
 
 const TVLLabel = styled.div`
   color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -283,8 +307,6 @@ const TVLLabel = styled.div`
 
 const VolumeLabel = styled.div`
   color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -295,8 +317,6 @@ const VolumeLabel = styled.div`
 
 const APRLabel = styled.div`
   color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -308,20 +328,38 @@ const APRLabel = styled.div`
 const Col3 = styled(Box)`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
-  flex-direction: column;
   align-items: baseline;
   gap: 8px;
   flex-grow: 1;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid #ffffff5c;
+
+  @media screen and (min-width: 600px) {
+    flex-direction: column;
+    justify-content: start;
+    width: fit-content;
+    border-bottom: none;
+  }
 `;
 
 const Col4 = styled(Box)`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
-  flex-direction: column;
   justify-content: center;
   align-items: baseline;
   gap: 8px;
   flex-grow: 1;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid #ffffff5c;
+
+  @media screen and (min-width: 600px) {
+    flex-direction: column;
+    justify-content: start;
+    width: fit-content;
+    border-bottom: none;
+  }
 `;
 
 const APRLabelContainer = styled.div`
@@ -331,11 +369,24 @@ const APRLabelContainer = styled.div`
 `;
 
 const Col5 = styled(Box)`
-  display: flex;
-  height: 65px;
-  flex-direction: column;
-  align-items: flex-start;
   gap: var(--Spacing-200, 4px);
+  padding-top: var(--Spacing-400, 1rem);
+  justify-content: space-between;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  @media screen and (min-width: 600px) {
+    height: 65px;
+  }
+
+  @media screen and (min-width: 600px) {
+    display: flex;
+    padding: 0px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: start;
+    width: fit-content;
+  }
 `;
 
 const Button = styled.div`
@@ -365,8 +416,6 @@ const ButtonLabelContainer = styled.div`
 
 const AddButtonLabel = styled.div`
   color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 15px;
@@ -388,8 +437,6 @@ const SwapButton = styled(Button)`
 
 const SwapButtonLabel = styled.div`
   color: var(--Color-Brand-White, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 14px;
@@ -466,8 +513,8 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
-        <PoolCardRow style={{ gap: "10px" }}>
-          <Col1>
+        <PoolCardRow>
+          <>
             <Col1Row1>
               {icon}
               <PairInfoContainer>
@@ -495,24 +542,42 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
                 </PairIds>
               </PairInfoContainer>
             </Col1Row1>
-          </Col1>
-          <Col2 sx={{ display: { xs: "none", sm: "flex" } }}>
-            <TVLLabel>
-              {!!token.price //&& token.pools.length > 0
-                ? Number(token.price).toFixed(6)
-                : " "}
-            </TVLLabel>
-          </Col2>
-          <Col3 sx={{ display: { xs: "none", sm: "flex" } }}>
-            <VolumeLabel>
-              {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
-            </VolumeLabel>
-          </Col3>
-          <Col4 sx={{ display: { xs: "none", sm: "flex" } }}>
+          </>
+          {!!token.price && token.pools.length > 0 && (
+            <Col3>
+             <LabelWrapper>
+                  <Label>
+                    Price
+                  </Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
+              <TVLLabel>
+                {!!token.price && token.pools.length > 0
+                  ? Number(token.price).toFixed(6)
+                  : ""}
+              </TVLLabel>
+            </Col3>
+          )}
+          {token.tvl > 0 && (
+            <Col3>
+             <LabelWrapper>
+                  <Label>TVL</Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
+              <VolumeLabel>
+                {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
+              </VolumeLabel>
+            </Col3>
+          )}
+          {tokenPools.length > 0 &&<Col4>
+            <LabelWrapper>
+                  <Label>Pools</Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
             <APRLabelContainer>
               <APRLabel>{tokenPools.length}</APRLabel>
             </APRLabelContainer>
-          </Col4>
+          </Col4>}
           {tokenPools.length > 0 ? (
             <>
               <Col5 sx={{ display: { xs: "none", sm: "flex" } }}>

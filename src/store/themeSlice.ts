@@ -1,19 +1,23 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 export interface ThemeState {
   isDarkTheme: boolean;
 }
 
 const initialState: ThemeState = {
-  isDarkTheme: true
+  isDarkTheme: window.localStorage.getItem("theme")
+    ? window.localStorage.getItem("theme") === "dark"
+    : window.matchMedia("(prefers-color-scheme: dark)").matches,
 };
-
 const themeSlice = createSlice({
-  name: 'theme',
+  name: "theme",
   initialState,
   reducers: {
     toggleTheme: (state) => {
-      state.isDarkTheme = !state.isDarkTheme;
+      console.log("Toggling theme")
+        window.localStorage.setItem("theme", !state.isDarkTheme ? "dark" : "light");
+         state.isDarkTheme = !state.isDarkTheme;
+      
     },
   },
 });

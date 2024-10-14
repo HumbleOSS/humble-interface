@@ -1,16 +1,19 @@
 import { Icon } from "@mui/material";
 import React from "react";
+import { useSelector } from "react-redux";
 import styled from "styled-components";
+import { RootState } from "../../store/store";
 
-const SearchRoot = styled.div`
+const SearchRoot = styled.div<{ isDarkTheme: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--Spacing-400, 8px);
   flex: 1 0 0;
+  color: ${(props) => (props.isDarkTheme ? "#fff" : "#0C0C10")};
 `;
 
-const InputContainer = styled.div`
+const InputContainer = styled.div<{ isDarkTheme: boolean }>`
   display: flex;
   padding: var(--Spacing-700, 16px) var(--Spacing-600, 12px);
   align-items: center;
@@ -19,10 +22,11 @@ const InputContainer = styled.div`
   /* style */
   border-radius: var(--Radius-300, 8px);
   border: 1.5px solid
-    var(
-      --Color-Neutral-Stroke-Primary-Static-Contrast,
-      rgba(255, 255, 255, 0.5)
-    );
+    ${(props) =>
+      props.isDarkTheme
+        ? `var(--Color-Neutral-Stroke-Primary-Static-Contrast,rgba(255, 255, 255, 0.5))`
+        : "#7E7E9A"};
+
   background: var(
     --Color-Comp-Input-Background-Default,
     rgba(255, 255, 255, 0)
@@ -35,7 +39,7 @@ const PlaceholderContainer = styled.div`
   flex: 1 0 0;
 `;
 
-const Placeholder = styled.input`
+const Placeholder = styled.input<{ isDarkTheme: boolean }>`
   /* layout */
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -43,7 +47,9 @@ const Placeholder = styled.input`
   flex: 1 0 0;
   /* type */
   overflow: hidden;
-  color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+  /* color: var(--Color-Neutral-Element-Secondary, #f6f6f8); */
+  color: ${(props) => (props.isDarkTheme ? "#fff" : "#0C0C10")};
+
   font-feature-settings: "clig" off, "liga" off;
   text-overflow: ellipsis;
   font-family: "Plus Jakarta Sans";
@@ -64,14 +70,14 @@ const SearchIcon = () => {
     >
       <path
         d="M9.58341 17.4993C13.9557 17.4993 17.5001 13.9549 17.5001 9.58268C17.5001 5.21043 13.9557 1.66602 9.58341 1.66602C5.21116 1.66602 1.66675 5.21043 1.66675 9.58268C1.66675 13.9549 5.21116 17.4993 9.58341 17.4993Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M18.3334 18.3327L16.6667 16.666"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -100,14 +106,19 @@ interface SearchProps {
 }
 
 const Search: React.FC<SearchProps> = ({ onChange }) => {
+  const isDarkTheme = useSelector(
+    (state: RootState) => state.theme.isDarkTheme
+  );
   return (
-    <SearchRoot>
-      <InputContainer>
+    <SearchRoot isDarkTheme={isDarkTheme}>
+      <InputContainer isDarkTheme={isDarkTheme}>
         <IconContainer>
           <StyledIcon />
         </IconContainer>
         <PlaceholderContainer>
           <Placeholder
+          placeholder="Search by token ID, name, or Symbol"
+            isDarkTheme={isDarkTheme}
             onChange={(e) => {
               onChange(e.target.value);
             }}

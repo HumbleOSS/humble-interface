@@ -1,11 +1,10 @@
 import styled from "@emotion/styled";
 import React, { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import SwapIcon from "static/icon/icon-swap.svg";
-import PoolIcon from "static/icon/icon-pool.svg";
-import FarmIcon from "static/icon/icon-farm.svg";
-import HomeIcon from "static/icon/icon-home.svg";
-import TokenIcon from "static/icon/icon-token.svg";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import SwapLogo from "../../components/SVG/Swap";
+import PoolLogo from "../../components/SVG/Pool";
+import Home from "../../components/SVG/Home";
+import TokenLogo from "../../components/SVG/Token";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
 import Box from "@mui/material/Box";
@@ -54,18 +53,21 @@ const MobileNavContainer = styled.div`
   flex-shrink: 0;
 `;
 
-const MobileNavItem = styled.div`
+const MobileNavItem = styled.div<{ active: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  color: ${(props) =>
+    !props.active
+      ? "var(--Color-Brand-White, #fff)"
+      : "var(--Color-Brand-Primary, #FFBE1D)"};
 `;
 
 const MobileNavItemLabel = styled.div`
-  color: var(--Color-Brand-White, #fff);
-  leading-trim: both;
-  text-edge: cap;
+  /* color: var(--Color-Brand-White, #fff); */
+
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 12px;
@@ -128,7 +130,7 @@ const NavButtonGroup = styled(Box)`
   gap: var(--Spacing-600, 12px);
 `;
 
-const NavButton = styled.div`
+const NavButton = styled.div<{ active: boolean }>`
   /* Layout */
   display: flex;
   padding: var(--Spacing-400, 8px) var(--Spacing-700, 16px);
@@ -137,13 +139,19 @@ const NavButton = styled.div`
   gap: var(--Spacing-200, 4px);
   /* Style */
   border-radius: var(--Radius-700, 16px);
-  border: 1px solid var(--Color-Brand-White, #fff);
+  border: 1px solid ${(props) =>
+    !props.active
+      ? "var(--Color-Brand-White, #fff)"
+      : "var(--Color-Brand-Primary, #FFBE1D)"};
+
+  color: ${(props) =>
+    !props.active
+      ? "var(--Color-Brand-White, #fff)"
+      : "var(--Color-Brand-Primary, #FFBE1D)"};
 `;
 
 const NavButtonLabel = styled.span`
-  color: var(--Color-Brand-White, #fff);
-  leading-trim: both;
-  text-edge: cap;
+  /* color: var(--Color-Brand-White, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
@@ -283,6 +291,7 @@ const Navbar = () => {
   /* Navigation */
 
   const navigate = useNavigate();
+  const activePath = useLocation();
   const [active, setActive] = React.useState("");
 
   /* Popper */
@@ -315,17 +324,17 @@ const Navbar = () => {
               {
                 label: "Swap",
                 href: "/swap",
-                icon: SwapIcon,
+                icon: SwapLogo,
               },
               {
                 label: "Pool",
                 href: "/pool",
-                icon: PoolIcon,
+                icon: PoolLogo,
               },
               {
                 label: "Token",
                 href: "/token",
-                icon: TokenIcon,
+                icon: TokenLogo,
               },
               /*
               {
@@ -334,19 +343,18 @@ const Navbar = () => {
                 icon: FarmIcon,
               },
               */
-            ].map((item) => (
-              <StyledLink to={item.href}>
-                <NavButton>
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    height="24"
-                    width="24"
-                  />
-                  <NavButtonLabel>{item.label}</NavButtonLabel>
-                </NavButton>
-              </StyledLink>
-            ))}
+            ].map((item) => {
+              const Item = item.icon;
+              return (
+                <StyledLink to={item.href}>
+                  <NavButton active={activePath.pathname == item.href}>
+                    <Item />
+
+                    <NavButtonLabel>{item.label}</NavButtonLabel>
+                  </NavButton>
+                </StyledLink>
+              );
+            })}
           </NavButtonGroup>
           <AccountButtonGroup>
             <ConnectWallet />
@@ -363,17 +371,17 @@ const Navbar = () => {
           <MobileNavContainer>
             {[
               {
-                icon: HomeIcon,
+                icon: Home,
                 label: "Home",
                 location: "/",
               },
               {
-                icon: SwapIcon,
+                icon: SwapLogo,
                 label: "Swap",
                 location: "/swap",
               },
               {
-                icon: PoolIcon,
+                icon: PoolLogo,
                 label: "Pool",
                 location: "/pool",
               },
@@ -384,16 +392,20 @@ const Navbar = () => {
                 location: "/farm",
               },
               */
-            ].map((item) => (
-              <MobileNavItem
-                onClick={() => {
-                  navigate(item.location);
-                }}
-              >
-                <img src={item.icon} alt={item.label} />
-                <MobileNavItemLabel>{item.label}</MobileNavItemLabel>
-              </MobileNavItem>
-            ))}
+            ].map((item) => {
+              const Item = item.icon;
+              return (
+                <MobileNavItem
+                  active={activePath.pathname == item.location}
+                  onClick={() => {
+                    navigate(item.location);
+                  }}
+                >
+                  <Item />
+                  <MobileNavItemLabel>{item.label}</MobileNavItemLabel>
+                </MobileNavItem>
+              );
+            })}
           </MobileNavContainer>
         </MobileNavList>
       </MobileNavRoot>

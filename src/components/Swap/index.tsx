@@ -26,7 +26,6 @@ import { ARC200TokenI, PoolI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { getPools } from "../../store/poolSlice";
-import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import { Toast } from "react-toastify/dist/components";
 import { tokenId, tokenSymbol } from "../../utils/dex";
@@ -325,20 +324,25 @@ const SwapRoot = styled.div`
     transition: all 1s;
     width: 630px;
     padding: 40px;
-    /*
-  &.light {
-    border: 1px solid
-      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
-    background: var(
-      --Color-Canvas-Transparent-white-950,
-      rgba(255, 255, 255, 0.95)
-    );
-  }
-  */
+
+    &.light {
+      border: 1px solid
+        var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+      background: var(
+        --Color-Canvas-Transparent-white-950,
+        rgba(255, 255, 255, 0.95)
+      );
+    }
     &.dark {
-      border: 1px solid var(--Color-Brand-Primary, #41137e);
-      background: var(--Color-Canvas-Transparent-white-950, #070709);
-      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+      @media screen and (min-width: 640px) {
+        border: 1px solid var(--Color-Brand-Primary, #41137e);
+        background: var(--Color-Canvas-Transparent-white-950, #070709);
+        box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+      }
+    }
+    @media screen and (min-width: 600px) {
+      width: 630px;
+      padding: var(--Spacing-1000, 40px);
     }
   }
 `;
@@ -497,7 +501,7 @@ const BreakdownValue = styled.div`
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
   font-style: normal;
-  font-weight: 600;:sp
+  font-weight: 600;
   line-height: 120%; /* 18px */
   &.dark {
     color: var(--Color-Neutral-Element-Primary, #fff);

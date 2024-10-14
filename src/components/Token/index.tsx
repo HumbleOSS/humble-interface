@@ -28,8 +28,10 @@ const TokenRoot = styled.div`
   }
   &.dark {
     border: 1px solid var(--Color-Brand-Primary, #41137e);
-    background: var(--Color-Canvas-Transparent-white-950, #070709);
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    @media screen and (min-width: 600px) {
+      background: var(--Color-Canvas-Transparent-white-950, #070709);
+    }
   }
   width: 100%;
   @media screen and (min-width: 600px) {
@@ -81,8 +83,6 @@ const Button = styled.div`
 
 const ButtonLabel = styled(Button)`
   color: var(--Color-Brand-White, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 22px;

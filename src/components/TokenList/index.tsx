@@ -28,8 +28,8 @@ const TokenListRoot = styled.div`
     & .heading-row2 {
       border-bottom: 1px solid
         var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
-      padding-bottom: var(--Spacing-700, 32px);
-    }
+        padding-bottom: var(--Spacing-700, 16px);
+      }
     & .message-text {
       color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
     }
@@ -57,8 +57,6 @@ const HeadingRow = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   /* Heading/Display 2 */
   font-family: "Plus Jakarta Sans";
@@ -68,13 +66,16 @@ const SectionTitle = styled.h2`
   line-height: 120%; /* 21.6px */
 `;
 
-const Columns = styled(Box)`
+// const Columns = styled()`
+const Columns = styled(Box)<{ smHidden?: boolean }>`
   display: flex;
   padding: 1px 0px;
   justify-content: center;
   align-items: baseline;
   gap: 10px;
-  align-self: stretch;
+  @media screen and (max-width: 600px) {
+    ${(props) => props.smHidden && "display:none;"}
+  }
 `;
 
 const Heading = styled.div`
@@ -108,13 +109,11 @@ const ColumnVolume = styled(Column)`
 const ColumnAPR = styled(Column)``;
 
 const ColumnLabel = styled.div`
-  color: var(--Color-Brand-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
+  /* color: var(--Color-Brand-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
   font-size: 13px;
   font-style: normal;
+  font-family: "Plus Jakarta Sans";
   font-weight: 600;
   line-height: 120%; /* 15.6px */
 `;
@@ -178,8 +177,6 @@ const PairTokens = styled.div`
 
 const PairTokenLabel = styled.div`
   color: var(--Color-Neutral-Element-Primary, #fff);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
@@ -290,21 +287,21 @@ const InfoCircleIcon = () => {
     >
       <path
         d="M7.99992 14.6673C11.6666 14.6673 14.6666 11.6673 14.6666 8.00065C14.6666 4.33398 11.6666 1.33398 7.99992 1.33398C4.33325 1.33398 1.33325 4.33398 1.33325 8.00065C1.33325 11.6673 4.33325 14.6673 7.99992 14.6673Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M8 8V11.3333"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M7.99634 5.33398H8.00233"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -559,8 +556,6 @@ const PoolIcon = () => {
 };
 
 const MessageText = styled.div`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
@@ -626,7 +621,8 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
         </HeadingRow>
         {tokens.length > 0 ? (
           <>
-            <Columns sx={{ display: { xs: "none", md: "block" } }}>
+            {/* <Columns > */}
+            <Columns sx={{ display: { xs: "none", md: "block" } }} smHidden>
               <Heading>
                 <ColumnPair>
                   <ColumnLabel>Token</ColumnLabel>

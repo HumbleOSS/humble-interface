@@ -1,6 +1,5 @@
 import * as React from "react";
 import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import styled from "styled-components";
 import {
   //PROVIDER_ID,
@@ -64,11 +63,12 @@ const AccountDropdownLabel = styled.span`
   font-style: normal;
   font-weight: 400;
   line-height: 120%; /* 18px */
+  color: var(--Color-Brand-White, #fff);
   &.dark {
     color: var(--Color-Brand-White, #fff);
   }
   &.light {
-    color: var(--Color-Brand-Black, #000);
+    color: var(--Color-Brand-White, #000);
   }
 `;
 
@@ -132,7 +132,7 @@ const AccountContainer = styled.div`
 
 const AccountNameContainer = styled.span`
   display: flex;
-  width: 200px
+  width: 200px;
   align-items: center;
   gap: var(--Main-System-10px, 10px);
   flex-shrink: 0;

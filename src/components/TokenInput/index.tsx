@@ -25,8 +25,6 @@ const MaxButton = styled.div`
 `;
 
 const MaxButtonLabel = styled.div`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 12px;
@@ -43,19 +41,20 @@ const SwapTokenContainer = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: var(--Spacing-700, 16px);
-  align-self: stretch;
   border-radius: var(--Radius-800, 24px);
   &.light {
     background: var(--Color-Brand-Background-Primary-30, #f1eafc);
   }
   &.dark {
-    background: var(--Color-Brand-Background-Primary-30, #291c47);
+    background: var(--Color-Brand-Background-Primary-30, #291C47);
+  }
+  @media screen and (min-width:600px) {
+  align-self: stretch;
+    
   }
 `;
 
 const SwapTokenLabel = styled.div`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   /* Body/Title 1 */
   font-family: "IBM Plex Sans Condensed";
@@ -102,12 +101,16 @@ const TokenContainer = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+  width: 100%;
+
 `;
 
 const TokenRow = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 6px;
+  width: 100%;
+
 `;
 
 const TokenLogo = styled.div`
@@ -135,6 +138,8 @@ const TokenButtonContainer = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 6px;
+  width: 100%;
+
 `;
 
 const TokenButtonWrapper = styled.div`
@@ -142,6 +147,9 @@ const TokenButtonWrapper = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  width: 100%;
+
+
 `;
 
 const TokenLabel = styled.div`
@@ -152,6 +160,8 @@ const TokenLabel = styled.div`
   font-style: normal;
   font-weight: 400;
   line-height: 120%; /* 12px */
+  width: 100%;
+
   &.light {
     color: var(--Brand-Black, #000);
   }
@@ -253,6 +263,7 @@ const Input = styled.input`
   font-style: normal;
   font-weight: 700;
   line-height: 120%; /* 21.6px */
+  width: 100%;
   &.light {
     color: var(--Color-Neutral-Element-Secondary, #56566e);
     &::placeholder {
