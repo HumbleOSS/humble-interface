@@ -28,8 +28,8 @@ const TokenListRoot = styled.div`
     & .heading-row2 {
       border-bottom: 1px solid
         var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
-        padding-bottom: var(--Spacing-700, 16px);
-      }
+      padding-bottom: var(--Spacing-700, 16px);
+    }
     & .message-text {
       color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
     }
@@ -66,15 +66,15 @@ const SectionTitle = styled.h2`
   line-height: 120%; /* 21.6px */
 `;
 
-// const Columns = styled()`
-const Columns = styled(Box)<{ smHidden?: boolean }>`
+const Columns = styled.div<{ smHidden?: boolean }>`
   display: flex;
   padding: 1px 0px;
-  justify-content: center;
   align-items: baseline;
+  align-self: stretch;
   gap: 10px;
   @media screen and (max-width: 600px) {
     ${(props) => props.smHidden && "display:none;"}
+    width: 100%;
   }
 `;
 
@@ -94,16 +94,15 @@ const Column = styled.div`
 `;
 
 const ColumnPair = styled(Column)`
-  flex-grow: 1;
-  width: 100px;
+  width: 234px;
 `;
 
 const ColumnTVL = styled(Column)`
-  flex-grow: 1;
+  width: 97px;
 `;
 
 const ColumnVolume = styled(Column)`
-  flex-grow: 1;
+  width: 98px;
 `;
 
 const ColumnAPR = styled(Column)``;
@@ -621,8 +620,7 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
         </HeadingRow>
         {tokens.length > 0 ? (
           <>
-            {/* <Columns > */}
-            <Columns sx={{ display: { xs: "none", md: "block" } }} smHidden>
+            <Columns smHidden>
               <Heading>
                 <ColumnPair>
                   <ColumnLabel>Token</ColumnLabel>

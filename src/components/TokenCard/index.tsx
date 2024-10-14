@@ -40,6 +40,9 @@ const PoolCardRoot = styled.div`
   border-radius: var(--Radius-500, 12px);
   border: 1px solid
     var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
+    &.light{
+      background: #fff;
+    }
 `;
 
 const PoolCardRow = styled.div`
@@ -86,7 +89,7 @@ const LabelWrapper = styled.div`
 `;
 const Label = styled.div`
   font-family: "Plus Jakarta Sans";
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
@@ -115,7 +118,7 @@ const PairTokens = styled.div`
 `;
 
 const PairTokenLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
@@ -132,7 +135,7 @@ const Field = styled.div`
 `;
 
 const FieldLabel = styled.div`
-  color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+  /* color: var(--Color-Neutral-Element-Secondary, #f6f6f8); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 16px;
@@ -142,7 +145,7 @@ const FieldLabel = styled.div`
 `;
 
 const FieldValue = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 16px;
@@ -292,11 +295,10 @@ const Col2 = styled(Box)`
   padding: var(--Spacing-400, 8px) 0px;
   align-items: baseline;
   gap: 10px;
-  flex-grow: 1;
 `;
 
 const TVLLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -306,7 +308,7 @@ const TVLLabel = styled.div`
 `;
 
 const VolumeLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -316,7 +318,7 @@ const VolumeLabel = styled.div`
 `;
 
 const APRLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -325,16 +327,14 @@ const APRLabel = styled.div`
   line-height: 120%; /* 16.8px */
 `;
 
-const Col3 = styled(Box)`
+const Col3 = styled(Box)<{isDarkTheme: boolean}>`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
   align-items: baseline;
   gap: 8px;
-  flex-grow: 1;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid #ffffff5c;
-
+  border-bottom: 1px solid ${({isDarkTheme}) => isDarkTheme ? "#ffffff5c" : "#D8D8E1"};
   @media screen and (min-width: 600px) {
     flex-direction: column;
     justify-content: start;
@@ -343,16 +343,15 @@ const Col3 = styled(Box)`
   }
 `;
 
-const Col4 = styled(Box)`
+const Col4 = styled(Box)<{isDarkTheme: boolean}>`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
   justify-content: center;
   align-items: baseline;
   gap: 8px;
-  flex-grow: 1;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid #ffffff5c;
+  border-bottom: 1px solid ${({isDarkTheme}) => isDarkTheme ? "#ffffff5c" : "#D8D8E1"};
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
@@ -449,7 +448,6 @@ interface TokenCardProps {
   token: any;
 }
 const TokenCard: FC<TokenCardProps> = ({ token }) => {
-  console.log({ token });
   const navigate = useNavigate();
   const pools = useSelector((state: RootState) => state.pools.pools);
   /* Theme */
@@ -544,13 +542,11 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </Col1Row1>
           </>
           {!!token.price && token.pools.length > 0 && (
-            <Col3>
-             <LabelWrapper>
-                  <Label>
-                    Price
-                  </Label>
-                  <InfoCircleIcon />
-                </LabelWrapper>
+            <Col3 isDarkTheme={isDarkTheme}>
+              <LabelWrapper>
+                <Label>Price</Label>
+                <InfoCircleIcon />
+              </LabelWrapper>
               <TVLLabel>
                 {!!token.price && token.pools.length > 0
                   ? Number(token.price).toFixed(6)
@@ -559,28 +555,30 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </Col3>
           )}
           {token.tvl > 0 && (
-            <Col3>
-             <LabelWrapper>
-                  <Label>TVL</Label>
-                  <InfoCircleIcon />
-                </LabelWrapper>
+            <Col3 isDarkTheme={isDarkTheme}>
+              <LabelWrapper>
+                <Label>TVL</Label>
+                <InfoCircleIcon />
+              </LabelWrapper>
               <VolumeLabel>
                 {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
               </VolumeLabel>
             </Col3>
           )}
-          {tokenPools.length > 0 &&<Col4>
-            <LabelWrapper>
-                  <Label>Pools</Label>
-                  <InfoCircleIcon />
-                </LabelWrapper>
-            <APRLabelContainer>
-              <APRLabel>{tokenPools.length}</APRLabel>
-            </APRLabelContainer>
-          </Col4>}
+          {tokenPools.length > 0 && (
+            <Col4 isDarkTheme={isDarkTheme}>
+              <LabelWrapper>
+                <Label>Pools</Label>
+                <InfoCircleIcon />
+              </LabelWrapper>
+              <APRLabelContainer>
+                <APRLabel>{tokenPools.length}</APRLabel>
+              </APRLabelContainer>
+            </Col4>
+          )}
           {tokenPools.length > 0 ? (
             <>
-              <Col5 sx={{ display: { xs: "none", sm: "flex" } }}>
+              <Col5 >
                 <StyledLink
                   to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
                   style={{
@@ -608,28 +606,6 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
                   </SwapButton>
                 </StyledLink>
               </Col5>
-              <Stack sx={{ flexGrow: 1, display: { xs: "flex", sm: "none" } }}>
-                <Field style={{ justifyContent: "space-between" }}>
-                  <FieldLabel>Price:</FieldLabel>
-                  <FieldValue>
-                    {!!token.price && token.pools.length > 0
-                      ? Number(token.price).toFixed(6)
-                      : ""}
-                  </FieldValue>
-                </Field>
-                <Field style={{ justifyContent: "space-between" }}>
-                  <FieldLabel>TVL:</FieldLabel>
-                  <FieldValue>
-                    {token.tvl > 0 ? `${formatter.format(token.tvl)} VOI` : ""}
-                  </FieldValue>
-                </Field>
-                <Field style={{ justifyContent: "space-between" }}>
-                  <FieldLabel>Pools:</FieldLabel>
-                  <FieldValue>
-                    {tokenPools.length > 0 ? tokenPools.length : ""}
-                  </FieldValue>
-                </Field>
-              </Stack>
             </>
           ) : (
             <Col5>
@@ -657,34 +633,6 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
             </Col5>
           )}
         </PoolCardRow>
-        <Stack direction="row" sx={{ display: { xs: "flex", sm: "none" } }}>
-          <StyledLink
-            to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
-            style={{
-              width: "100%",
-            }}
-          >
-            <AddButton>
-              <ButtonLabelContainer>
-                <AddButtonLabel>Pools</AddButtonLabel>
-              </ButtonLabelContainer>
-            </AddButton>
-          </StyledLink>
-          <StyledLink
-            to={`/swap?poolId=${
-              tokenPools[0]?.contractId || tokenPools[0]?.poolId || 0
-            }`}
-            style={{
-              width: "100%",
-            }}
-          >
-            <SwapButton>
-              <ButtonLabelContainer>
-                <SwapButtonLabel>Swap</SwapButtonLabel>
-              </ButtonLabelContainer>
-            </SwapButton>
-          </StyledLink>
-        </Stack>
       </PoolCardRoot>
     </Fade>
   );

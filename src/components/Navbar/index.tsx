@@ -28,6 +28,7 @@ const MobileNavRoot = styled(Box)`
   width: 100%;
   display: flex;
   justify-content: center;
+  z-index: 10;
 `;
 
 const MobileNavList = styled.div`
@@ -358,7 +359,7 @@ const Navbar = () => {
           </NavButtonGroup>
           <AccountButtonGroup>
             <ConnectWallet />
-            {/*<SettingMenu />*/}
+            <SettingMenu />
           </AccountButtonGroup>
         </NavContainer>
       </NavRoot>

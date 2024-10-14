@@ -8,7 +8,6 @@ import { Box, ButtonGroup, Fade, Stack, Tooltip } from "@mui/material";
 import { stringToColorCode } from "../../utils/string";
 import algosdk from "algosdk";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import { display } from "@mui/system";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 
 const StyledLink = styled(Link)`
@@ -26,6 +25,9 @@ const PoolCardRoot = styled(Box)`
   border-radius: var(--Radius-500, 12px);
   border: 1px solid
     var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
+  &.light {
+    background: #fff;
+  }
   /*
   background: var(--Color-Canvas-Transparent-white-900, #070709);
   */
@@ -72,7 +74,7 @@ const LabelWrapper = styled.div`
 `;
 const Label = styled.div`
   font-family: "Plus Jakarta Sans";
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
@@ -101,7 +103,7 @@ const PairTokens = styled.div`
 `;
 
 const PairTokenLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
@@ -152,12 +154,12 @@ const CryptoIconPlaceholder = () => {
       />
       <path
         d="M0.5 8C0.5 3.85786 3.85786 0.5 8 0.5H16C20.1421 0.5 23.5 3.85786 23.5 8V16C23.5 20.1421 20.1421 23.5 16 23.5H8C3.85786 23.5 0.5 20.1421 0.5 16V8Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-opacity="0.7"
       />
       <path
         d="M4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20C7.58172 20 4 16.4183 4 12Z"
-        fill="white"
+        fill="currentColor"
         fill-opacity="0.01"
       />
       <g clip-path="url(#clip0_390_19487)">
@@ -165,7 +167,7 @@ const CryptoIconPlaceholder = () => {
           fill-rule="evenodd"
           clip-rule="evenodd"
           d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.03957 20.277 9.03957 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
-          fill="white"
+          fill="currentColor"
         />
       </g>
       <defs>
@@ -173,7 +175,7 @@ const CryptoIconPlaceholder = () => {
           <rect
             width="16"
             height="16"
-            fill="white"
+            fill="currentColor"
             transform="translate(4 4)"
           />
         </clipPath>
@@ -195,7 +197,7 @@ const PlaceHolderIcon = () => {
         fill-rule="evenodd"
         clip-rule="evenodd"
         d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.03957 20.277 9.03957 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
-        fill="#F6F6F8"
+        fill="currentColor"
       />
     </svg>
   );
@@ -212,21 +214,21 @@ const InfoCircleIcon = () => {
     >
       <path
         d="M7.99992 14.6673C11.6666 14.6673 14.6666 11.6673 14.6666 8.00065C14.6666 4.33398 11.6666 1.33398 7.99992 1.33398C4.33325 1.33398 1.33325 4.33398 1.33325 8.00065C1.33325 11.6673 4.33325 14.6673 7.99992 14.6673Z"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M8 8V11.3333"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M7.99634 5.33398H8.00233"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -292,7 +294,7 @@ const Col2 = styled(Box)`
 `;
 
 const TVLLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -302,7 +304,7 @@ const TVLLabel = styled.div`
 `;
 
 const VolumeLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -312,7 +314,7 @@ const VolumeLabel = styled.div`
 `;
 
 const APRLabel = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #fff);
+  /* color: var(--Color-Neutral-Element-Primary, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
   font-size: 14px;
@@ -321,14 +323,15 @@ const APRLabel = styled.div`
   line-height: 120%; /* 16.8px */
 `;
 
-const Col3 = styled(Box)`
+const Col3 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
   align-items: baseline;
   gap: 8px;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid #ffffff5c;
+  border-bottom: 1px solid
+    ${({ isDarkTheme }) => (isDarkTheme ? "#ffffff5c" : "#D8D8E1")};
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
@@ -338,7 +341,7 @@ const Col3 = styled(Box)`
   }
 `;
 
-const Col4 = styled(Box)`
+const Col4 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
   justify-content: center;
@@ -346,7 +349,8 @@ const Col4 = styled(Box)`
   gap: 8px;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid #ffffff5c;
+  border-bottom: 1px solid
+    ${({ isDarkTheme }) => (isDarkTheme ? "#ffffff5c" : "#D8D8E1")};
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
@@ -580,7 +584,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
         <PoolCardRow>
-          <Col1>
+          <>
             <Col1Row1>
               <PairIconContainer>
                 <PairIconLeft>{tokAIcon}</PairIconLeft>
@@ -598,7 +602,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                     {/*<CryptoIconPlaceholder />*/}
                   </PairTokens>
                 </PairInfo>
-                <PairIds sx={{ display: { xs: "none", md: "flex" } }}>
+                <PairIds>
                   <Field>
                     <FieldLabel>ID:</FieldLabel>
                     <FieldValue>{displayTokAId}</FieldValue>
@@ -609,12 +613,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   </Field>
                 </PairIds>
                 {!balance ? (
-                  <Stack sx={{ display: { xs: "flex", md: "none" } }}>
-                    <TVLLabel>
-                      {pool.tvl} VOI / {pool?.vol || "0"} VOI /{" "}
-                      {pool?.apr || "0.00"}%
-                    </TVLLabel>
-                  </Stack>
+                  <></>
                 ) : (
                   <Stack
                     direction="row"
@@ -635,16 +634,22 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 )}
               </PairInfoContainer>
             </Col1Row1>
-          </Col1>
+          </>
           {balance ? (
             <>
               <Col2 sx={{ display: { xs: "none", md: "block" } }}>
                 <TVLLabel>&nbsp;</TVLLabel>
               </Col2>
-              <Col3 sx={{ display: { xs: "none", md: "block" } }}>
+              <Col3
+                isDarkTheme={isDarkTheme}
+                sx={{ display: { xs: "none", md: "block" } }}
+              >
                 <VolumeLabel>&nbsp;</VolumeLabel>
               </Col3>
-              <Col4 sx={{ display: { xs: "none", md: "block" } }}>
+              <Col4
+                isDarkTheme={isDarkTheme}
+                sx={{ display: { xs: "none", md: "block" } }}
+              >
                 <APRLabelContainer>
                   <APRLabel
                     style={{
@@ -681,18 +686,30 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
             </>
           ) : (
             <>
-              <Col3 sx={{ display: { xs: "none", md: "block" } }}>
+              <Col3 isDarkTheme={isDarkTheme}>
+                <LabelWrapper>
+                  <Label>Tvl</Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
                 <TVLLabel>{pool.tvl} VOI</TVLLabel>
               </Col3>
-              <Col3 sx={{ display: { xs: "none", md: "block" } }}>
+              <Col3 isDarkTheme={isDarkTheme}>
+                <LabelWrapper>
+                  <Label>Volume</Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
                 <VolumeLabel>{pool?.vol || "0"} VOI</VolumeLabel>
               </Col3>
-              <Col4 sx={{ display: { xs: "none", md: "block" } }}>
+              <Col4 isDarkTheme={isDarkTheme}>
+                <LabelWrapper>
+                  <Label>APR</Label>
+                  <InfoCircleIcon />
+                </LabelWrapper>
                 <APRLabelContainer>
                   <APRLabel>{pool?.apr || "0.00"}%</APRLabel>
                 </APRLabelContainer>
               </Col4>
-              <Col5 sx={{ display: { xs: "none", md: "flex" } }}>
+              <Col5>
                 <StyledLink
                   to={`/pool/add?poolId=${pool.contractId}`}
                   style={{
@@ -716,67 +733,6 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
             </>
           )}
         </PoolCardRow>
-        {balance ? (
-          <Stack
-            gap={1}
-            direction="row"
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              display: { xs: "flex", md: "none" },
-            }}
-          >
-            <StyledLink
-              to={`/pool/add?poolId=${pool.contractId}`}
-              style={{
-                width: "100%",
-              }}
-            >
-              <AddButton>
-                <ButtonLabelContainer>
-                  <AddButtonLabel>Add</AddButtonLabel>
-                </ButtonLabelContainer>
-              </AddButton>
-            </StyledLink>
-            <StyledLink to={`/pool/remove?poolId=${pool.contractId}`}>
-              <SwapButton>
-                <ButtonLabelContainer>
-                  <SwapButtonLabel>Remove</SwapButtonLabel>
-                </ButtonLabelContainer>
-              </SwapButton>
-            </StyledLink>
-          </Stack>
-        ) : (
-          <Stack
-            gap={1}
-            direction="row"
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              display: { xs: "flex", md: "none" },
-            }}
-          >
-            <StyledLink
-              to={`/pool/add?poolId=${pool.contractId}`}
-              style={{
-                width: "100%",
-              }}
-            >
-              <AddButton>
-                <ButtonLabelContainer>
-                  <AddButtonLabel>Add</AddButtonLabel>
-                </ButtonLabelContainer>
-              </AddButton>
-            </StyledLink>
-            <StyledLink to={`/swap?poolId=${pool.contractId}`}>
-              <SwapButton>
-                <ButtonLabelContainer>
-                  <SwapButtonLabel>Swap</SwapButtonLabel>
-                </ButtonLabelContainer>
-              </SwapButton>
-            </StyledLink>
-          </Stack>
-        )}
       </PoolCardRoot>
     </Fade>
   );
