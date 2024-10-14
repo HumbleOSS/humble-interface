@@ -11,7 +11,9 @@ import ProgressBar from "../ProgressBar";
 
 const TokenRoot = styled.div`
   display: flex;
+  /*
   padding: var(--Spacing-1000, 40px);
+  */
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-800, 24px);
@@ -160,6 +162,7 @@ const Pool = () => {
       };
     });
     const wntTokens = pTokens?.filter((t) => t.tokenId === "0") || [];
+    console.log({ wntTokens });
     const nt = {
       name: "Voi",
       symbol: "VOI",
@@ -170,7 +173,7 @@ const Pool = () => {
         (acc, val) => Math.max(acc, val.contractId),
         0
       ),
-      pools: wntTokens.slice(1).flatMap((t) => t.pools),
+      pools: wntTokens.flatMap((t) => t.pools),
     };
     const pts = pTokens.filter((t) => t.tokenId !== "0");
     const tokens = pts.length > 0 ? [nt, ...pts] : [];

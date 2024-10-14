@@ -12,6 +12,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <>
       <Navbar />
       <Container
+        maxWidth="lg"
         id="content-layer"
         sx={{ mt: 5, mb: 20, display: "flex", justifyContent: "center" }}
       >

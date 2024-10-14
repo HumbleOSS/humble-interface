@@ -8,11 +8,10 @@ import { useNavigate } from "react-router-dom";
 import { useWallet } from "@txnlab/use-wallet-react";
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import { Box, Fade, Stack } from "@mui/material";
+import { Box, Fade, Grid, Stack } from "@mui/material";
 import Search from "../Search";
 
 const PopularPoolsRoot = styled.div`
-  width: 90%;
   display: flex;
   padding: var(--Spacing-800, 24px) var(--Spacing-900, 32px);
   flex-direction: column;
@@ -46,12 +45,9 @@ const PopularPoolsRoot = styled.div`
   }
 `;
 
-const HeadingRow = styled.div`
-  display: flex;
+const HeadingRow = styled(Box)`
   width: 100%;
-  /*
-  padding-bottom: var(--Spacing-700, 16px);
-  */
+  display: flex;
   justify-content: space-between;
   align-items: center;
 `;
@@ -68,7 +64,7 @@ const SectionTitle = styled.h2`
   line-height: 120%; /* 21.6px */
 `;
 
-const Columns = styled.div`
+const Columns = styled(Box)`
   display: flex;
   padding: 1px 0px;
   justify-content: center;
@@ -77,7 +73,7 @@ const Columns = styled.div`
   align-self: stretch;
 `;
 
-const Heading = styled.div`
+const Heading = styled(Box)`
   display: flex;
   padding: var(--Spacing-600, 12px) var(--Spacing-700, 16px);
   align-items: flex-start;
@@ -254,6 +250,28 @@ const PoolList: FC<PoolListProps> = ({
         ref={poolsRef}
         className={isDarkTheme ? "dark" : "light"}
       >
+        {/*<Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <SectionTitle>Popular Pools</SectionTitle>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            {activeAccount ? (
+              <CreateTokenButton
+                onClick={() => {
+                  navigate(`/pool/create`);
+                }}
+              >
+                <CreateButtonInner>
+                  <CreateButtonLabel>Create pool</CreateButtonLabel>
+                  {<PoolIcon />}
+                </CreateButtonInner>
+              </CreateTokenButton>
+            ) : null}
+          </Grid>
+          <Grid item xs={12}>
+            <Search onChange={onFilter} />
+          </Grid>
+        </Grid>*/}
         <HeadingRow className="heading-row">
           <SectionTitle>Popular Pools</SectionTitle>
           {activeAccount ? (
@@ -273,7 +291,7 @@ const PoolList: FC<PoolListProps> = ({
           <Search onChange={onFilter} />
         </HeadingRow>
         <Columns>
-          <Heading>
+          <Heading sx={{ display: { xs: "none", md: "flex" } }}>
             <ColumnPair>
               <ColumnLabel>Pair</ColumnLabel>
             </ColumnPair>

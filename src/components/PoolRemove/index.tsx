@@ -1,11 +1,10 @@
 import styled from "@emotion/styled";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import { CONTRACT, abi, arc200, swap200, swap } from "ulujs";
-import { TOKEN_AUSDC, TOKEN_WVOI1 } from "../../constants/tokens";
+import { CircularProgress } from "@mui/material";
+import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { useSearchParams } from "react-router-dom";
 import { ARC200TokenI, PoolI } from "../../types";
@@ -16,6 +15,80 @@ import DiscreteSlider from "../DiscreteSlider";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import BigNumber from "bignumber.js";
+import debounce from "lodash/debounce";
+
+const SwapHeadingContainer = styled.div`
+  width: 100%;
+`;
+
+const SwapHeading = styled.div`
+  color: var(--Color-Neutral-Element-Primary, #0c0c10);
+  leading-trim: both;
+  text-edge: cap;
+  font-feature-settings: "clig" off, "liga" off;
+  /* Heading/Display 2 */
+  font-family: "Plus Jakarta Sans";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%; /* 21.6px */
+  &.dark {
+    color: var(--Color-Neutral-Element-Primary, #fff);
+  }
+`;
+
+const SwapRoot = styled.div`
+  display: flex;
+  padding: var(--Spacing-1000, 40px);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--Spacing-800, 24px);
+  border-radius: var(--Radius-800, 24px);
+  &.light {
+    border: 1px solid
+      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+    background: var(
+      --Color-Canvas-Transparent-white-950,
+      rgba(255, 255, 255, 0.95)
+    );
+  }
+  &.dark {
+    border: 1px solid var(--Color-Brand-Primary, #41137e);
+    background: var(--Color-Canvas-Transparent-white-950, #070709);
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  }
+  @media screen and (min-width: 600px) {
+    width: 630px;
+  }
+`;
+
+const BaseButton = styled.div`
+  cursor: pointer;
+`;
+
+const Button = styled(BaseButton)`
+  display: flex;
+  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: var(--Radius-750, 20px);
+  background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
+  &.active {
+    border-radius: var(--Radius-700, 16px);
+    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  }
+`;
+
+const useDebouncedCallback = (
+  callback: (value: string) => void,
+  delay: number
+) => {
+  const debouncedFn = useCallback(debounce(callback, delay), [callback, delay]);
+  return debouncedFn;
+};
 
 const spec = {
   name: "pool",
@@ -201,71 +274,6 @@ const spec = {
   events: [],
 };
 
-const SwapHeadingContainer = styled.div`
-  width: 100%;
-`;
-
-const SwapHeading = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  /* Heading/Display 2 */
-  font-family: "Plus Jakarta Sans";
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 120%; /* 21.6px */
-  &.dark {
-    color: var(--Color-Neutral-Element-Primary, #fff);
-  }
-`;
-
-const SwapRoot = styled.div`
-  display: flex;
-  padding: var(--Spacing-1000, 40px);
-  flex-direction: column;
-  align-items: center;
-  gap: var(--Spacing-800, 24px);
-  border-radius: var(--Radius-800, 24px);
-  &.light {
-    border: 1px solid
-      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
-    background: var(
-      --Color-Canvas-Transparent-white-950,
-      rgba(255, 255, 255, 0.95)
-    );
-  }
-  &.dark {
-    border: 1px solid var(--Color-Brand-Primary, #41137e);
-    background: var(--Color-Canvas-Transparent-white-950, #070709);
-    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-  }
-  @media screen and (min-width: 600px) {
-    width: 630px;
-  }
-`;
-
-const BaseButton = styled.div`
-  cursor: pointer;
-`;
-
-const Button = styled(BaseButton)`
-  display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  align-self: stretch;
-  border-radius: var(--Radius-750, 20px);
-  background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
-  &.active {
-    border-radius: var(--Radius-700, 16px);
-    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
-  }
-`;
-
 const PoolRemove = () => {
   /* Theme */
   const isDarkTheme = useSelector(
@@ -281,19 +289,12 @@ const PoolRemove = () => {
   /* Pools */
   const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
 
-  console.log({ pools, tokens });
   /* Params */
   const [sp] = useSearchParams();
   const paramPoolId = sp.get("poolId");
 
   /* Wallet */
-  const {
-    //providers,
-    activeAccount,
-    signTransactions,
-    //sendTransactions,
-    //getAccountInfo,
-  } = useWallet();
+  const { activeAccount, signTransactions } = useWallet();
 
   const [pool, setPool] = useState<PoolI>({
     poolId: Number(paramPoolId),
@@ -343,51 +344,8 @@ const PoolRemove = () => {
     }
   }, [pools, tokens, paramPoolId]);
 
-  console.log({ pool, token, token2 });
-
-  const [accInfo, setAccInfo] = React.useState<any>(null);
-  const [focus, setFocus] = useState<"from" | "to">("from");
-  const [fromAmount, setFromAmount] = React.useState<any>("");
-  const [toAmount, setToAmount] = React.useState<any>("");
+  const [fromAmount, setFromAmount] = React.useState<string>("0");
   const [on, setOn] = useState(false);
-
-  // const [tokenOptions, setTokenOptions] = useState<ARC200TokenI[]>();
-  // const [tokenOptions2, setTokenOptions2] = useState<ARC200TokenI[]>();
-  // const [balance, setBalance] = React.useState<string>();
-  // const [balance2, setBalance2] = React.useState<string>();
-
-  // useEffect(() => {
-  //   if (!tokens || !pools || pools.length === 0) return;
-  //   const newTokens = new Set<number>();
-  //   for (const pool of pools) {
-  //     newTokens.add(pool.tokA);
-  //     newTokens.add(pool.tokB);
-  //   }
-  //   const poolTokens = Array.from(newTokens);
-  //   const tokenOptions = tokens.filter((t: ARC200TokenI) =>
-  //     poolTokens.includes(t.tokenId)
-  //   );
-  //   setTokenOptions(tokenOptions);
-  // }, [tokens, pools]);
-
-  // useEffect(() => {
-  //   if (token || !tokenOptions) return;
-  //   setToken(tokenOptions[0]);
-  // }, [token, tokenOptions]);
-
-  // const eligiblePools = useMemo(() => {
-  //   return pools.filter((p: PoolI) => {
-  //     return (
-  //       [p.tokA, p.tokB].includes(token?.tokenId || 0) &&
-  //       [p.tokA, p.tokB].includes(token2?.tokenId || 0) &&
-  //       p.tokA !== p.tokB
-  //     );
-  //   });
-  // }, [pools, token, token2]);
-
-  // useEffect(() => {
-  //   setPool(eligiblePools[0]);
-  // }, [eligiblePools]);
 
   const [info, setInfo] = useState<any>();
   useEffect(() => {
@@ -397,25 +355,6 @@ const PoolRemove = () => {
     ci.Info().then((info: any) => {
       setInfo(info.returnValue);
     });
-    // const ci = new swap200(pool.poolId, algodClient, indexerClient);
-    // ci.Info().then((info: any) => {
-    //   setInfo(
-    //     ((info: any) => ({
-    //       lptBals: info[0],
-    //       poolBals: info[1],
-    //       protoInfo: ((pi: any) => ({
-    //         protoFee: Number(pi[0]),
-    //         lpFee: Number(pi[1]),
-    //         totFee: Number(pi[2]),
-    //         protoAddr: pi[3],
-    //         locked: pi[4],
-    //       }))(info[2]),
-    //       protoBals: info[3],
-    //       tokA: Number(info[4]),
-    //       tokB: Number(info[5]),
-    //     }))(info.returnValue)
-    //   );
-    // });
   }, [pool]);
 
   const [poolBalance, setPoolBalance] = useState<BigInt>();
@@ -423,7 +362,6 @@ const PoolRemove = () => {
     if (!activeAccount || !pool) return;
     const { algodClient, indexerClient } = getAlgorandClients();
     const ci = new arc200(pool?.poolId, algodClient, indexerClient);
-    console.log({ activeAccount });
     ci.arc200_balanceOf(activeAccount.address).then(
       (arc200_balanceOfR: any) => {
         if (arc200_balanceOfR.success) {
@@ -432,7 +370,6 @@ const PoolRemove = () => {
       }
     );
   }, [activeAccount, pool]);
-  console.log({ poolBalance });
 
   const [poolShare, setPoolShare] = useState<string>("0");
   useEffect(() => {
@@ -442,15 +379,9 @@ const PoolRemove = () => {
     setPoolShare(newShare.toFixed(2));
   }, [activeAccount, pool, info, poolBalance]);
 
-  console.log("poolShare", poolShare);
-
   const [expectedOutcome, setExpectedOutcome] = useState<string>();
   useEffect(() => {
     if (!pool || !info) return;
-    // if (!activeAccount || !pool || !info || !fromAmount || !token || !token2) {
-    //   setExpectedOutcome(undefined);
-    //   return;
-    // }
     const { algodClient, indexerClient } = getAlgorandClients();
     const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, {
       addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
@@ -470,8 +401,6 @@ const PoolRemove = () => {
     );
   }, [activeAccount, pool, info, fromAmount]);
 
-  console.log("expectedOutcome", expectedOutcome);
-
   const [newShare, setNewShare] = useState<string>();
   useEffect(() => {
     if (poolShare === "100.00") {
@@ -485,87 +414,6 @@ const PoolRemove = () => {
     const newShare = (Number(poolShare) * (100 - Number(fromAmount))) / 100;
     setNewShare(newShare.toFixed(2));
   }, [poolShare, fromAmount]);
-
-  console.log("newShare", newShare);
-
-  console.log("fromAmount", fromAmount);
-
-  const rate = useMemo(() => {
-    if (!info || !token || !token2) return;
-    if (info.tokA === token?.tokenId) {
-      return (
-        (Number(info.poolBals.A) * 10 ** token2.decimals) /
-        Number(info.poolBals.B) /
-        10 ** token.decimals
-      ).toFixed(token.decimals);
-    } else {
-      return (
-        (Number(info.poolBals.B) * 10 ** token.decimals) /
-        Number(info.poolBals.A) /
-        10 ** token2.decimals
-      ).toFixed(token2.decimals);
-    }
-  }, [info, token, token2]);
-
-  console.log("rate", rate);
-
-  useEffect(() => {
-    if (!rate || !fromAmount || !toAmount || !focus || !token || !token2)
-      return;
-    if (focus === "from") {
-      setToAmount(
-        Number(
-          (Number(rate) * Number(fromAmount)).toFixed(token2.decimals)
-        ).toLocaleString()
-      );
-    } else if (focus === "to") {
-      setFromAmount(
-        Number(
-          (Number(toAmount) / Number(rate)).toFixed(token.decimals)
-        ).toLocaleString()
-      );
-    }
-  }, [rate, fromAmount, toAmount, focus, token, token2]);
-
-  useEffect(() => {
-    if (!pool || !token || !token2 || !toAmount || focus !== "to") return;
-    const { algodClient, indexerClient } = getAlgorandClients();
-    const acc = {
-      addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
-      sk: new Uint8Array(0),
-    };
-    const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, acc);
-    ci.setFee(4000);
-    if (token.tokenId === pool?.tokA) {
-      ci.Trader_swapBForA(1, Number(toAmount) * 10 ** token2.decimals, 0).then(
-        (r: any) => {
-          console.log({ r });
-          if (r.success) {
-            const fromAmount = (
-              Number(r.returnValue[0]) /
-              10 ** token2.decimals
-            ).toLocaleString();
-            console.log({ fromAmount });
-            setFromAmount(fromAmount);
-          }
-        }
-      );
-    } else if (token.tokenId === pool?.tokB) {
-      ci.Trader_swapAForB(1, Number(fromAmount) * 10 ** token.decimals, 0).then(
-        (r: any) => {
-          console.log({ r });
-          if (r.success) {
-            const fromAmount = (
-              Number(r.returnValue[1]) /
-              10 ** token.decimals
-            ).toLocaleString();
-            console.log({ fromAmount });
-            setFromAmount(fromAmount);
-          }
-        }
-      );
-    }
-  }, [pool, token, token2, toAmount, focus]);
 
   const isValid = !!token && !!token2 && !!fromAmount;
 
@@ -594,112 +442,7 @@ const PoolRemove = () => {
     //setToken2(Array.from(options)[0]);
   }, [tokens, pools, token, token2]);
 
-  // // EFFECT
-  // useEffect(() => {
-  //   if (!tokens || !pool) return;
-  //   const tokenA = tokens.find(
-  //     (t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokA}`
-  //   );
-  //   const tokenB = tokens.find(
-  //     (t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokB}`
-  //   );
-  //   if (paramTokenId) {
-  //     if (`${paramTokenId}` === `${tokenA?.tokenId}`) {
-  //       setToken(tokenA);
-  //       setToken2(tokenB);
-  //     } else {
-  //       setToken(tokenB);
-  //       setToken2(tokenA);
-  //     }
-  //   } else {
-  //     setToken(tokenA);
-  //     setToken2(tokenB);
-  //   }
-  // }, [tokens, pool, paramTokenId]);
-
-  // EFFECT
-  // useEffect(() => {
-  //   const options = new Set<ARC200TokenI>();
-  //   for (const p of pools) {
-  //     if ([p.tokA, p.tokB].includes(token?.tokenId || 0)) {
-  //       if (token?.tokenId === p.tokA) {
-  //         options.add(
-  //           tokens.find(
-  //             (t: ARC200TokenI) => `${t.tokenId}` === `${p.tokB}`
-  //           ) as ARC200TokenI
-  //         );
-  //       } else {
-  //         options.add(
-  //           tokens.find(
-  //             (t: ARC200TokenI) => `${t.tokenId}` === `${p.tokA}`
-  //           ) as ARC200TokenI
-  //         );
-  //       }
-  //     }
-  //   }
-  //   setTokenOptions2(Array.from(options));
-  //   setToken2(Array.from(options)[0]);
-  //   setToAmount("");
-  //   setFromAmount("");
-  // }, [token, pools]);
-
-  // useEffect(() => {
-  //   if (!token2) return;
-  //   setToAmount("");
-  // }, [token2]);
-
-  // EFFECT
-  // useEffect(() => {
-  //   if (!token || !activeAccount) return;
-  //   const { algodClient, indexerClient } = getAlgorandClients();
-  //   const ci = new arc200(token.tokenId, algodClient, indexerClient);
-  //   ci.arc200_balanceOf(activeAccount.address).then(
-  //     (arc200_balanceOfR: any) => {
-  //       if (arc200_balanceOfR.success) {
-  //         setBalance(
-  //           (
-  //             Number(arc200_balanceOfR.returnValue) /
-  //             10 ** token.decimals
-  //           ).toLocaleString()
-  //         );
-  //       }
-  //     }
-  //   );
-  // }, [token, activeAccount]);
-
-  // EFFECT
-  // useEffect(() => {
-  //   if (!token2 || !activeAccount) return;
-  //   const { algodClient, indexerClient } = getAlgorandClients();
-  //   const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-  //   ci.arc200_balanceOf(activeAccount.address).then(
-  //     (arc200_balanceOfR: any) => {
-  //       if (arc200_balanceOfR.success) {
-  //         setBalance2(
-  //           (
-  //             Number(arc200_balanceOfR.returnValue) /
-  //             10 ** token2.decimals
-  //           ).toLocaleString()
-  //         );
-  //       }
-  //     }
-  //   );
-  // }, [token2, activeAccount]);
-
-  // EFFECT: get voi balance
-  // useEffect(() => {
-  //   if (activeAccount && providers && providers.length >= 3) {
-  //     getAccountInfo().then(setAccInfo);
-  //   }
-  // }, [activeAccount, providers]);
-
-  const buttonLabel = useMemo(() => {
-    if (isValid) {
-      return "Remove liquidity";
-    } else {
-      return "Select token above";
-    }
-  }, [isValid]);
+  const buttonLabel = "Remove liquidity";
 
   const handleRemoveLiquidity = async () => {
     //if (!isValid || !token || !token2 || !pool) return;
@@ -800,10 +543,6 @@ const PoolRemove = () => {
         };
       };
 
-      console.log({ info });
-
-      // pick a pool
-      //const pool = eligiblePools.slice(-1)[0];
       const { poolId } = pool;
       const tokA = info.tokA;
       const tokB = info.tokB;
@@ -811,22 +550,7 @@ const PoolRemove = () => {
       const ciA = makeCi(tokA);
       const ciB = makeCi(tokB);
 
-      // get token ids
-
-      console.log({ ci, poolId, tokA, tokB });
-
       ci.setFee(4000);
-      // get reserves
-      // const reserveR = await ci.reserve(activeAccount.address);
-      // if (!reserveR.success) return new Error("Reserve failed");
-      // const [reserveA, reserveB] = reserveR.returnValue;
-      // console.log({ reserveA, reserveB });
-
-      // determine the direction
-      // const swapAForB = pool.tokA === token.tokenId;
-      // if (swapAForB) {
-      // const inA = Math.round(Number(fromAmount) * 10 ** token.decimals);
-      // const inB = Math.round(Number(toAmount) * 10 ** token2.decimals);
 
       const arc200_balanceOfR = await ci.arc200_balanceOf(
         activeAccount.address
@@ -855,76 +579,91 @@ const PoolRemove = () => {
 
       const buildN = [];
 
-      // experimental withdraw extra wVOI
+      //
+      // TODO use api
+      //
+      const tokens = [
+        {
+          contractId: 390001,
+          name: "Wrapped Voi",
+          symbol: "wVOI",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "1.000000",
+          tokenId: "0",
+          verified: null,
+          mintRound: 0,
+          globalState: {},
+        },
+        {
+          contractId: 413153,
+          name: "Aramid ALGO",
+          symbol: "aAlgo",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "1.00100099766100213213",
+          tokenId: "302189",
+          verified: null,
+          mintRound: 894792,
+          globalState: {},
+        },
+        {
+          contractId: 395614,
+          name: "aUSDC",
+          symbol: "aUSDC",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "75.15856933383736351197",
+          tokenId: "302190",
+          verified: 1,
+          mintRound: 0,
+          globalState: {},
+        },
+      ];
+
+      //
+      // experimental withdraw extra wrapped tokens
+      //
+
+      const accountAssets = await indexerClient
+        .lookupAccountAssets(activeAccount.address)
+        .do();
 
       do {
-        if ([TOKEN_WVOI1].includes(tokA) || [TOKEN_WVOI1].includes(tokB)) {
-          let constructor;
-          let arc200_balanceOf = BigInt(0);
-          if (tokA === TOKEN_WVOI1) {
-            arc200_balanceOf = (
-              await ciA.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokA;
-          } else {
-            arc200_balanceOf = (
-              await ciB.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokB;
-          }
-          if (arc200_balanceOf === BigInt(0)) break;
+        for (const tok of [tokA, tokB]) {
+          const token = tokens?.find((t) => t.contractId === tok);
+          if (!token) continue;
+          const assetId = Number(token.tokenId);
+          const tokBuilder =
+            tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
+          const tokCi = tok === tokA ? ciA : ciB;
+          const arc200_balanceOf = (
+            await tokCi.arc200_balanceOf(activeAccount.address)
+          ).returnValue;
+          if (arc200_balanceOf === BigInt(0)) continue;
           const msg = `Withdraw ${new BigNumber(arc200_balanceOf.toString())
             .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6)} wVOI`;
+            .toFixed(6)} ${token.symbol}`;
           const note = new TextEncoder().encode(msg);
-          const txnO = (await constructor.withdraw(arc200_balanceOf)).obj;
-          buildN.push({
-            ...txnO,
-            note,
-          });
-        }
-      } while (0);
-
-      // experimental withdraw extra aUSD
-
-      do {
-        if ([TOKEN_AUSDC].includes(tokA) || [TOKEN_AUSDC].includes(tokB)) {
-          let constructor;
-          let arc200_balanceOf = BigInt(0);
-          if (tokA === TOKEN_AUSDC) {
-            arc200_balanceOf = (
-              await ciA.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokA;
-          } else {
-            arc200_balanceOf = (
-              await ciB.arc200_balanceOf(activeAccount.address)
-            ).returnValue;
-            constructor = builder.arc200.tokB;
-          }
-          if (arc200_balanceOf === BigInt(0)) break;
-          const accountAssets = await indexerClient
-            .lookupAccountAssets(algosdk.getApplicationAddress(TOKEN_AUSDC))
-            .do();
-          const [asset] = accountAssets.assets;
-          const { ["asset-id"]: assetId } = asset;
-          const msg = `Withdraw ${new BigNumber(arc200_balanceOf.toString())
-            .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6)} aUSDC`;
-          const note = new TextEncoder().encode(msg);
-          const accountAssets2 = await indexerClient
-            .lookupAccountAssets(activeAccount.address)
-            .do();
-          const condOptin = !!accountAssets2.assets.find(
-            (a: any) => a["asset-id"] === TOKEN_AUSDC
-          )
-            ? {
-                xaid: assetId,
-                snd: activeAccount.address,
-                arcv: activeAccount.address,
-              }
-            : {};
-          const txnO = (await constructor.withdraw(arc200_balanceOf)).obj;
+          const condOptin =
+            assetId !== 0 &&
+            !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
+              ? {
+                  xaid: assetId,
+                  snd: activeAccount.address,
+                  arcv: activeAccount.address,
+                }
+              : {};
+          const txnO = (await tokBuilder.withdraw(arc200_balanceOf)).obj;
           buildN.push({
             ...txnO,
             ...condOptin,
@@ -933,7 +672,9 @@ const PoolRemove = () => {
         }
       } while (0);
 
+      //
       // remove liquidity
+      //
 
       do {
         const txnO = (
@@ -951,68 +692,41 @@ const PoolRemove = () => {
         });
       } while (0);
 
-      // if Provider_withdraw includes wVOI add withdraw wVOI
-      if ([TOKEN_WVOI1].includes(tokA) || [TOKEN_WVOI1].includes(tokB)) {
-        let constructor;
-        let withdrawAmount = BigInt(0);
-        if (tokA === TOKEN_WVOI1) {
-          withdrawAmount = Provider_withdraw[0];
-          constructor = builder.arc200.tokA;
-        } else {
-          withdrawAmount = Provider_withdraw[1];
-          constructor = builder.arc200.tokB;
-        }
-        const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
-          .dividedBy(new BigNumber(10).pow(6))
-          .toFixed(6)} wVOI`;
-        const note = new TextEncoder().encode(msg);
-        const txnO = (await constructor.withdraw(withdrawAmount)).obj;
-        buildN.push({
-          ...txnO,
-          note,
-        });
-      }
+      //
+      // If Provider_withdraw includes wrapped token withdraw
+      //
 
-      // TODO check for aUSD, generalize
-      // if Provider_withdraw includes aUSD like token add withdraw withdraw aUSD
-      if ([TOKEN_AUSDC].includes(tokA) || [TOKEN_AUSDC].includes(tokB)) {
-        let constructor;
-        let withdrawAmount = BigInt(0);
-        if ([TOKEN_AUSDC].includes(tokA)) {
-          constructor = builder.arc200.tokA;
-          withdrawAmount = Provider_withdraw[0];
-        } else {
-          constructor = builder.arc200.tokB;
-          withdrawAmount = Provider_withdraw[1];
+      do {
+        for (const tok of [tokA, tokB]) {
+          const token = tokens?.find((t) => t.contractId === tok);
+          if (!token) continue;
+          const symbol = token.symbol;
+          const decimals = token.decimals;
+          const assetId = Number(token.tokenId);
+          const tokenContract =
+            tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
+          const withdrawAmount = Provider_withdraw[tok === tokA ? 0 : 1];
+          const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
+            .dividedBy(new BigNumber(10).pow(6))
+            .toFixed(decimals)} ${symbol}`;
+          const note = new TextEncoder().encode(msg);
+          const condOptin =
+            assetId !== 0 &&
+            !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
+              ? {
+                  xaid: assetId,
+                  snd: activeAccount.address,
+                  arcv: activeAccount.address,
+                }
+              : {};
+          const txnO = (await tokenContract.withdraw(withdrawAmount)).obj;
+          buildN.push({
+            ...txnO,
+            ...condOptin,
+            note,
+          });
         }
-        const accountAssets = await indexerClient
-          .lookupAccountAssets(algosdk.getApplicationAddress(TOKEN_AUSDC))
-          .do();
-        const [asset] = accountAssets.assets;
-        const { ["asset-id"]: assetId } = asset;
-        const accountAssets2 = await indexerClient
-          .lookupAccountAssets(activeAccount.address)
-          .do();
-        const condOptin = !!accountAssets2.assets.find(
-          (a: any) => a["asset-id"] === TOKEN_AUSDC
-        )
-          ? {
-              xaid: assetId,
-              snd: activeAccount.address,
-              arcv: activeAccount.address,
-            }
-          : {};
-        const txnO = (await constructor.withdraw(withdrawAmount)).obj;
-        const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
-          .dividedBy(new BigNumber(10).pow(6))
-          .toFixed(6)}  aUSDC`;
-        const note = new TextEncoder().encode(msg);
-        buildN.push({
-          ...txnO,
-          ...condOptin,
-          note,
-        });
-      }
+      } while (0);
 
       ci.setAccounts([poolAddr]);
       ci.setEnableGroupResourceSharing(true);
@@ -1027,6 +741,8 @@ const PoolRemove = () => {
           (t: string) => new Uint8Array(Buffer.from(t, "base64"))
         )
       );
+
+      // TODO toast here
 
       // await toast.promise(
       //   signTransactions(
@@ -1057,6 +773,26 @@ const PoolRemove = () => {
       console.error(e);
     } finally {
       setOn(false);
+    }
+  };
+
+  const debouncedSetFromAmount = useDebouncedCallback((value: string) => {
+    setFromAmount(value);
+  }, 300);
+
+  const handleClick = () => {
+    const amount = parseFloat(fromAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.info("Please enter a valid amount greater than 0");
+      return;
+    }
+    // REM impossible until proven wrong
+    // if (amount > parseFloat(poolShare)) {
+    //   toast.info("Amount exceeds your current share");
+    //   return;
+    // }
+    if (!on) {
+      handleRemoveLiquidity();
     }
   };
 
@@ -1104,7 +840,7 @@ const PoolRemove = () => {
       </div>
       <DiscreteSlider
         onChange={(v) => {
-          setFromAmount(v.toString());
+          debouncedSetFromAmount(v.toString());
         }}
       />
       <div
@@ -1153,15 +889,7 @@ const PoolRemove = () => {
                 ?.decimals || 0)
           : "-"}
       </div>
-      <Button
-        //className={isValid ? "active" : undefined}
-        className="active"
-        onClick={() => {
-          if (!on) {
-            handleRemoveLiquidity();
-          }
-        }}
-      >
+      <Button className="active" onClick={handleClick}>
         {!on ? (
           buttonLabel
         ) : (

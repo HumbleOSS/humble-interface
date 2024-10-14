@@ -9,7 +9,7 @@ import CreateTokenModal from "../modals/CreateTokenModal";
 import AddTokenModal from "../modals/AddTokenModal";
 import { Stack } from "@mui/system";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { Fade } from "@mui/material";
+import { Box, Fade } from "@mui/material";
 import Search from "../Search";
 
 const TokenListRoot = styled.div`
@@ -68,7 +68,7 @@ const SectionTitle = styled.h2`
   line-height: 120%; /* 21.6px */
 `;
 
-const Columns = styled.div`
+const Columns = styled(Box)`
   display: flex;
   padding: 1px 0px;
   justify-content: center;
@@ -93,15 +93,16 @@ const Column = styled.div`
 `;
 
 const ColumnPair = styled(Column)`
-  width: 234px;
+  flex-grow: 1;
+  width: 100px;
 `;
 
 const ColumnTVL = styled(Column)`
-  width: 97px;
+  flex-grow: 1;
 `;
 
 const ColumnVolume = styled(Column)`
-  width: 98px;
+  flex-grow: 1;
 `;
 
 const ColumnAPR = styled(Column)``;
@@ -625,12 +626,11 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
         </HeadingRow>
         {tokens.length > 0 ? (
           <>
-            <Columns>
+            <Columns sx={{ display: { xs: "none", md: "block" } }}>
               <Heading>
                 <ColumnPair>
                   <ColumnLabel>Token</ColumnLabel>
                 </ColumnPair>
-
                 <ColumnTVL>
                   <ColumnLabel>Price</ColumnLabel>
                   <InfoCircleIcon />
