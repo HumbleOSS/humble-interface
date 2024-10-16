@@ -547,7 +547,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
               </LabelWrapper>
               <TVLLabel>
                 {!!token.price && token.pools.length > 0
-                  ? BigNumber(token.price).toFixed(6)
+                  ? new BigNumber(token.price).toFixed(6)
                   : ""}
               </TVLLabel>
             </Col3>

@@ -140,10 +140,11 @@ const NavButton = styled.div<{ active: boolean }>`
   gap: var(--Spacing-200, 4px);
   /* Style */
   border-radius: var(--Radius-700, 16px);
-  border: 1px solid ${(props) =>
-    !props.active
-      ? "var(--Color-Brand-White, #fff)"
-      : "var(--Color-Brand-Primary, #FFBE1D)"};
+  border: 1px solid
+    ${(props) =>
+      !props.active
+        ? "var(--Color-Brand-White, #fff)"
+        : "var(--Color-Brand-Primary, #FFBE1D)"};
 
   color: ${(props) =>
     !props.active
@@ -347,7 +348,7 @@ const Navbar = () => {
             ].map((item) => {
               const Item = item.icon;
               return (
-                <StyledLink to={item.href}>
+                <StyledLink key={item.label} to={item.href}>
                   <NavButton active={activePath.pathname == item.href}>
                     <Item />
 
@@ -397,6 +398,7 @@ const Navbar = () => {
               const Item = item.icon;
               return (
                 <MobileNavItem
+                  key={item.label}
                   active={activePath.pathname == item.location}
                   onClick={() => {
                     navigate(item.location);

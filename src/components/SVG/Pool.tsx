@@ -8,6 +8,8 @@ const PoolLogo = () => {
       viewBox="0 0 25 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+
     >
       <path
         d="M1.50464 16.8361H11.8272"
