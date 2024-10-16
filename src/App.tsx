@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import store, { RootState } from "./store/store";
@@ -30,6 +30,15 @@ const BackgroundLayer2 = styled(BackgroundLayer)`
   background-repeat: no-repeat;
   background-position-y: bottom;
   background-position-x: right;
+  @media screen and (max-width: 640px) {
+    background: url(/static/pattern_small.svg);
+    background-repeat: no-repeat;
+    background-position-y: bottom;
+    background-position-x: right;
+  }
+  @media screen and (min-width: 640px) {
+    /* transform: translateY(-200px); */
+  }
 `;
 
 interface AppContainerProps {
@@ -44,15 +53,21 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
       style={{
         color: isDarkTheme ? "#fff" : "#000",
         transition: "all 0.25s linear",
+      
       }}
     >
       <BackgroundLayer
         className="background-layer"
         style={{
-          background: isDarkTheme ? "#41137E" : "#FFFFFF",
+          background: isDarkTheme
+            ? "linear-gradient(45deg, rgba(34,23,63,1) 35%, rgba(82,61,136,1) 100%)"
+            : "#FFFFFF",
         }}
       ></BackgroundLayer>
-      <BackgroundLayer2 className="background-layer"></BackgroundLayer2>
+      <BackgroundLayer2
+        {...{ isDarkTheme }}
+        className="background-layer"
+      ></BackgroundLayer2>
       <div className="content-layer" style={{ width: "100%", height: "100%" }}>
         {children}
       </div>

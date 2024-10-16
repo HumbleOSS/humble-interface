@@ -1,7 +1,6 @@
 import * as React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -9,7 +8,12 @@ import { ARC200TokenI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { tokenSymbol } from "../../utils/dex";
-
+const Wrapper=styled.div`
+  width:86%;
+  @media screen and (min-width: 640px) {
+    width: fit-content;
+  } 
+`
 const TokenButton = styled.div`
   display: flex;
   padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
@@ -17,6 +21,8 @@ const TokenButton = styled.div`
   justify-content: center;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  
   border-radius: var(--Radius-600, 13px);
   &.light {
     background: var(--Color-Accent-Primary-Background-Default, #41137e);
@@ -34,11 +40,12 @@ const TokenButtonGroup = styled.div`
   justify-content: center;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  cursor: pointer;
+
 `;
 
 const TokenButtonLabel = styled.div`
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 14px;
@@ -105,8 +112,6 @@ const ContentBody = styled.div`
 
 const ContentText = styled.div`
   color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
@@ -149,9 +154,9 @@ const ArrowDownwardIcon = () => {
       <path
         d="M16 10L12 14L8 10"
         stroke={isDarkTheme ? "#000" : "#fff"}
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -185,7 +190,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   };
   //const [selectedIndex, setSelectedIndex] = React.useState(0);
   return (
-    <div>
+    <Wrapper>
       <TokenButton
         className={isDarkTheme ? "dark" : "light"}
         aria-label="more"
@@ -194,9 +199,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
         onClick={handleClick}
+        style={{
+          width:"100%"
+        }}
       >
         <TokenButtonGroup>
-          <TokenButtonLabel className={isDarkTheme ? "dark" : "light"}>
+          <TokenButtonLabel  className={isDarkTheme ? "dark" : "light"}>
             {tokenSymbol(token)}
           </TokenButtonLabel>
           <ArrowDownwardIcon />
@@ -254,8 +262,8 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                       fill="none"
                     >
                       <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
+                        fillRule="evenodd"
+                        clipRule="evenodd"
                         d="M12.6187 7.38128C12.9604 7.72299 12.9604 8.27701 12.6187 8.61872L8.61872 12.6187C8.27701 12.9604 7.72299 12.9604 7.38128 12.6187C7.03957 12.277 7.03957 11.723 7.38128 11.3813L11.3813 7.38128C11.723 7.03957 12.277 7.03957 12.6187 7.38128ZM18.6187 7.38128C18.9604 7.72299 18.9604 8.27701 18.6187 8.61872L8.61872 18.6187C8.27701 18.9604 7.72299 18.9604 7.38128 18.6187C7.03957 18.277 7.03957 17.723 7.38128 17.3813L17.3813 7.38128C17.723 7.03957 18.277 7.03957 18.6187 7.38128ZM24.6187 7.38128C24.9604 7.72299 24.9604 8.27701 24.6187 8.61872L8.61872 24.6187C8.27701 24.9604 7.72299 24.9604 7.38128 24.6187C7.03957 24.277 7.03957 23.723 7.38128 23.3813L23.3813 7.38128C23.723 7.03957 24.277 7.03957 24.6187 7.38128ZM24.6187 13.3813C24.9604 13.723 24.9604 14.277 24.6187 14.6187L14.6187 24.6187C14.277 24.9604 13.723 24.9604 13.3813 24.6187C13.0396 24.277 13.0396 23.723 13.3813 23.3813L23.3813 13.3813C23.723 13.0396 24.277 13.0396 24.6187 13.3813ZM24.6187 19.3813C24.9604 19.723 24.9604 20.277 24.6187 20.6187L20.6187 24.6187C20.277 24.9604 19.723 24.9604 19.3813 24.6187C19.0396 24.277 19.0396 23.723 19.3813 23.3813L23.3813 19.3813C23.723 19.0396 24.277 19.0396 24.6187 19.3813Z"
                         fill="#0C0C10"
                       />
@@ -269,7 +277,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
             </StyledMenuItem>
           ))}
       </Menu>
-    </div>
+    </Wrapper>
   );
 };
 

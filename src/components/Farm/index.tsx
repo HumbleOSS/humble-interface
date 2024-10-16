@@ -143,8 +143,8 @@ const DropdownIcon = () => {
         d="M16.5 10L12.5 14L8.5 10"
         stroke="white"
         stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

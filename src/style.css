@@ -8,6 +8,7 @@ html, body, #root {
 }
 body {
   margin: 0px;
+  background: #20093e;
 }
 
 .background-layer {

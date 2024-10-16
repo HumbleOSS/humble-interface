@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo } from "react";
-import Layout from "../../layouts/Default";
 import {
   Avatar,
   Button,
@@ -12,7 +11,6 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
-import axios from "axios";
 import styled from "styled-components";
 import IconAlarm from "static/icon-alarm.svg";
 import ButtonBuy from "static/button-buy.svg";

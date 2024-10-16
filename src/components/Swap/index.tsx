@@ -26,7 +26,6 @@ import { ARC200TokenI, PoolI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { getPools } from "../../store/poolSlice";
-import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import { Toast } from "react-toastify/dist/components";
 import { tokenId, tokenSymbol } from "../../utils/dex";
@@ -284,30 +283,30 @@ const SpinnerIcon = () => {
       <path
         d="M4.78886 10.618L2.89155 8.7207L1.00513 10.618"
         stroke="white"
-        stroke-width="1.63562"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.63562"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M21.2104 13.3828L23.1078 15.2801L25.0051 13.3828"
         stroke="white"
-        stroke-width="1.63562"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.63562"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M23.0966 14.5293V11.9996C23.0966 6.41666 18.5714 1.90234 12.9994 1.90234C9.81541 1.90234 6.96943 3.38534 5.11572 5.68611"
         stroke="white"
-        stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M2.90234 9.4707V12.0005C2.90234 17.5834 7.42756 22.0977 12.9996 22.0977C16.1836 22.0977 19.0296 20.6147 20.8833 18.3139"
         stroke="white"
-        stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -325,20 +324,25 @@ const SwapRoot = styled.div`
     transition: all 1s;
     width: 630px;
     padding: 40px;
-    /*
-  &.light {
-    border: 1px solid
-      var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
-    background: var(
-      --Color-Canvas-Transparent-white-950,
-      rgba(255, 255, 255, 0.95)
-    );
-  }
-  */
+
+    &.light {
+      border: 1px solid
+        var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+      background: var(
+        --Color-Canvas-Transparent-white-950,
+        rgba(255, 255, 255, 0.95)
+      );
+    }
     &.dark {
-      border: 1px solid var(--Color-Brand-Primary, #41137e);
-      background: var(--Color-Canvas-Transparent-white-950, #070709);
-      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+      @media screen and (min-width: 640px) {
+        border: 1px solid var(--Color-Brand-Primary, #41137e);
+        background: var(--Color-Canvas-Transparent-white-950, #070709);
+        box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+      }
+    }
+    @media screen and (min-width: 600px) {
+      width: 630px;
+      padding: var(--Spacing-1000, 40px);
     }
   }
 `;
@@ -373,8 +377,6 @@ const Button = styled(BaseButton)`
 const SummaryContainer = styled.div`
   padding: 40px;
   border-radius: 24px;
-  border: #41137e;
-  background: #070709;
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
 
   display: flex;
@@ -382,6 +384,13 @@ const SummaryContainer = styled.div`
   align-items: flex-start;
   gap: 12px;
   align-self: stretch;
+  display: flex;
+  &.dark{
+  background: #070709;
+  }
+  &.light{
+  background: #f1eafc;
+  }
 `;
 
 const RateContainer = styled.div`
@@ -497,7 +506,7 @@ const BreakdownValue = styled.div`
   font-family: "IBM Plex Sans Condensed";
   font-size: 15px;
   font-style: normal;
-  font-weight: 600;:sp
+  font-weight: 600;
   line-height: 120%; /* 18px */
   &.dark {
     color: var(--Color-Neutral-Element-Primary, #fff);
@@ -519,23 +528,23 @@ const InfoCircleIcon = () => {
       <path
         d="M7.99992 14.6663C11.6666 14.6663 14.6666 11.6663 14.6666 7.99967C14.6666 4.33301 11.6666 1.33301 7.99992 1.33301C4.33325 1.33301 1.33325 4.33301 1.33325 7.99967C1.33325 11.6663 4.33325 14.6663 7.99992 14.6663Z"
         stroke="white"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M8 8V11.3333"
         stroke="white"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M7.99634 5.33301H8.00233"
         stroke="white"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -1339,7 +1348,7 @@ const Swap = () => {
         </SwapContainer>
         {!!token2 ? (
           <>
-            <SummaryContainer>
+            <SummaryContainer className={isDarkTheme ? "dark" : "light"}>
               {!!token2 &&
               (info?.poolBals?.A !== "0" || info?.poolBals?.B !== "0") ? (
                 <RateContainer>
