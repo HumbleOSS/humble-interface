@@ -314,7 +314,7 @@ const ModalPattern: FC<ModalPatterProps> = ({ theme }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <g clip-path="url(#clip0_392_56109)">
+      <g clipPath="url(#clip0_392_56109)">
         <rect
           width="1004.73"
           height="424.171"
@@ -356,7 +356,7 @@ const ModalPattern: FC<ModalPatterProps> = ({ theme }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <g clip-path="url(#clip0_392_57147)">
+      <g clipPath="url(#clip0_392_57147)">
         <rect
           width="1004.73"
           height="424.171"

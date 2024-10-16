@@ -162,7 +162,7 @@ const CryptoIconPlaceholder = () => {
         fill="currentColor"
         fillOpacity="0.01"
       />
-      <g clip-path="url(#clip0_390_19487)">
+      <g clipPath="url(#clip0_390_19487)">
         <path
           fillRule="evenodd"
           clipRule="evenodd"
