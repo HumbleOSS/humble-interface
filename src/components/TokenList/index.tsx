@@ -86,12 +86,12 @@ const Heading = styled.div`
   border-radius: var(--Radius-500, 12px);
 `;
 const Heading2 = styled(Heading)`
-@media screen and (min-width: 600px) {
-  display: grid;
-  grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-  min-width: 560px;
-}
-`
+  @media screen and (min-width: 600px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    min-width: 560px;
+  }
+`;
 
 const Column = styled.div`
   display: flex;
@@ -113,6 +113,9 @@ const ColumnTVL = styled(Column)`
 
 const ColumnVolume = styled(Column)`
   /* width: 98px; */
+  justify-content: center;
+  align-items: center;
+  grid-column: span 2;
 `;
 
 const ColumnAPR = styled(Column)``;
@@ -548,7 +551,7 @@ const PoolIcon = () => {
         d="M14.3231 15.6665C14.3231 19.3865 11.3122 22.3974 7.59224 22.3974C3.87224 22.3974 0.861328 19.3865 0.861328 15.6665C0.861328 11.9465 3.87224 8.93555 7.59224 8.93555C7.76679 8.93555 7.93042 8.94648 8.11588 8.95739C11.4213 9.2083 14.0613 11.8483 14.3122 15.1537C14.3122 15.3174 14.3231 15.4811 14.3231 15.6665Z"
         stroke="white"
         strokeWidth="1.5"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -556,7 +559,7 @@ const PoolIcon = () => {
         d="M21.5778 8.40081C21.5778 12.1208 18.5669 15.1318 14.8469 15.1318H14.3123C14.0614 11.8263 11.4214 9.18626 8.11597 8.93535V8.40081C8.11597 4.68081 11.1269 1.66992 14.8469 1.66992C18.5669 1.66992 21.5778 4.68081 21.5778 8.40081Z"
         fill="white"
         strokeWidth="1.5"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -635,9 +638,11 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
                 <ColumnPair>
                   <ColumnLabel>Token</ColumnLabel>
                 </ColumnPair>
-                <ColumnTVL style={{
-                  gridColumn:"span 2"
-                }}>
+                <ColumnTVL
+                  style={{
+                    gridColumn: "span 2",
+                  }}
+                >
                   <ColumnLabel>Price</ColumnLabel>
                   <InfoCircleIcon />
                 </ColumnTVL>
@@ -645,12 +650,7 @@ const TokenList: FC<TokenListProps> = ({ tokens, showing, onFilter }) => {
                   <ColumnLabel>TVL</ColumnLabel>
                   <InfoCircleIcon />
                 </ColumnTVL>
-                <ColumnVolume style={{
-                  justifyContent:"center",
-                  alignItems:"center" ,
-                  gridColumn:"span 2",
-
-                }}>
+                <ColumnVolume>
                   <ColumnLabel>Pools</ColumnLabel>
                   <InfoCircleIcon />
                 </ColumnVolume>

@@ -200,11 +200,11 @@ const InfoCircleIcon = () => {
 const PoolIcon = () => {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M1.29028 16.8359H11.6129" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3.58187 13.1621H9.32128C11.1587 13.1621 11.6129 13.6163 11.6129 15.4331V19.6757C11.6129 21.4924 11.1587 21.9466 9.32128 21.9466H3.58187C1.74445 21.9466 1.29028 21.4924 1.29028 19.6757V15.4331C1.29028 13.6163 1.74445 13.1621 3.58187 13.1621Z" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M1.29028 16.8359H11.6129" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3.58187 13.1621H9.32128C11.1587 13.1621 11.6129 13.6163 11.6129 15.4331V19.6757C11.6129 21.4924 11.1587 21.9466 9.32128 21.9466H3.58187C1.74445 21.9466 1.29028 21.4924 1.29028 19.6757V15.4331C1.29028 13.6163 1.74445 13.1621 3.58187 13.1621Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M21.9355 14.7109C21.9355 18.7058 18.7046 21.9367 14.7097 21.9367L15.7936 20.1303" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M1.29028 8.51682C1.29028 4.52198 4.52125 1.29102 8.51609 1.29102L7.43223 3.09747" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M18.3227 10.5813C20.8881 10.5813 22.9678 8.50163 22.9678 5.93618C22.9678 3.37072 20.8881 1.29102 18.3227 1.29102C15.7572 1.29102 13.6775 3.37072 13.6775 5.93618C13.6775 8.50163 15.7572 10.5813 18.3227 10.5813Z" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M18.3227 10.5813C20.8881 10.5813 22.9678 8.50163 22.9678 5.93618C22.9678 3.37072 20.8881 1.29102 18.3227 1.29102C15.7572 1.29102 13.6775 3.37072 13.6775 5.93618C13.6775 8.50163 15.7572 10.5813 18.3227 10.5813Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
     
   );

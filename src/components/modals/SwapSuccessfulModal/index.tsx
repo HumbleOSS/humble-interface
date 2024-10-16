@@ -273,7 +273,7 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         d="M14 9.24805L18.1667 6.74805L22.3334 9.24805V19.248L18.1667 21.748L9.83337 16.748V11.748L18.1667 16.748V11.748L14 9.24805Z"
         stroke="black"
         stroke-width="1.25"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -281,7 +281,7 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         d="M14 9.24805L9.83335 6.74805L5.66669 9.24805V19.248L9.83335 21.748L13.75 19.1397"
         stroke="black"
         stroke-width="1.25"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -298,7 +298,7 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         d="M9.99992 5.24805L14.1666 2.74805L18.3333 5.24805V15.248L14.1666 17.748L5.83325 12.748V7.74805L14.1666 12.748V7.74805L9.99992 5.24805Z"
         stroke="white"
         stroke-width="1.25"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -306,7 +306,7 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         d="M10.0001 5.24805L5.83341 2.74805L1.66675 5.24805V15.248L5.83341 17.748L9.75008 15.1397"
         stroke="white"
         stroke-width="1.25"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
