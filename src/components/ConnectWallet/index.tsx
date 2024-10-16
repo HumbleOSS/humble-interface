@@ -68,7 +68,7 @@ const AccountDropdownLabel = styled.span`
     color: var(--Color-Brand-White, #fff);
   }
   &.light {
-    color: var(--Color-Brand-White, #000);
+    color: var(--Color-Brand-Black, #000);
   }
 `;
 
@@ -224,9 +224,9 @@ const DisconnectButton = () => {
         <path
           d="M131 20L125 26M125 20L131 26M138 23C138 28.5228 133.523 33 128 33C122.477 33 118 28.5228 118 23C118 17.4772 122.477 13 128 13C133.523 13 138 17.4772 138 23Z"
           stroke="white"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
     </div>
@@ -253,9 +253,9 @@ const ConnectButton = () => {
         <path
           d="M137 25.3333H137.007M128 19.3333V28.6667C128 29.403 128.597 30 129.333 30H138.667C139.403 30 140 29.403 140 28.6667V22C140 21.2636 139.403 20.6667 138.667 20.6667L129.333 20.6667C128.597 20.6667 128 20.0697 128 19.3333ZM128 19.3333C128 18.597 128.597 18 129.333 18H137.333M137.333 25.3333C137.333 25.5174 137.184 25.6667 137 25.6667C136.816 25.6667 136.667 25.5174 136.667 25.3333C136.667 25.1492 136.816 25 137 25C137.184 25 137.333 25.1492 137.333 25.3333Z"
           stroke="black"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </g>
       <defs>

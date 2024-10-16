@@ -223,15 +223,15 @@ const XIcon = () => {
         d="M21.5 21.75L3.5 3.75"
         stroke="white"
         stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M21.5001 3.75L3.5 21.7501"
         stroke="white"
         stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -262,16 +262,16 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         stroke="black"
         stroke-width="1.25"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M14 9.24805L9.83335 6.74805L5.66669 9.24805V19.248L9.83335 21.748L13.75 19.1397"
         stroke="black"
         stroke-width="1.25"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   ) : (
@@ -287,16 +287,16 @@ const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
         stroke="white"
         stroke-width="1.25"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M10.0001 5.24805L5.83341 2.74805L1.66675 5.24805V15.248L5.83341 17.748L9.75008 15.1397"
         stroke="white"
         stroke-width="1.25"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -429,29 +429,29 @@ const SwapIcon = () => {
         d="M5.28886 10.8661L3.39155 8.96875L1.50513 10.8661"
         stroke="white"
         stroke-width="1.63562"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M21.7104 13.6309L23.6078 15.5282L25.5051 13.6309"
         stroke="white"
         stroke-width="1.63562"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M23.5968 14.7774V12.2476C23.5968 6.66471 19.0716 2.15039 13.4995 2.15039C10.3155 2.15039 7.46955 3.63339 5.61584 5.93416"
         stroke="white"
         stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M3.40247 9.71875V12.2485C3.40247 17.8314 7.92768 22.3458 13.4997 22.3458C16.6837 22.3458 19.5297 20.8628 21.3834 18.562"
         stroke="white"
         stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -471,74 +471,74 @@ const CalendarIcon = () => {
         stroke="white"
         stroke-width="1.5"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M15.4446 1V4"
         stroke="white"
         stroke-width="1.5"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M1.55566 8.08984H20.4446"
         stroke="white"
         stroke-width="1.5"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M21 7.5V16C21 19 19.3333 21 15.4444 21H6.55556C2.66667 21 1 19 1 16V7.5C1 4.5 2.66667 2.5 6.55556 2.5H15.4444C19.3333 2.5 21 4.5 21 7.5Z"
         stroke="white"
         stroke-width="1.5"
         stroke-miterlimit="10"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M15.1051 12.6992H15.1151"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M15.1051 15.6992H15.1151"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M10.995 12.6992H11.005"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M10.995 15.6992H11.005"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M6.8827 12.6992H6.89268"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M6.8827 15.6992H6.89268"
         stroke="white"
         stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

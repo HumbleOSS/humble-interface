@@ -79,25 +79,37 @@ const Heading = styled(Box)`
   align-items: flex-start;
   align-self: stretch;
   border-radius: var(--Radius-500, 12px);
+
 `;
+const Heading2 = styled(Heading)`
+@media screen and (min-width: 600px) {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  min-width: 560px;
+}
+
+`
 
 const Column = styled.div`
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  /* align-items: flex-end; */
+  gap: 4px;
   height: 16px;
+  justify-content: start;
+  align-items: start;
 `;
 
 const ColumnPair = styled(Column)`
-  width: 234px;
+  /* width: 234px; */
+  grid-column: span 3;
 `;
 
 const ColumnTVL = styled(Column)`
-  width: 97px;
+  /* width: 97px; */
 `;
 
 const ColumnVolume = styled(Column)`
-  width: 98px;
+  /* width: 98px; */
 `;
 
 const ColumnAPR = styled(Column)``;
@@ -163,23 +175,23 @@ const InfoCircleIcon = () => {
       <path
         d="M7.99992 14.6673C11.6666 14.6673 14.6666 11.6673 14.6666 8.00065C14.6666 4.33398 11.6666 1.33398 7.99992 1.33398C4.33325 1.33398 1.33325 4.33398 1.33325 8.00065C1.33325 11.6673 4.33325 14.6673 7.99992 14.6673Z"
         stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M8 8V11.3333"
         stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M7.99634 5.33398H8.00233"
         stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -188,11 +200,11 @@ const InfoCircleIcon = () => {
 const PoolIcon = () => {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M1.29028 16.8359H11.6129" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M3.58187 13.1621H9.32128C11.1587 13.1621 11.6129 13.6163 11.6129 15.4331V19.6757C11.6129 21.4924 11.1587 21.9466 9.32128 21.9466H3.58187C1.74445 21.9466 1.29028 21.4924 1.29028 19.6757V15.4331C1.29028 13.6163 1.74445 13.1621 3.58187 13.1621Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M21.9355 14.7109C21.9355 18.7058 18.7046 21.9367 14.7097 21.9367L15.7936 20.1303" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M1.29028 8.51682C1.29028 4.52198 4.52125 1.29102 8.51609 1.29102L7.43223 3.09747" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M18.3227 10.5813C20.8881 10.5813 22.9678 8.50163 22.9678 5.93618C22.9678 3.37072 20.8881 1.29102 18.3227 1.29102C15.7572 1.29102 13.6775 3.37072 13.6775 5.93618C13.6775 8.50163 15.7572 10.5813 18.3227 10.5813Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1.29028 16.8359H11.6129" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3.58187 13.1621H9.32128C11.1587 13.1621 11.6129 13.6163 11.6129 15.4331V19.6757C11.6129 21.4924 11.1587 21.9466 9.32128 21.9466H3.58187C1.74445 21.9466 1.29028 21.4924 1.29028 19.6757V15.4331C1.29028 13.6163 1.74445 13.1621 3.58187 13.1621Z" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M21.9355 14.7109C21.9355 18.7058 18.7046 21.9367 14.7097 21.9367L15.7936 20.1303" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M1.29028 8.51682C1.29028 4.52198 4.52125 1.29102 8.51609 1.29102L7.43223 3.09747" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M18.3227 10.5813C20.8881 10.5813 22.9678 8.50163 22.9678 5.93618C22.9678 3.37072 20.8881 1.29102 18.3227 1.29102C15.7572 1.29102 13.6775 3.37072 13.6775 5.93618C13.6775 8.50163 15.7572 10.5813 18.3227 10.5813Z" stroke="currentColor" strokeWidth="1.5" stroke-miterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
     
   );
@@ -275,7 +287,7 @@ const PoolList: FC<PoolListProps> = ({
           <Search onChange={onFilter} />
         </HeadingRow>
         <Columns smHidden={true}>
-          <Heading sx={{ display: { xs: "none", md: "flex" } }}>
+          <Heading2 sx={{ display: { xs: "none", md: "flex" } }}>
             <ColumnPair>
               <ColumnLabel>Pair</ColumnLabel>
             </ColumnPair>
@@ -291,7 +303,7 @@ const PoolList: FC<PoolListProps> = ({
               <ColumnLabel>APR</ColumnLabel>
               <InfoCircleIcon />
             </ColumnAPR>
-          </Heading>
+          </Heading2>
         </Columns>
         {pools.length > 0 ? (
           pools.slice(0, showing).map((p: IndexerPoolI) => {
