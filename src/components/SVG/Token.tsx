@@ -7,8 +7,8 @@ interface TokenLogoProps {
 const TokenLogo: React.FC<TokenLogoProps> = ({ width = 32, height = 32 }) => {
   return (
     <svg
-      width={width}
-      height={height}
+      width="auto"
+      height="auto"
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

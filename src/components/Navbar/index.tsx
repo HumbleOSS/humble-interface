@@ -350,7 +350,9 @@ const Navbar = () => {
               return (
                 <StyledLink key={item.label} to={item.href}>
                   <NavButton active={activePath.pathname == item.href}>
-                    <Item />
+                    <Box sx={{ height: "25px" }}>
+                      <Item />
+                    </Box>
 
                     <NavButtonLabel>{item.label}</NavButtonLabel>
                   </NavButton>
