@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
 import "./style.css";
+import { currentVersion } from "./constants/versions";
 /*
 import * as Sentry from "@sentry/react";
 Sentry.init({
@@ -19,5 +20,14 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
 });
 */
+
+const dbname = "dexDatabase";
+const versionKey = "humble-versions";
+const version = Number(localStorage.getItem(versionKey) || "0");
+if (version < currentVersion) {
+  localStorage.clear();
+  localStorage.setItem(versionKey, `${currentVersion}`);
+  indexedDB.deleteDatabase(dbname);
+}
 
 ReactDOM.render(<App />, document.getElementById("root"));
