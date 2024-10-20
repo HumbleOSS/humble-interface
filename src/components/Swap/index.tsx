@@ -25,7 +25,7 @@ import { useSearchParams } from "react-router-dom";
 import { ARC200TokenI, PoolI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
-import { getPools } from "../../store/poolSlice";
+import { fetchPool, getPool, getPools } from "../../store/poolSlice";
 import { toast } from "react-toastify";
 import { Toast } from "react-toastify/dist/components";
 import { tokenId, tokenSymbol } from "../../utils/dex";
@@ -584,8 +584,6 @@ const Swap = () => {
   const [sp] = useSearchParams();
   const paramPoolId = sp.get("poolId") || CTCINFO_DEFAULT_LP;
 
-  console.log({ paramPoolId });
-
   const { activeAccount, signTransactions } = useWallet();
 
   // confirmation modal
@@ -611,6 +609,11 @@ const Swap = () => {
   }, []);
 
   console.log({ tokens2 });
+
+  // EFFECT: get pool for paramPoolId
+  useEffect(() => {
+    getPool(Number(paramPoolId))
+  }, [paramPoolId]);
 
   // don't remember what this is used for
 

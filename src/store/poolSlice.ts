@@ -2,7 +2,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import db from "../db";
 import { RootState } from "./store";
-import { CONTRACT, abi, arc200 } from "ulujs";
+import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { getAlgorandClients } from "../wallets";
 import { PoolI } from "../types";
 import { BAD_POOLS, CTCINFO_TRI } from "../constants/dex";
@@ -21,6 +21,38 @@ export interface PoolState {
   pools: Pool[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+}
+
+export const fetchPool = async (poolId: number) => {
+  const { algodClient, indexerClient } = getAlgorandClients();
+  const InfoR = await new swap(poolId, algodClient, indexerClient)
+    .Info()
+  if(InfoR.success) {
+    return InfoR.returnValue;
+  }
+}
+
+export const getPool = async (poolId: number) => {
+  try {
+    const poolTable = db.table("pools");
+    const pool = await poolTable.get(poolId);
+    if (pool) {
+      return pool;
+    }
+    const poolFetchResponse = await fetchPool(poolId);
+    if(poolFetchResponse) {
+      const newPool = {
+        poolId,
+        round: 0,
+        tokA: poolFetchResponse.tokA,
+        tokB: poolFetchResponse.tokB,
+      }
+      await db.table("pools").put(newPool);
+      return newPool;
+    }
+  } catch (error) {
+    throw error;
+  }
 }
 
 export const getPools = createAsyncThunk<

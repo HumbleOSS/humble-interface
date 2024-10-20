@@ -66,28 +66,6 @@ export const getToken = async (tokenId: number) => {
         return newToken;
       }
     }
-    //   const ci = makeCi(Number(tokenId));
-    //   const arc200_nameR = await ci.arc200_name();
-    //   const arc200_symbolR = await ci.arc200_symbol();
-    //   const arc200_decimalsR = await ci.arc200_decimals();
-    //   const arc200_totalSupplyR = await ci.arc200_totalSupply();
-    //   if (
-    //     arc200_nameR.success &&
-    //     arc200_symbolR.success &&
-    //     arc200_decimalsR.success &&
-    //     arc200_totalSupplyR.success
-    //   ) {
-    //     const token = {
-    //       tokenId,
-    //       name: arc200_nameR.returnValue,
-    //       symbol: arc200_symbolR.returnValue,
-    //       decimals: Number(arc200_decimalsR.returnValue),
-    //       totalSupply: arc200_totalSupplyR.returnValue,
-    //     };
-    //     db.table("tokens").put(token);
-    //     return token;
-    //   }
-    // }
     return token;
   } catch (error: any) {
     return error.message;
