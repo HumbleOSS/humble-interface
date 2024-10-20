@@ -53,7 +53,6 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
       style={{
         color: isDarkTheme ? "#fff" : "#000",
         transition: "all 0.25s linear",
-      
       }}
     >
       <BackgroundLayer
@@ -76,27 +75,29 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  let walletConnectProjectId; // = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID;
+  if (!walletConnectProjectId) {
+    walletConnectProjectId = "cd7fe0125d88d239da79fa286e6de2a8";
+  }
   const walletManager = new WalletManager({
     wallets: [
-      /*
-      WalletId.DEFLY,
-      WalletId.PERA,
-      WalletId.EXODUS,
-      */
       WalletId.KIBISIS,
-      /*
-      {
-        id: WalletId.WALLETCONNECT,
-        options: { projectId: '<YOUR_PROJECT_ID>' }
-      },
-      {
-        id: WalletId.MAGIC,
-        options: { apiKey: '<YOUR_API_KEY>' }
-      },
-      */
       {
         id: WalletId.LUTE,
         options: { siteName: "HumbPact" },
+      },
+      {
+        id: WalletId.WALLETCONNECT,
+        options: {
+          projectId: walletConnectProjectId,
+          metadata: {
+            name: "HumbleSwap",
+            url: "https://voi.humble.sh",
+            description: "HumbleSwap",
+            icons: ["https://nautilus.sh/favicon.ico"],
+          },
+          themeMode: "light",
+        },
       },
     ],
     network: NetworkId.MAINNET,
