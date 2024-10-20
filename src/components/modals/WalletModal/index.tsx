@@ -218,7 +218,7 @@ export const WalletModal: React.FC<BaseModalProps> = ({
                       ? "available-fst"
                       : index === wallets.length - 1
                       ? "available-lst"
-                      : ""
+                      : "available-el"
                   }
                   onClick={(ev) => {
                     ev.preventDefault();

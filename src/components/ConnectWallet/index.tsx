@@ -87,7 +87,7 @@ const WalletContainer = styled.div`
 
 const ProviderContainer = styled.div`
   /* Layout */
-  width: 270px;
+  min-width: 333px;
   display: flex;
   padding: 16px 8px;
   flex-direction: column;
@@ -108,7 +108,7 @@ const ProviderIconContainer = styled.div`
 
 const ProviderName = styled.div`
   display: flex;
-  width: 100px;
+  width: 150px;
   align-items: center;
   gap: var(--Main-System-10px, 10px);
   flex-shrink: 0;
@@ -182,10 +182,15 @@ const ActiveButton = styled.div`
 `;
 
 const WalletIcon = styled.div`
-  width: 53px;
-  height: 53px;
   flex-shrink: 0;
   border-radius: 1000px;
+  width: 53px;
+  height: 53px;
+  @media (max-width: 768px) {
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+  }
 `;
 
 const ProviderNameLabel = styled.div`
@@ -373,6 +378,10 @@ function BasicMenu() {
       )}
 
       <AccountMenu
+        sx={{
+          minWidth: { xs: "350px", sm: "" },
+          ml: { xs: 3.5, sm: 0 },
+        }}
         id="basic-menu"
         anchorEl={anchorEl}
         open={open}
@@ -383,6 +392,7 @@ function BasicMenu() {
         PaperProps={{
           elevation: 0,
           sx: {
+            minWidth: "350px",
             display: "inline-flex",
             padding: "18px",
             flexDirection: "column",
@@ -391,7 +401,7 @@ function BasicMenu() {
             borderRadius: "16px",
             overflow: "visible",
             filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-            mt: 2,
+            mt: 2.25,
             "& .MuiAvatar-root": {
               width: 32,
               height: 32,
@@ -414,8 +424,8 @@ function BasicMenu() {
             */
           },
         }}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        transformOrigin={{ horizontal: "center", vertical: "top" }}
+        anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
       >
         <WalletContainer>
           {wallets?.map((wallet) => {
