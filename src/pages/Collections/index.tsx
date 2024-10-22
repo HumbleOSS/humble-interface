@@ -3,7 +3,6 @@ import Layout from "../../layouts/Default";
 import { Container, Grid, Stack, Typography } from "@mui/material";
 import NFTCard from "../../components/NFTCard";
 import Section from "../../components/Section";
-import { nfts } from "../../static/json/nfts";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";

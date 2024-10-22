@@ -21,7 +21,6 @@ import { UnknownAction } from "@reduxjs/toolkit";
 import { getPools } from "../../store/poolSlice";
 import algosdk, { decodeAddress } from "algosdk";
 import { toast } from "react-toastify";
-import { Toast } from "react-toastify/dist/components";
 import axios from "axios";
 import { hasAllowance } from "ulujs/types/arc200";
 import { tokenId, tokenSymbol } from "../../utils/dex";
