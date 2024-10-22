@@ -27,7 +27,6 @@ import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { fetchPool, getPool, getPools } from "../../store/poolSlice";
 import { toast } from "react-toastify";
-import { Toast } from "react-toastify/dist/components";
 import { tokenId, tokenSymbol } from "../../utils/dex";
 import BigNumber from "bignumber.js";
 import { CTCINFO_DEFAULT_LP } from "../../constants/dex";

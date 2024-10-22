@@ -3,10 +3,11 @@
   "version": "1.0.0-beta.0",
   "description": "",
   "main": "index.tsx",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "webpack-dev-server --open",
-    "build": "webpack"
+    "start": "vite --host",
+    "build": "tsc -b && vite build"
   },
   "keywords": [],
   "author": "",
@@ -55,16 +56,13 @@
     "@types/lodash": "^4.17.10",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
-    "copy-webpack-plugin": "^12.0.2",
+    "@vitejs/plugin-react": "^4.3.3",
     "css-loader": "^6.10.0",
-    "dotenv-webpack": "^8.0.1",
     "gh-pages": "^6.1.1",
     "style-loader": "^3.3.4",
     "svg-url-loader": "^8.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
-    "webpack": "^5.90.2",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.2"
+    "vite": "^5.4.9"
   }
 }
