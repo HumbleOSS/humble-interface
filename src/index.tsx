@@ -1,9 +1,9 @@
-import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
 import "./style.css";
 import { currentVersion } from "./constants/versions";
 import { Buffer } from 'buffer';
+import { createRoot } from 'react-dom/client';
 
 window.Buffer = Buffer;
 /*
@@ -33,4 +33,6 @@ if (version < currentVersion) {
   indexedDB.deleteDatabase(dbname);
 }
 
-ReactDOM.render(<App />, document.getElementById("root"));
+const container=document.getElementById("root");
+const root = createRoot(container!)
+root.render(<App />);
