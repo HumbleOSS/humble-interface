@@ -3,6 +3,9 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import "./style.css";
 import { currentVersion } from "./constants/versions";
+import { Buffer } from 'buffer';
+
+window.Buffer = Buffer;
 /*
 import * as Sentry from "@sentry/react";
 Sentry.init({

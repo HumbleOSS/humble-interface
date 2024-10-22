@@ -54,6 +54,7 @@
     "usehooks-ts": "^2.15.0"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@types/lodash": "^4.17.10",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
