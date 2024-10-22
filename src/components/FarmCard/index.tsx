@@ -9,10 +9,7 @@ import { getToken, getTokens, updateToken } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
-import Accordion from "@mui/material/Accordion";
-import AccordionActions from "@mui/material/AccordionActions";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
+import { Accordion, AccordionActions, AccordionSummary, AccordionDetails } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BigNumber from "bignumber.js";
 import { getAlgorandClients } from "../../wallets";

@@ -7,7 +7,7 @@ import Home from "../../components/SVG/Home";
 import TokenLogo from "../../components/SVG/Token";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
-import Box from "@mui/material/Box";
+import { Box } from "@mui/material";
 import { useWallet } from "@txnlab/use-wallet-react";
 import { useCopyToClipboard } from "usehooks-ts";
 import { toast } from "react-toastify";
