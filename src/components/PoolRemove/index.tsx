@@ -408,8 +408,7 @@ const PoolRemove = () => {
         [0, 0]
       );
       if (!Provider_withdrawR.success) return;
-      if (Provider_withdrawR.success) {
-        setExpectedOutcome(Provider_withdrawR.returnValue);
+      setExpectedOutcome(Provider_withdrawR.returnValue);
       }
     })();
   }, [activeAccount, pool, info, fromAmount]);
