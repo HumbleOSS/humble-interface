@@ -385,7 +385,7 @@ const PoolRemove = () => {
     (async () => {
       const { algodClient, indexerClient } = getAlgorandClients();
       const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, {
-        addr: activeAccount?.address || "",
+        addr: activeAccount.address,
         sk: new Uint8Array(0),
       });
       const arc200_balanceOfR = await ci.arc200_balanceOf(
