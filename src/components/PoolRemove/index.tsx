@@ -381,27 +381,38 @@ const PoolRemove = () => {
 
   const [expectedOutcome, setExpectedOutcome] = useState<string>();
   useEffect(() => {
-    if (!pool || !info) return;
-    const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, {
-      addr: activeAccount?.address || "",
-      sk: new Uint8Array(0),
-    });
-    const share = (Number(poolShare) * Number(fromAmount)) / 100;
-    const withdrawAmount = Math.round(
-      (Number(info.lptBals.lpMinted) * share) / 100
-    );
-    ci.setFee(4000);
-    ci.Provider_withdraw(1, withdrawAmount, [0, 0]).then(
-      (Provider_withdrawR: any) => {
-        console.log({ Provider_withdrawR });
-        if (Provider_withdrawR.success) {
-          setExpectedOutcome(Provider_withdrawR.returnValue);
-        }
+    if (!pool || !info || !activeAccount) return;
+    (async () => {
+      const { algodClient, indexerClient } = getAlgorandClients();
+      const ci = new CONTRACT(pool.poolId, algodClient, indexerClient, spec, {
+        addr: activeAccount?.address || "",
+        sk: new Uint8Array(0),
+      });
+      const arc200_balanceOfR = await ci.arc200_balanceOf(
+        activeAccount.address
+      );
+      if (!arc200_balanceOfR.success) return;
+      const poolShare = arc200_balanceOfR.returnValue;
+
+      const withdrawAmount = BigInt(
+        new BigNumber(poolShare.toString())
+          .multipliedBy(new BigNumber(fromAmount))
+          .dividedBy(100)
+          .toFixed(0)
+      );
+
+      ci.setFee(4000);
+      const Provider_withdrawR = await ci.Provider_withdraw(
+        1,
+        withdrawAmount,
+        [0, 0]
+      );
+      if (!Provider_withdrawR.success) return;
+      if (Provider_withdrawR.success) {
+        setExpectedOutcome(Provider_withdrawR.returnValue);
       }
-    );
+    })();
   }, [activeAccount, pool, info, fromAmount]);
-  console.log({ expectedOutcome });
 
   const [newShare, setNewShare] = useState<string>();
   useEffect(() => {
