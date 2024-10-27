@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled, { keyframes } from "styled-components";
 import React, { FC } from "react";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
@@ -9,6 +9,7 @@ import { stringToColorCode } from "../../utils/string";
 import algosdk from "algosdk";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
+import useDefiRewards from "@/hooks/useDefiRewards";
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -166,7 +167,7 @@ const CryptoIconPlaceholder = () => {
         <path
           fillRule="evenodd"
           clipRule="evenodd"
-          d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.03957 20.277 9.03957 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
+          d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.0396 20.277 9.0396 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
           fill="currentColor"
         />
       </g>
@@ -196,7 +197,7 @@ const PlaceHolderIcon = () => {
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.03957 20.277 9.03957 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
+        d="M8.61872 3.38128C8.96043 3.72299 8.96043 4.27701 8.61872 4.61872L4.61872 8.61872C4.27701 8.96043 3.72299 8.96043 3.38128 8.61872C3.03957 8.27701 3.03957 7.72299 3.38128 7.38128L7.38128 3.38128C7.72299 3.03957 8.27701 3.03957 8.61872 3.38128ZM14.6187 3.38128C14.9604 3.72299 14.9604 4.27701 14.6187 4.61872L4.61872 14.6187C4.27701 14.9604 3.72299 14.9604 3.38128 14.6187C3.03957 14.277 3.03957 13.723 3.38128 13.3813L13.3813 3.38128C13.723 3.03957 14.277 3.03957 14.6187 3.38128ZM20.6187 3.38128C20.9604 3.72299 20.9604 4.27701 20.6187 4.61872L4.61872 20.6187C4.27701 20.9604 3.72299 20.9604 3.38128 20.6187C3.03957 20.277 3.03957 19.723 3.38128 19.3813L19.3813 3.38128C19.723 3.03957 20.277 3.03957 20.6187 3.38128ZM20.6187 9.38128C20.9604 9.72299 20.9604 10.277 20.6187 10.6187L10.6187 20.6187C10.277 20.9604 9.72299 20.9604 9.38128 20.6187C9.03957 20.277 9.03957 19.723 9.38128 19.3813L19.3813 9.38128C19.723 9.0396 20.277 9.0396 20.6187 9.38128ZM20.6187 15.3813C20.9604 15.723 20.9604 16.277 20.6187 16.6187L16.6187 20.6187C16.277 20.9604 15.723 20.9604 15.3813 20.6187C15.0396 20.277 15.0396 19.723 15.3813 19.3813L19.3813 15.3813C19.723 15.0396 20.277 15.0396 20.6187 15.3813Z"
         fill="currentColor"
       />
     </svg>
@@ -323,6 +324,40 @@ const APRLabel = styled.div`
   line-height: 120%; /* 16.8px */
 `;
 
+const fireAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.10); }
+  100% { transform: scale(1); }
+`;
+
+const APRBoostLabel = styled.div`
+  font-size: 12px;
+  font-weight: 400;
+  color: #ff6b00;
+  background-color: rgba(255, 107, 0, 0.1);
+  border: 1px solid #ff6b00;
+  border-radius: 12px;
+  padding: 2px 6px;
+  margin-left: 4px;
+  text-shadow: 0 0 2px #ffa500;
+  animation: ${fireAnimation} 2s ease-in-out infinite;
+  display: inline-block;
+`;
+
+const BlueFlameAPRLabel = styled.div`
+  font-size: 12px;
+  font-weight: 100;
+  color: #007bff;
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 1px solid #007bff;
+  border-radius: 12px;
+  padding: 2px 6px;
+  margin-left: 4px;
+  text-shadow: 0 0 4px #00c8ff;
+  animation: ${fireAnimation} 2s ease-in-out infinite;
+  display: inline-block;
+`;
+
 const Col3 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
@@ -364,6 +399,7 @@ const APRLabelContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  cursor: help;
 `;
 
 const Col5 = styled(Box)`
@@ -511,6 +547,10 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+  const rewards = useDefiRewards();
+  const reward = rewards.find((r) => r.poolId === pool.contractId) || {
+    aprBoost: 0,
+  };
   const tokA = tokens?.find((t) => `${t.contractId}` === `${pool.tokAId}`);
   const tokB = tokens?.find((t) => `${t.contractId}` === `${pool.tokBId}`);
   const isWVOIf = (token: any) => {
@@ -580,6 +620,21 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   const displayTokBId =
     `${pool.tokBId}` === `${TOKEN_WVOI1}` ? "0" : `${pool.tokBId}`;
   console.log({ pool, balance, tokens, tokA, tokB });
+
+  const aprTooltipContent = () => {
+    const baseApr = Number(pool?.apr || 0);
+    const totalApr = baseApr + reward.aprBoost;
+    return (
+      <div>
+        <p>Total APR: {totalApr.toFixed(2)}%</p>
+        <p>Base Swap APR: {baseApr.toFixed(2)}%</p>
+        {reward.aprBoost > 0 && (
+          <p>DeFi Boost: {reward.aprBoost.toFixed(2)}%</p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
@@ -705,9 +760,47 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   <Label>APR</Label>
                   <InfoCircleIcon />
                 </LabelWrapper>
-                <APRLabelContainer>
-                  <APRLabel>{pool?.apr || "0.00"}%</APRLabel>
-                </APRLabelContainer>
+                <Tooltip title={aprTooltipContent()} arrow placement="top">
+                  <APRLabelContainer>
+                    {reward.aprBoost > 0 ? (
+                      <>
+                        {Number(pool.apr) + reward.aprBoost >= 30 ? (
+                          <BlueFlameAPRLabel>
+                            {pool?.apr
+                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
+                              : "0.00"}
+                            %
+                          </BlueFlameAPRLabel>
+                        ) : null}
+                        {Number(pool.apr) + reward.aprBoost >= 10 &&
+                        Number(pool.apr) + reward.aprBoost < 30 ? (
+                          <APRBoostLabel>
+                            {pool?.apr
+                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
+                              : "0.00"}
+                            %
+                          </APRBoostLabel>
+                        ) : null}
+                        {reward.aprBoost < 10 ? (
+                          <APRBoostLabel>
+                            +{reward.aprBoost.toFixed(2)}%
+                          </APRBoostLabel>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        {Number(pool?.apr || 0) < 10 ? (
+                          <APRLabel>{pool?.apr || "0.00"}%</APRLabel>
+                        ) : null}
+                        {Number(pool?.apr || 0) >= 10 ? (
+                          <APRBoostLabel>
+                            {Number(pool?.apr || 0).toFixed(2)}%
+                          </APRBoostLabel>
+                        ) : null}
+                      </>
+                    )}
+                  </APRLabelContainer>
+                </Tooltip>
               </Col4>
               <Col5>
                 <StyledLink
