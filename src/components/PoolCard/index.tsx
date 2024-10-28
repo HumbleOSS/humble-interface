@@ -10,6 +10,9 @@ import algosdk from "algosdk";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import useDefiRewards from "@/hooks/useDefiRewards";
+import { useCopyToClipboard } from "usehooks-ts";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { toast } from "react-toastify";
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -635,6 +638,8 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     );
   };
 
+  const [copiedText, copyToClipboard] = useCopyToClipboard();
+
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
@@ -657,16 +662,38 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                     {/*<CryptoIconPlaceholder />*/}
                   </PairTokens>
                 </PairInfo>
-                <PairIds>
+                {!balance ? (
+                  <PairIds>
+                    <Field>
+                      <FieldLabel>ID:</FieldLabel>
+                      <FieldValue>{displayTokAId}</FieldValue>
+                    </Field>
+                    <Field>
+                      <FieldLabel>ID:</FieldLabel>
+                      <FieldValue>{displayTokBId}</FieldValue>
+                    </Field>
+                  </PairIds>
+                ) : (
                   <Field>
                     <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{displayTokAId}</FieldValue>
+                    <FieldValue>{pool.contractId}</FieldValue>
+                    <ContentCopyIcon
+                      fontSize="small"
+                      sx={{ cursor: "pointer", height: "20px" }}
+                      onClick={() => {
+                        copyToClipboard(`${pool.contractId}`)
+                          .then(() => {
+                            toast.success(
+                              `Copied pool ID:${pool.contractId} to clipboard.`
+                            );
+                          })
+                          .catch(() => {
+                            toast.error("Failed to copy pool ID to clipboard");
+                          });
+                      }}
+                    />
                   </Field>
-                  <Field>
-                    <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{displayTokBId}</FieldValue>
-                  </Field>
-                </PairIds>
+                )}
                 {!balance ? (
                   <></>
                 ) : (
