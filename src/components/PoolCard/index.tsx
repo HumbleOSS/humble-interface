@@ -808,11 +808,6 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                             %
                           </APRBoostLabel>
                         ) : null}
-                        {reward.aprBoost < 10 ? (
-                          <APRBoostLabel>
-                            +{reward.aprBoost.toFixed(2)}%
-                          </APRBoostLabel>
-                        ) : null}
                       </>
                     ) : (
                       <>

@@ -20,6 +20,14 @@ const useDefiRewards = () => {
               poolId: 395553,
               aprBoost: 28.75, // TVL lte 250k USD
             },
+            {
+              poolId: 429999,
+              aprBoost: 5,
+            },
+            {
+              poolId: 395554,
+              aprBoost: 10,
+            },
           ],
         };
         // Assuming the API returns an array of objects with poolId and aprBoost
