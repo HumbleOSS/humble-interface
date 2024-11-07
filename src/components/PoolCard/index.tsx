@@ -793,7 +793,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                       <>
                         {Number(pool.apr) + reward.aprBoost >= 30 ? (
                           <BlueFlameAPRLabel>
-                            {pool?.apr
+                            {Number(pool.apr) + reward.aprBoost
                               ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
                               : "0.00"}
                             %
@@ -802,11 +802,19 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                         {Number(pool.apr) + reward.aprBoost >= 10 &&
                         Number(pool.apr) + reward.aprBoost < 30 ? (
                           <APRBoostLabel>
-                            {pool?.apr
+                            {Number(pool.apr) + reward.aprBoost
                               ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
                               : "0.00"}
                             %
                           </APRBoostLabel>
+                        ) : null}
+                        {Number(pool.apr) + reward.aprBoost < 10 ? (
+                          <APRLabel>
+                            {Number(pool.apr) + reward.aprBoost
+                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
+                              : "0.00"}
+                            %
+                          </APRLabel>
                         ) : null}
                       </>
                     ) : (
