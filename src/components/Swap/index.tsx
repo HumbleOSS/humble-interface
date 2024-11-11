@@ -34,6 +34,7 @@ import SwapSuccessfulModal from "../modals/SwapSuccessfulModal";
 import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import axios from "axios";
 import ProgressBar from "../ProgressBar";
+import algosdk from "algosdk";
 
 const spec = {
   name: "pool",
@@ -384,11 +385,11 @@ const SummaryContainer = styled.div`
   gap: 12px;
   align-self: stretch;
   display: flex;
-  &.dark{
-  background: #070709;
+  &.dark {
+    background: #070709;
   }
-  &.light{
-  background: #f1eafc;
+  &.light {
+    background: #f1eafc;
   }
 `;
 
@@ -587,14 +588,13 @@ const Swap = () => {
 
   // confirmation modal
 
-  const [txId, setTxId] = useState<string>(
-    "YE6LE6TJY3IKZILM7YEOO3BWXU6CY7MD7HZV3N6YRQKZVAN5ABVQ"
-  );
-  const [swapIn, setSwapIn] = useState("1");
-  const [swapOut, setSwapOut] = useState("2");
-  const [tokIn, setTokIn] = useState("TOKA");
-  const [tokOut, setTokOut] = useState("TOKB");
-  const [swapModalOpen, setSwapModalOpen] = useState<boolean>(false);
+  const [txId, setTxId] = useState("");
+  const [poolId, setPoolId] = useState<number>();
+  const [swapIn, setSwapIn] = useState("");
+  const [swapOut, setSwapOut] = useState("");
+  const [tokIn, setTokIn] = useState("");
+  const [tokOut, setTokOut] = useState("");
+  const [swapModalOpen, setSwapModalOpen] = useState(false);
 
   const [tokens2, setTokens] = React.useState<any[]>();
   useEffect(() => {
@@ -611,7 +611,7 @@ const Swap = () => {
 
   // EFFECT: get pool for paramPoolId
   useEffect(() => {
-    getPool(Number(paramPoolId))
+    getPool(Number(paramPoolId));
   }, [paramPoolId]);
 
   // don't remember what this is used for
@@ -1125,6 +1125,10 @@ const Swap = () => {
       const { algodClient, indexerClient } = getAlgorandClients();
       // pick a pool with best rate
 
+      // get last round
+      const status = await algodClient.status().do();
+      const { ["last-round"]: lastRound } = status;
+
       const pool = eligiblePools.slice(-1)[0]; // last pools
       const { poolId } = pool;
       const ci = new swap(poolId, algodClient, indexerClient, { acc });
@@ -1168,9 +1172,9 @@ const Swap = () => {
         tokenId: mB.tokenId ?? undefined,
       };
 
-      console.log({ A, B, acc, pool2 });
-
       const swapR = await ci.swap(acc.addr, pool2.poolId, A, B);
+
+      console.log({ swapR });
 
       if (!swapR.success) throw new Error("Swap simulation failed");
 
@@ -1199,19 +1203,35 @@ const Swap = () => {
       //     theme: "dark",
       //   }
       // );
-      //const res = await sendTransactions(stxns);
-      //console.log({ res });
 
       const res = await algodClient
         .sendRawTransaction(stxns as Uint8Array[])
         .do();
 
-      console.log({ res });
-
       setProgress(75);
       setMessage("Confirming transaction...");
-      //await algosdk.waitForConfirmation(algodClient, res.txId, 1000);
+      await algosdk.waitForConfirmation(algodClient, res.txId, 1000);
       setProgress(85);
+
+      let swapEvents: any;
+      do {
+        swapEvents = await ci.SwapEvents({
+          minRound: lastRound,
+          sender: activeAccount.address,
+        });
+      } while (!swapEvents.length);
+
+      console.log({ swapEvents });
+
+      const [confirmedTxId] = swapEvents[0];
+
+      setTxId(confirmedTxId);
+      setPoolId(pool2.poolId);
+      setSwapIn(fromAmount);
+      setSwapOut(toAmount);
+      setTokIn(token?.symbol || "");
+      setTokOut(token2?.symbol || "");
+      setSwapModalOpen(true);
 
       // -----------------------------------------
       // QUEST HERE hmbl_pool_swap
@@ -1241,13 +1261,6 @@ const Swap = () => {
       //   }
       // } while (0);
       // -----------------------------------------
-      setProgress(95);
-      await new Promise((res) => setTimeout(res, 1000));
-
-      //const swapEvents = await ci.SwapEvents({ txid: res.txId });
-      //console.log(swapEvents);
-
-      // TODO add confirmation modal
     } catch (e: any) {
       console.log(e);
       toast.error(e.message);
@@ -1262,16 +1275,6 @@ const Swap = () => {
 
   const [message, setMessage] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
-
-  useEffect(() => {
-    if (progress === 0 || progress >= 100) return;
-    const timeout = setTimeout(() => {
-      setProgress(progress + 1);
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [progress]);
-
-  console.log({ token, token2 });
 
   const [tokAInfo, setTokAInfo] = useState<any>();
   useEffect(() => {
@@ -1457,7 +1460,7 @@ const Swap = () => {
       <SwapSuccessfulModal
         open={swapModalOpen}
         handleClose={() => setSwapModalOpen(false)}
-        poolId={pool?.poolId}
+        poolId={poolId}
         tokIn={tokIn}
         tokOut={tokOut}
         swapIn={swapIn}

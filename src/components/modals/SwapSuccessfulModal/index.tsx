@@ -5,6 +5,8 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
+import ReactConfetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 const CustomDialog = mstyled(Dialog)(({ theme }) => {
   /* Theme */
@@ -14,17 +16,28 @@ const CustomDialog = mstyled(Dialog)(({ theme }) => {
   return {
     "& .MuiDialog-paper": {
       borderRadius: "24px",
-      //boxShadow: "0px 4px 16px rgba(0, 0, 0, 0.1)",
       overflow: "hidden",
-      //border: "1px solid #B8B8CC",
-      /* dark */
-      border:
-        "1px solid var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.80))",
+      border: "1px solid var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.80))",
       boxShadow: "0px 4px 10px 0px rgba(255, 255, 255, 0.20)",
+      position: "relative",
+      zIndex: 1400,
+      margin: "16px",
+      width: "calc(100% - 32px)",
+      maxWidth: "480px",
+      maxHeight: "90vh",
+      display: "flex",
+      flexDirection: "column",
     },
     "& .MuiDialogContent-root": {
       padding: 0,
       overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      flex: 1,
+    },
+    "& .MuiBackdrop-root": {
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      backdropFilter: "blur(8px)",
     },
   };
 });
@@ -33,7 +46,13 @@ const ModalBodyContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 32px;
+  padding: 32px 24px;
+  
+  @media (max-width: 480px) {
+    padding: 24px 16px 32px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
 `;
 
 const ModalBody = styled.div`
@@ -41,6 +60,11 @@ const ModalBody = styled.div`
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-900, 32px);
+  width: 100%;
+  
+  @media (max-width: 480px) {
+    gap: 24px;
+  }
 `;
 
 const ModalTitleContainer = styled.div`
@@ -82,30 +106,19 @@ const ButtonContainer = styled(Button)`
   align-self: stretch;
   border-radius: var(--Radius-750, 20px);
   background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  margin-bottom: 8px;
+  @media (max-width: 480px) {
+    padding: 14px 20px;
+  }
 `;
 
-const SecondaryButtonContainer = styled(Button)`
-  display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  align-self: stretch;
-  border-radius: var(--Radius-750, 20px);
+const SecondaryButtonContainer = styled(ButtonContainer)`
   background: var(--Color-Accent-CTA-Background-Default, #ffbe1d);
 `;
 
-const ExplorerButtonContainer = styled(Button)`
-  display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  align-self: stretch;
-  border-radius: var(--Radius-750, 20px);
+const ExplorerButtonContainer = styled(ButtonContainer)`
   background: blueviolet;
+  margin-bottom: 0;
 `;
 
 const ButtonBody = styled.div`
@@ -124,44 +137,35 @@ const ButtonLabel = styled.div`
   font-size: 22px;
   font-style: normal;
   font-weight: 700;
-  line-height: 120%; /* 26.4px */
+  line-height: 120%;
+  
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
 `;
 
 const SwapInfoContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  align-self: stretch;
+  width: 100%;
+  max-width: 420px;
+  
+  @media (max-width: 480px) {
+    max-width: 100%;
+  }
 `;
 
 const SwapInContainer = styled.div`
-  display: flex;
-  max-width: 420px;
-  width: 100%;
-  padding: 28px var(--Spacing-900, 32px) 28px 20px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  border-radius: 26px 26px 0px 0px;
-  border: 1px solid #b8b8cc;
-  @media (max-width: 600px) {
-    max-width: 300px;
+  padding: 24px 20px;
+  
+  @media (max-width: 480px) {
+    padding: 16px;
   }
 `;
 
 const SwapOutContainer = styled.div`
-  display: flex;
-  width: 420px;
-  padding: 28px var(--Spacing-900, 20px) 28px 32px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 0px 0px 26px 26px;
-  border-right: 1px solid #b8b8cc;
-  border-bottom: 1px solid #b8b8cc;
-  border-left: 1px solid #b8b8cc;
-  padding-top: 0px;
-  @media (max-width: 600px) {
-    max-width: 300px;
+  padding: 24px 20px;
+  
+  @media (max-width: 480px) {
+    padding: 16px;
   }
 `;
 
@@ -490,98 +494,142 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   txId,
 }) => {
   const navigate = useNavigate();
-  /* Theme */
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = React.useState(true);
+
+  React.useEffect(() => {
+    if (open) {
+      setShowConfetti(true);
+      const timer = setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  const handleExplorerClick = () => {
+    window.open(
+      `https://block.voi.network/explorer/transaction/${txId}/arguments`,
+      '_blank'
+    );
+  };
+
   return (
-    <CustomDialog open={open} onClose={handleClose}>
-      <DialogContent
-        sx={{
-          background: isDarkTheme ? "#000" : "#fff",
+    <>
+      {open && showConfetti && (
+        <ReactConfetti
+          width={width}
+          height={height}
+          numberOfPieces={200}
+          recycle={false}
+          colors={isDarkTheme ? ['#FFBE1D', '#9933FF', '#FFFFFF'] : ['#9933FF', '#41137E', '#FFBE1D']}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            zIndex: 1500,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      
+      <CustomDialog 
+        open={open} 
+        onClose={handleClose}
+        BackdropProps={{
+          style: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)',
+          }
         }}
+        fullWidth
       >
-        <ModalPattern theme={isDarkTheme ? "dark" : "light"} />
-        <ModalBodyContainer>
-          <ModalBody>
-            <ModalTitleContainer>
-              <SmileIcon />
-              <ModalTitle className={isDarkTheme ? "dark" : "light"}>
-                Swap Successful
-              </ModalTitle>
-            </ModalTitleContainer>
-            <SwapInfoContainer>
-              <SwapInContainer>
-                <SwapInContentContainer>
-                  <SwapInTokenContainer>
-                    <TokenIcon theme={isDarkTheme ? "dark" : "light"} />
-                    <SwapInTokenLabel
-                      className={isDarkTheme ? "dark" : "light"}
-                    >
-                      {tokIn}
-                    </SwapInTokenLabel>
-                  </SwapInTokenContainer>
-                  <SwapInValueContainer>
-                    <SwapInValue>
-                      <SwapInLabel className={isDarkTheme ? "dark" : "light"}>
-                        {swapIn}
-                      </SwapInLabel>
-                    </SwapInValue>
-                  </SwapInValueContainer>
-                </SwapInContentContainer>
-              </SwapInContainer>
-              <SwapOutContainer>
-                <SwapOutContentContainer>
-                  <SwapOutContent>
+        <DialogContent
+          sx={{
+            background: isDarkTheme ? "#000" : "#fff",
+            position: "relative",
+            zIndex: 1600,
+          }}
+        >
+          <ModalPattern theme={isDarkTheme ? "dark" : "light"} />
+          <ModalBodyContainer>
+            <ModalBody>
+              <ModalTitleContainer>
+                <SmileIcon />
+                <ModalTitle className={isDarkTheme ? "dark" : "light"}>
+                  Swap Successful
+                </ModalTitle>
+              </ModalTitleContainer>
+              <SwapInfoContainer>
+                <SwapInContainer>
+                  <SwapInContentContainer>
                     <SwapInTokenContainer>
                       <TokenIcon theme={isDarkTheme ? "dark" : "light"} />
                       <SwapInTokenLabel
                         className={isDarkTheme ? "dark" : "light"}
                       >
-                        {tokOut}
+                        {tokIn}
                       </SwapInTokenLabel>
                     </SwapInTokenContainer>
                     <SwapInValueContainer>
                       <SwapInValue>
                         <SwapInLabel className={isDarkTheme ? "dark" : "light"}>
-                          {swapOut}
+                          {swapIn}
                         </SwapInLabel>
                       </SwapInValue>
                     </SwapInValueContainer>
-                  </SwapOutContent>
-                </SwapOutContentContainer>
-              </SwapOutContainer>
-            </SwapInfoContainer>
-            <ButtonContainer onClick={handleClose}>
-              <ButtonBody>
-                <ButtonLabel>Go back to swap</ButtonLabel>
-                <SwapIcon />
-              </ButtonBody>
-            </ButtonContainer>
-            <SecondaryButtonContainer
-              onClick={() => {
-                navigate(`/pool/add?poolId=${poolId}`);
-              }}
-            >
-              <ButtonBody>
-                <ButtonLabel>Add Liquidity</ButtonLabel>
-              </ButtonBody>
-            </SecondaryButtonContainer>
-            <ExplorerButtonContainer
-              onClick={() => {
-                window.open(
-                  `https://voitest.blockpack.app/#/explorer/transaction/${txId}/global-state-delta`
-                );
-              }}
-            >
-              <ButtonBody>
-                <ButtonLabel>View on Explorer</ButtonLabel>
-              </ButtonBody>
-            </ExplorerButtonContainer>
-          </ModalBody>
-        </ModalBodyContainer>
-      </DialogContent>
-    </CustomDialog>
+                  </SwapInContentContainer>
+                </SwapInContainer>
+                <SwapOutContainer>
+                  <SwapOutContentContainer>
+                    <SwapOutContent>
+                      <SwapInTokenContainer>
+                        <TokenIcon theme={isDarkTheme ? "dark" : "light"} />
+                        <SwapInTokenLabel
+                          className={isDarkTheme ? "dark" : "light"}
+                        >
+                          {tokOut}
+                        </SwapInTokenLabel>
+                      </SwapInTokenContainer>
+                      <SwapInValueContainer>
+                        <SwapInValue>
+                          <SwapInLabel className={isDarkTheme ? "dark" : "light"}>
+                            {swapOut}
+                          </SwapInLabel>
+                        </SwapInValue>
+                      </SwapInValueContainer>
+                    </SwapOutContent>
+                  </SwapOutContentContainer>
+                </SwapOutContainer>
+              </SwapInfoContainer>
+              <ButtonContainer onClick={handleClose}>
+                <ButtonBody>
+                  <ButtonLabel>Go back to swap</ButtonLabel>
+                  <SwapIcon />
+                </ButtonBody>
+              </ButtonContainer>
+              <SecondaryButtonContainer
+                onClick={() => {
+                  navigate(`/pool/add?poolId=${poolId}`);
+                }}
+              >
+                <ButtonBody>
+                  <ButtonLabel>Add Liquidity</ButtonLabel>
+                </ButtonBody>
+              </SecondaryButtonContainer>
+              <ExplorerButtonContainer onClick={handleExplorerClick}>
+                <ButtonBody>
+                  <ButtonLabel>View on Explorer</ButtonLabel>
+                </ButtonBody>
+              </ExplorerButtonContainer>
+            </ModalBody>
+          </ModalBodyContainer>
+        </DialogContent>
+      </CustomDialog>
+    </>
   );
 };
 

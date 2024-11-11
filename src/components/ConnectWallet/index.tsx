@@ -364,8 +364,8 @@ const MenuIconWrapper = styled(Box)`
   }
 `;
 
-// Add new styled component for the drawer backdrop
-const DrawerBackdrop = styled.div<{ $isMobile: boolean }>`
+// Update DrawerBackdrop with animation
+const DrawerBackdrop = styled.div<{ $isMobile: boolean; $isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -378,10 +378,12 @@ const DrawerBackdrop = styled.div<{ $isMobile: boolean }>`
   justify-content: flex-end;
   align-items: ${(props) => (props.$isMobile ? "flex-end" : "stretch")};
   padding: ${(props) => (props.$isMobile ? "16px 0px 0px" : "0")};
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  transition: opacity 0.3s ease;
 `;
 
-// Add styled component for drawer content wrapper
-const DrawerContent = styled.div<{ $isMobile: boolean }>`
+// Update DrawerContent with animation
+const DrawerContent = styled.div<{ $isMobile: boolean; $isOpen: boolean }>`
   background: transparent;
   width: ${(props) => (props.$isMobile ? "100%" : "400px")};
   height: ${(props) => (props.$isMobile ? "auto" : "100%")};
@@ -392,6 +394,10 @@ const DrawerContent = styled.div<{ $isMobile: boolean }>`
   position: relative;
   z-index: 1301;
   overflow: hidden;
+  transform: ${props => props.$isMobile 
+    ? `translateY(${props.$isOpen ? '0' : '100%'})` 
+    : `translateX(${props.$isOpen ? '0' : '100%'})`};
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const DrawerHeader = styled.div<{ $isDarkTheme?: boolean }>`
@@ -524,6 +530,7 @@ function BasicMenu() {
   const [isPowerExpanded, setIsPowerExpanded] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const dispatch = useDispatch();
+  const [isAnimating, setIsAnimating] = React.useState(false);
 
   // Add ref for the power button
   const powerButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -602,10 +609,14 @@ function BasicMenu() {
 
   // Add handleClose function
   const handleClose = () => {
-    setIsDrawerOpen(false);
-    setIsWalletModalOpen(false);
-    setIsPowerExpanded(false);
-    setShowSettings(false);
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsDrawerOpen(false);
+      setIsWalletModalOpen(false);
+      setIsPowerExpanded(false);
+      setShowSettings(false);
+      setIsAnimating(false);
+    }, 300); // Match transition duration
   };
 
   return (
@@ -636,10 +647,15 @@ function BasicMenu() {
         </AccountDropdown>
       )}
 
-      {isDrawerOpen && (
-        <DrawerBackdrop $isMobile={isMobile} onClick={handleClose}>
+      {(isDrawerOpen || isAnimating) && (
+        <DrawerBackdrop 
+          $isMobile={isMobile} 
+          $isOpen={isDrawerOpen}
+          onClick={handleClose}
+        >
           <DrawerContent
             $isMobile={isMobile}
+            $isOpen={isDrawerOpen}
             onClick={(e) => e.stopPropagation()}
           >
             <Box
