@@ -42,7 +42,7 @@ const useDefiRewards = () => {
             },
             {
               poolId: 443620, // F/CORN CORN TVL 5%
-              aprBoost: 5
+              aprBoost: 5,
             },
             {
               poolId: 440986, // F/GM GM TVL 5%
