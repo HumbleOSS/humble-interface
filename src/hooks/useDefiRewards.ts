@@ -22,28 +22,32 @@ const useDefiRewards = () => {
             },
             {
               poolId: 429999, // UNIT/VOI UNIT TVL 5%
-              aprBoost: 5,
+              aprBoost: 30,
             },
             {
               poolId: 395554, // GM/VOI GM TVL 5%
               aprBoost: 10,
             },
             {
-              poolId: 440993, // F/UNIT UNIT TVL 1%
-              aprBoost: 1,
+              poolId: 440993, // F/UNIT UNIT TVL 5%
+              aprBoost: 5,
             },
             {
-              poolId: 443619, // F/ROCKET ROCKET TVL 1%
-              aprBoost: 1,
+              poolId: 443619, // F/ROCKET ROCKET TVL 5%
+              aprBoost: 5,
             },
             {
-              poolId: 443610, // F/COOL COOL TVL 1%
-              aprBoost: 1,
+              poolId: 443610, // F/COOL COOL TVL 5%
+              aprBoost: 5,
             },
             {
-              poolId: 443620, // F/CORN CORN TVL 1%
-              aprBoost: 1
-            }
+              poolId: 443620, // F/CORN CORN TVL 5%
+              aprBoost: 5
+            },
+            {
+              poolId: 440986, // F/GM GM TVL 5%
+              aprBoost: 5,
+            },
           ],
         };
         // Assuming the API returns an array of objects with poolId and aprBoost
