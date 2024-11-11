@@ -1,124 +1,40 @@
 import styled from "@emotion/styled";
-import React, { useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import SwapLogo from "../../components/SVG/Swap";
 import PoolLogo from "../../components/SVG/Pool";
-import Home from "../../components/SVG/Home";
 import TokenLogo from "../../components/SVG/Token";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
 import { Box } from "@mui/material";
-import { useWallet } from "@txnlab/use-wallet-react";
-import { useCopyToClipboard } from "usehooks-ts";
-import { toast } from "react-toastify";
 import ConnectWallet from "../ConnectWallet";
-import SettingMenu from "../SettingMenu";
+import MenuIcon from "@mui/icons-material/Menu";
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import HomeIcon from "@mui/icons-material/Home";
 
 const Logo = styled.img`
   width: auto;
   height: 32px;
+  transition: height 0.3s ease;
   @media (max-width: 600px) {
-    height: 24px; // Smaller size for mobile devices
+    height: 24px;
   }
 `;
 
-const MobileNavRoot = styled(Box)`
-  position: fixed;
-  bottom: 24px;
-  width: 100%;
+const LogoContainer = styled(Link)`
   display: flex;
-  justify-content: center;
-  z-index: 10;
-`;
-
-const MobileNavList = styled.div`
-  /* Layout */
-  display: flex;
-  max-width: 300px;
-  width: 100%;
-  padding: 22px 17px 22px 22px;
-  justify-content: flex-end;
   align-items: center;
-  flex-shrink: 0;
-  /* Style */
-  border-radius: var(--Radius-800, 24px);
-  background: var(--Color-Brand-Primary, #41137e);
-  // margin: 0px 16px;
-`;
-
-const MobileNavContainer = styled.div`
-  display: flex;
-  width: 300px;
-  justify-content: space-around;
-  align-items: flex-end;
-  flex-shrink: 0;
-`;
-
-const MobileNavItem = styled.div<{ active: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  color: ${(props) =>
-    !props.active
-      ? "var(--Color-Brand-White, #fff)"
-      : "var(--Color-Brand-Primary, #FFBE1D)"};
-`;
-
-const MobileNavItemLabel = styled.div`
-  /* color: var(--Color-Brand-White, #fff); */
-
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 120%; /* 14.4px */
+  transition: all 0.3s ease;
+  @media (max-width: 600px) {
+    width: 32px;
+    overflow: hidden;
+  }
 `;
 
 const AccountButtonGroup = styled.div`
   display: flex;
   align-items: flex-end;
   gap: var(--Spacing-600, 12px);
-`;
-
-const AccountDropdown = styled.div`
-  /* Layout */
-  display: flex;
-  padding: 10px;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  /* Style */
-  border-radius: 12px;
-  border: 1px solid var(--Color-Brand-White, #fff);
-  /* Extra */
-  cursor: pointer;
-`;
-
-const AccountDropdownLabel = styled.span`
-  color: var(--Color-Brand-White, #fff);
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "IBM Plex Sans Condensed";
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 120%; /* 18px */
-`;
-
-const SettingDropdown = styled.div`
-  /* Layout */
-  display: flex;
-  padding: 7px 8px;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  /* Style */
-  border-radius: 12px;
-  border: 1px solid var(--Color-Brand-White, #fff);
-  /* Extra */
-  cursor: pointer;
 `;
 
 const StyledLink = styled(Link)`
@@ -145,21 +61,25 @@ const NavButton = styled.div<{ active: boolean }>`
       !props.active
         ? "var(--Color-Brand-White, #fff)"
         : "var(--Color-Brand-Primary, #FFBE1D)"};
-
   color: ${(props) =>
     !props.active
       ? "var(--Color-Brand-White, #fff)"
       : "var(--Color-Brand-Primary, #FFBE1D)"};
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const NavButtonLabel = styled.span`
-  /* color: var(--Color-Brand-White, #fff); */
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
   font-size: 16px;
   font-style: normal;
   font-weight: 600;
-  line-height: 120%; /* 19.2px */
+  line-height: 120%;
 `;
 
 const NavRoot = styled.nav`
@@ -167,6 +87,7 @@ const NavRoot = styled.nav`
   justify-content: space-between;
   align-items: center;
   padding: 18px;
+  transition: background-color 0.3s ease;
   @media (min-width: 600px) {
     padding: var(--Spacing-800, 24px) 0px;
   }
@@ -178,136 +99,119 @@ const NavContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 0px 80px;
+  transition: padding 0.3s ease;
   @media screen and (max-width: 600px) {
     padding: 0px;
   }
 `;
 
-const NavLogo = styled.img``;
-
-const NavLinks = styled.ul`
-  list-style-type: none;
-  margin: 0;
+const MobileMenuButton = styled.button`
+  display: none;
+  background: none;
+  border: none;
   padding: 0;
-  display: none;
+  cursor: pointer;
+  color: #ffffff;
+  height: 24px;
+
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+`;
+
+const LogoSection = styled.div`
+  display: flex;
   align-items: center;
-  gap: 24px;
-  @media screen and (min-width: 960px) {
-    display: inline-flex;
+  gap: 0;
+`;
+
+// Add styled components for mobile menu
+const MobileMenuDrawer = styled.div<{ $isDarkTheme?: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+`;
+
+const MobileMenuContent = styled.div<{ $isDarkTheme?: boolean }>`
+  background: ${props => props.$isDarkTheme ? '#20093E' : '#FFFFFF'};
+  padding: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+`;
+
+const MenuItem = styled.div<{ $active?: boolean; $isDarkTheme?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  background: ${props => props.$active 
+    ? props.$isDarkTheme 
+      ? 'rgba(255, 255, 255, 0.1)'
+      : 'rgba(0, 0, 0, 0.05)'
+    : 'transparent'
+  };
+
+  &:hover {
+    background: ${props => props.$isDarkTheme 
+      ? 'rgba(255, 255, 255, 0.1)'
+      : 'rgba(0, 0, 0, 0.05)'
+    };
   }
 `;
 
-const NavLink = styled.a`
-  font-family: Nohemi, sans-serif;
+const MenuItemLabel = styled.span<{ $active?: boolean; $isDarkTheme?: boolean }>`
+  color: ${props => {
+    if (props.$active) {
+      return props.$isDarkTheme ? '#FFBE1D' : '#9933FF';
+    }
+    return props.$isDarkTheme ? '#FFFFFF' : '#161717';
+  }};
   font-size: 16px;
-  font-weight: 500;
-  line-height: 22px;
-  letter-spacing: 0.1px;
-  text-align: left;
-  text-decoration: none;
-  color: #161717;
-  cursor: pointer;
-  &:hover {
-    color: #9933ff !important;
-  }
-  text-align: center;
-  padding-left: 6px;
-  padding-right: 6px;
+  font-weight: ${props => props.$active ? '600' : '500'};
+  line-height: 24px;
 `;
 
-const ActiveNavLink = styled(NavLink)`
-  color: #9933ff;
-  border-bottom: 3px solid #9933ff;
-`;
-
-const LgIconLink = styled.a`
-  display: none;
-  cursor: pointer;
-  &:hover {
-    color: #9933ff;
-  }
-  @media screen and (min-width: 600px) {
-    display: inline-flex;
-  }
-`;
-
-const ConnectButton = styled.svg`
-  cursor: pointer;
+const MenuIconWrapper = styled(Box)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 `;
 
 const Navbar = () => {
-  /* Copy to clipboard */
-
-  const [copiedText, copy] = useCopyToClipboard();
-
-  const handleCopy = (text: string) => () => {
-    copy(text)
-      .then(() => {
-        console.log("Copied!", { text });
-        toast.success("Copied to clipboard!");
-      })
-      .catch((error) => {
-        toast.error("Failed to copy to clipboard!");
-      });
-  };
-
-  /* Wallet */
-
-  const {
-    //providers,
-    activeAccount,
-    //connectedAccounts, getAccountInfo
-  } = useWallet();
-
-  const [accInfo, setAccInfo] = React.useState<any>(null);
-  const [balance, setBalance] = React.useState<any>(null);
-
-  // EFFECT: get voi balance
-  // useEffect(() => {
-  //   if (activeAccount && providers && providers.length >= 3) {
-  //     getAccountInfo().then(setAccInfo);
-  //   }
-  // }, [activeAccount, providers]);
-
-  // EFFECT: get voi balance
-  // useEffect(() => {
-  //   if (activeAccount && providers && providers.length >= 3) {
-  //     const { algodClient, indexerClient } = getAlgorandClients();
-  //     const ci = new arc200(TOKEN_VIA, algodClient, indexerClient);
-  //     ci.arc200_balanceOf(activeAccount.address).then(
-  //       (arc200_balanceOfR: any) => {
-  //         if (arc200_balanceOfR.success) {
-  //           setBalance(Number(arc200_balanceOfR.returnValue));
-  //         }
-  //       }
-  //     );
-  //   }
-  // }, [activeAccount, providers]);
-
-  /* Theme */
-
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
-
-  /* Navigation */
-
+  const location = useLocation();
   const navigate = useNavigate();
-  const activePath = useLocation();
-  const [active, setActive] = React.useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
-  /* Popper */
+  const menuItems = [
+    { path: "/", label: "Home", Icon: HomeIcon },
+    { path: "/swap", label: "Swap", Icon: SwapLogo },
+    { path: "/pool", label: "Pool", Icon: PoolLogo },
+    { path: "/token", label: "Token", Icon: TokenLogo },
+  ];
 
-  const [open, setOpen] = React.useState(false);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-    setOpen((previousOpen) => !previousOpen);
+  const handleMenuClick = (path: string) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
   };
-
-  const canBeOpen = open && Boolean(anchorEl);
-  const id = canBeOpen ? "transition-popper" : undefined;
 
   return (
     <>
@@ -318,9 +222,29 @@ const Navbar = () => {
         }}
       >
         <NavContainer>
-          <Link to="/">
-            <Logo src="/logo.png" alt="Humble Swap Logo" />
-          </Link>
+          <LogoSection>
+            <LogoContainer to="/">
+              <Logo src="/logo.png" alt="Humble Swap Logo" />
+            </LogoContainer>
+            <MobileMenuButton onClick={() => setIsMobileMenuOpen(true)}>
+              <MenuIcon
+                sx={{
+                  fontSize: 24,
+                  display: "block",
+                  height: "24px",
+                }}
+              />
+              <KeyboardArrowDownIcon 
+                sx={{
+                  fontSize: 16,
+                  display: "block",
+                  height: "24px",
+                  transition: 'transform 0.3s ease',
+                  transform: isMobileMenuOpen ? 'rotate(180deg)' : 'rotate(0)',
+                }}
+              />
+            </MobileMenuButton>
+          </LogoSection>
           <NavButtonGroup sx={{ display: { xs: "none", md: "flex" } }}>
             {[
               {
@@ -338,22 +262,14 @@ const Navbar = () => {
                 href: "/token",
                 icon: TokenLogo,
               },
-              /*
-              {
-                label: "Farm",
-                href: "/farm",
-                icon: FarmIcon,
-              },
-              */
             ].map((item) => {
               const Item = item.icon;
               return (
                 <StyledLink key={item.label} to={item.href}>
-                  <NavButton active={activePath.pathname == item.href}>
+                  <NavButton active={location.pathname === item.href}>
                     <Box sx={{ height: "25px" }}>
                       <Item />
                     </Box>
-
                     <NavButtonLabel>{item.label}</NavButtonLabel>
                   </NavButton>
                 </StyledLink>
@@ -362,58 +278,49 @@ const Navbar = () => {
           </NavButtonGroup>
           <AccountButtonGroup>
             <ConnectWallet />
-            <SettingMenu />
           </AccountButtonGroup>
         </NavContainer>
       </NavRoot>
-      <MobileNavRoot
-        sx={{
-          display: { xs: "flex", md: "none" },
-        }}
-      >
-        <MobileNavList>
-          <MobileNavContainer>
-            {[
-              {
-                icon: Home,
-                label: "Home",
-                location: "/",
-              },
-              {
-                icon: SwapLogo,
-                label: "Swap",
-                location: "/swap",
-              },
-              {
-                icon: PoolLogo,
-                label: "Pool",
-                location: "/pool",
-              },
-              /*
-              {
-                icon: FarmIcon,
-                label: "Farm",
-                location: "/farm",
-              },
-              */
-            ].map((item) => {
-              const Item = item.icon;
-              return (
-                <MobileNavItem
-                  key={item.label}
-                  active={activePath.pathname == item.location}
-                  onClick={() => {
-                    navigate(item.location);
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <MobileMenuDrawer
+          $isDarkTheme={isDarkTheme}
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <MobileMenuContent
+            $isDarkTheme={isDarkTheme}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {menuItems.map(({ path, label, Icon }) => (
+              <MenuItem
+                key={path}
+                $active={location.pathname === path}
+                $isDarkTheme={isDarkTheme}
+                onClick={() => handleMenuClick(path)}
+              >
+                <MenuIconWrapper
+                  sx={{
+                    svg: {
+                      color: location.pathname === path
+                        ? (isDarkTheme ? '#FFBE1D' : '#9933FF')
+                        : (isDarkTheme ? '#FFFFFF' : '#161717')
+                    }
                   }}
                 >
-                  <Item />
-                  <MobileNavItemLabel>{item.label}</MobileNavItemLabel>
-                </MobileNavItem>
-              );
-            })}
-          </MobileNavContainer>
-        </MobileNavList>
-      </MobileNavRoot>
+                  <Icon />
+                </MenuIconWrapper>
+                <MenuItemLabel
+                  $active={location.pathname === path}
+                  $isDarkTheme={isDarkTheme}
+                >
+                  {label}
+                </MenuItemLabel>
+              </MenuItem>
+            ))}
+          </MobileMenuContent>
+        </MobileMenuDrawer>
+      )}
     </>
   );
 };

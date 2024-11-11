@@ -18,7 +18,7 @@ const NotificationBox = styled(Box)<{
   $isDarkTheme: boolean;
 }>`
   display: flex;
-  padding: ${(props) => (props.$isMobile ? "16px" : "24px 40px")};
+  padding: ${(props) => (props.$isMobile ? "16px" : "16px 16px")};
   justify-content: space-between;
   align-items: ${(props) => (props.$isMobile ? "flex-start" : "center")};
   gap: ${(props) => (props.$isMobile ? "16px" : "24px")};

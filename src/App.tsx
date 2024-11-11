@@ -1,21 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
-import { Provider, useDispatch, useSelector } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import store, { RootState } from "./store/store";
-import Navbar from "./components/Navbar";
 import { routes } from "./routes";
-import { getProviderInit } from "./wallets";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import styled from "styled-components";
 import Layout from "./layouts/Default";
-import { getPools } from "./store/poolSlice";
-import { UnknownAction } from "@reduxjs/toolkit";
-import { getToken, getTokens } from "./store/tokenSlice";
-import { getPoolBals } from "./store/poolBalsSlice";
-import { getVolume } from "./store/volumeSlice";
-import { Button, Paper, Stack, Typography } from "@mui/material";
-
 import { WalletProvider } from "@txnlab/use-wallet-react";
 import { NetworkId, WalletId, WalletManager } from "@txnlab/use-wallet";
 
