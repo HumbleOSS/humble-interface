@@ -1,5 +1,5 @@
-import React, { FC } from "react";
-import { Dialog, DialogContent, Modal } from "@mui/material";
+import React, { FC, useEffect, useState } from "react";
+import { Dialog, DialogContent, Modal, Box, Tooltip } from "@mui/material";
 import mstyled from "@emotion/styled";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
 import ReactConfetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import axios from 'axios';
 
 const CustomDialog = mstyled(Dialog)(({ theme }) => {
   /* Theme */
@@ -199,23 +201,21 @@ const SwapOutContent = styled.div`
 
 const SwapInTokenContainer = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
 `;
 
 const SwapInTokenLabel = styled.div`
   color: var(--Brand-Black, #000);
-  leading-trim: both;
-  text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
-
-  /* Heading/Display 2 */
   font-family: "Plus Jakarta Sans";
   font-size: 18px;
   font-style: normal;
   font-weight: 700;
-  line-height: 120%; /* 21.6px */
+  line-height: 120%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   &.dark {
     color: #fff;
   }
@@ -252,71 +252,31 @@ const SwapInLabel = styled.div`
   }
 `;
 
-interface TokenIconProps {
-  theme: "light" | "dark";
-}
+const TokenIcon = styled.img`
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+`;
 
-const TokenIcon: FC<TokenIconProps> = ({ theme }) => {
-  return theme === "light" ? (
-    <svg
-      width="28"
-      height="29"
-      viewBox="0 0 28 29"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="0.5"
-        y="0.748047"
-        width="27"
-        height="27"
-        rx="13.5"
-        stroke="black"
-      />
-      <path
-        d="M14 9.24805L18.1667 6.74805L22.3334 9.24805V19.248L18.1667 21.748L9.83337 16.748V11.748L18.1667 16.748V11.748L14 9.24805Z"
-        stroke="black"
-        stroke-width="1.25"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 9.24805L9.83335 6.74805L5.66669 9.24805V19.248L9.83335 21.748L13.75 19.1397"
-        stroke="black"
-        stroke-width="1.25"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg
-      width="20"
-      height="21"
-      viewBox="0 0 20 21"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M9.99992 5.24805L14.1666 2.74805L18.3333 5.24805V15.248L14.1666 17.748L5.83325 12.748V7.74805L14.1666 12.748V7.74805L9.99992 5.24805Z"
-        stroke="white"
-        stroke-width="1.25"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10.0001 5.24805L5.83341 2.74805L1.66675 5.24805V15.248L5.83341 17.748L9.75008 15.1397"
-        stroke="white"
-        stroke-width="1.25"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
+const TokenIconFallback = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFBE1D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+interface TokenInfo {
+  contractId: number;
+  tokenId: string;
+  verified: number;
+  name: string;
+  symbol: string;
+}
 
 interface ModalPatterProps {
   theme: "light" | "dark";
@@ -493,6 +453,8 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   tokOut,
   txId,
 }) => {
+  const [tokInInfo, setTokInInfo] = useState<TokenInfo | null>(null);
+  const [tokOutInfo, setTokOutInfo] = useState<TokenInfo | null>(null);
   const navigate = useNavigate();
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -510,12 +472,77 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open) {
+      axios.get(`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`)
+        .then(({ data }) => {
+          const tokInData = data.tokens.find((t: TokenInfo) => t.symbol === tokIn);
+          const tokOutData = data.tokens.find((t: TokenInfo) => t.symbol === tokOut);
+          setTokInInfo(tokInData);
+          setTokOutInfo(tokOutData);
+        });
+    }
+  }, [open, tokIn, tokOut]);
+
+  const renderTokenIcon = (token: TokenInfo | null, symbol: string) => {
+    if (symbol === 'VOI') {
+      return (
+        <Tooltip title="Voi" placement="top" arrow>
+          <TokenIcon
+            src={`https://asset-verification.nautilus.sh/icons/0.png`}
+            alt="VOI icon"
+          />
+        </Tooltip>
+      );
+    }
+
+    if (token?.verified > 0) {
+      return (
+        <Tooltip title={token.name} placement="top" arrow>
+          <TokenIcon
+            src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
+            alt={`${token.symbol} icon`}
+          />
+        </Tooltip>
+      );
+    }
+
+    return (
+      <TokenIconFallback>
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M12.6187 7.38128C12.9604 7.72299 12.9604 8.27701 12.6187 8.61872L8.61872 12.6187C8.27701 12.9604 7.72299 12.9604 7.38128 12.6187C7.03957 12.277 7.03957 11.723 7.38128 11.3813L11.3813 7.38128C11.723 7.03957 12.277 7.03957 12.6187 7.38128Z"
+            fill="#56566E"
+          />
+          {/* ... rest of the path data ... */}
+        </svg>
+      </TokenIconFallback>
+    );
+  };
+
   const handleExplorerClick = () => {
     window.open(
       `https://block.voi.network/explorer/transaction/${txId}/arguments`,
       '_blank'
     );
   };
+
+  const renderTokenLabel = (symbol: string, isVerified: boolean, isDarkTheme: boolean) => (
+    <SwapInTokenLabel className={isDarkTheme ? "dark" : "light"}>
+      <span>{symbol}</span>
+      {isVerified && (
+        <VerifiedUserIcon 
+          fontSize="small" 
+          sx={{ 
+            color: symbol === 'VOI' ? "gold" : "inherit",
+            verticalAlign: 'middle'
+          }} 
+        />
+      )}
+    </SwapInTokenLabel>
+  );
 
   return (
     <>
@@ -567,12 +594,12 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                 <SwapInContainer>
                   <SwapInContentContainer>
                     <SwapInTokenContainer>
-                      <TokenIcon theme={isDarkTheme ? "dark" : "light"} />
-                      <SwapInTokenLabel
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        {tokIn}
-                      </SwapInTokenLabel>
+                      {renderTokenIcon(tokInInfo, tokIn)}
+                      {renderTokenLabel(
+                        tokIn, 
+                        (tokInInfo?.verified > 0 || tokIn === 'VOI'),
+                        isDarkTheme
+                      )}
                     </SwapInTokenContainer>
                     <SwapInValueContainer>
                       <SwapInValue>
@@ -587,12 +614,12 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                   <SwapOutContentContainer>
                     <SwapOutContent>
                       <SwapInTokenContainer>
-                        <TokenIcon theme={isDarkTheme ? "dark" : "light"} />
-                        <SwapInTokenLabel
-                          className={isDarkTheme ? "dark" : "light"}
-                        >
-                          {tokOut}
-                        </SwapInTokenLabel>
+                        {renderTokenIcon(tokOutInfo, tokOut)}
+                        {renderTokenLabel(
+                          tokOut,
+                          (tokOutInfo?.verified > 0 || tokOut === 'VOI'),
+                          isDarkTheme
+                        )}
                       </SwapInTokenContainer>
                       <SwapInValueContainer>
                         <SwapInValue>
