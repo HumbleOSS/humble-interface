@@ -516,6 +516,34 @@ const SettingsLabel = styled.span<{ $isDarkTheme?: boolean }>`
   font-weight: 500;
 `;
 
+// Add new styled component for the avatar wrapper
+const AvatarWrapper = styled.div`
+  position: relative;
+  width: 32px;
+  height: 32px;
+`;
+
+// Add styled component for the provider icon overlay
+const ProviderIconOverlay = styled.div`
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  
+  img {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+`;
+
 function BasicMenu() {
   const { activeAccount, wallets, activeWallet, activeWalletAccounts } =
     useWallet();
@@ -688,19 +716,29 @@ function BasicMenu() {
               {activeAccount && (
                 <DrawerHeader $isDarkTheme={isDarkTheme}>
                   <AccountInfo>
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: isDarkTheme
-                          ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(0, 0, 0, 0.1)",
-                        color: isDarkTheme ? "#FFFFFF" : "#161717",
-                        fontSize: "14px",
-                      }}
-                    >
-                      {activeAccount.address.slice(0, 2)}
-                    </Avatar>
+                    <AvatarWrapper>
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          bgcolor: isDarkTheme
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)",
+                          color: isDarkTheme ? "#FFFFFF" : "#161717",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {activeAccount.address.slice(0, 2)}
+                      </Avatar>
+                      {activeWallet && (
+                        <ProviderIconOverlay>
+                          <img 
+                            src={activeWallet.metadata.icon} 
+                            alt={activeWallet.metadata.name}
+                          />
+                        </ProviderIconOverlay>
+                      )}
+                    </AvatarWrapper>
                     <AddressSection>
                       <AddressText $isDarkTheme={isDarkTheme}>
                         {compactAddress(activeAccount.address)}
