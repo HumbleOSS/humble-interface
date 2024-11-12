@@ -514,7 +514,35 @@ const Swap: FC<SwapProps> = ({
                   placeholder="0.00"
                   onKeyDown={() => onFocus()}
                   onChange={(e) => {
-                    setAmount(e.target.value);
+                    const value = e.target.value;
+                    
+                    // Only allow numbers, decimal point, and commas
+                    if (!/^[0-9.,]*$/.test(value)) {
+                      return;
+                    }
+
+                    // Remove commas for processing
+                    const noCommas = value.replace(/,/g, '');
+                    
+                    // Split on decimal point
+                    const parts = noCommas.split('.');
+                    
+                    // If no decimal or token doesn't exist, pass through
+                    if (parts.length === 1 || !token?.decimals) {
+                      setAmount(value);
+                      return;
+                    }
+                    
+                    // If decimal places exceed token decimals, truncate
+                    if (parts[1].length > token.decimals) {
+                      parts[1] = parts[1].substring(0, token.decimals);
+                      // Reconstruct with original commas in integer part
+                      const integerPartWithCommas = value.split('.')[0];
+                      setAmount(integerPartWithCommas + '.' + parts[1]);
+                      return;
+                    }
+
+                    setAmount(value);
                   }}
                   value={amount}
                 />
