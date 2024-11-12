@@ -735,7 +735,8 @@ const Swap = () => {
 
   const fee = useMemo(() => {
     if (!info) return "0";
-    return ((fromAmount * info?.protoInfo.totFee) / 10000).toFixed(6);
+    const amount = Number(fromAmount.replace(/,/g, ''));
+    return ((amount * info?.protoInfo.totFee) / 10000).toFixed(6);
   }, [info, fromAmount]);
 
   console.log("fee", fee);
@@ -774,7 +775,7 @@ const Swap = () => {
     );
     ci.setFee(4000);
     if (pool.tokA === tokenId(token)) {
-      const fromAmountBN = new BigNumber(fromAmount);
+      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
         fromAmountBN.multipliedBy(10 ** token.decimals).toFixed()
@@ -791,7 +792,7 @@ const Swap = () => {
         }
       });
     } else if (pool.tokB === tokenId(token)) {
-      const fromAmountBN = new BigNumber(fromAmount);
+      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
         fromAmountBN.multipliedBy(10 ** token.decimals).toFixed()
@@ -838,7 +839,7 @@ const Swap = () => {
     );
     ci.setFee(4000);
     if (pool.tokA === tokenId(token2)) {
-      const toAmountBN = new BigNumber(toAmount);
+      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ''));
       if (toAmountBN.isNaN()) return;
       const toAmountBI = BigInt(
         toAmountBN
@@ -865,7 +866,7 @@ const Swap = () => {
         }
       );
     } else if (pool.tokA === tokenId(token)) {
-      const toAmountBN = new BigNumber(toAmount);
+      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ''));
       if (toAmountBN.isNaN()) return;
       // convert to atomic unit
       const toAmountBI = BigInt(
