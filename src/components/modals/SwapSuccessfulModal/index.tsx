@@ -5,10 +5,10 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
-import ReactConfetti from 'react-confetti';
-import { useWindowSize } from 'react-use';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import axios from 'axios';
+import ReactConfetti from "react-confetti";
+import { useWindowSize } from "react-use";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import axios from "axios";
 
 const CustomDialog = mstyled(Dialog)(({ theme }) => {
   /* Theme */
@@ -19,7 +19,8 @@ const CustomDialog = mstyled(Dialog)(({ theme }) => {
     "& .MuiDialog-paper": {
       borderRadius: "24px",
       overflow: "hidden",
-      border: "1px solid var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.80))",
+      border:
+        "1px solid var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.80))",
       boxShadow: "0px 4px 10px 0px rgba(255, 255, 255, 0.20)",
       position: "relative",
       zIndex: 1400,
@@ -49,7 +50,7 @@ const ModalBodyContainer = styled.div`
   flex-direction: column;
   align-items: center;
   padding: 32px 24px;
-  
+
   @media (max-width: 480px) {
     padding: 24px 16px 32px;
     max-height: 90vh;
@@ -63,7 +64,7 @@ const ModalBody = styled.div`
   align-items: center;
   gap: var(--Spacing-900, 32px);
   width: 100%;
-  
+
   @media (max-width: 480px) {
     gap: 24px;
   }
@@ -140,7 +141,7 @@ const ButtonLabel = styled.div`
   font-style: normal;
   font-weight: 700;
   line-height: 120%;
-  
+
   @media (max-width: 480px) {
     font-size: 18px;
   }
@@ -149,7 +150,7 @@ const ButtonLabel = styled.div`
 const SwapInfoContainer = styled.div`
   width: 100%;
   max-width: 420px;
-  
+
   @media (max-width: 480px) {
     max-width: 100%;
   }
@@ -157,7 +158,7 @@ const SwapInfoContainer = styled.div`
 
 const SwapInContainer = styled.div`
   padding: 24px 20px;
-  
+
   @media (max-width: 480px) {
     padding: 16px;
   }
@@ -165,7 +166,7 @@ const SwapInContainer = styled.div`
 
 const SwapOutContainer = styled.div`
   padding: 24px 20px;
-  
+
   @media (max-width: 480px) {
     padding: 16px;
   }
@@ -263,7 +264,7 @@ const TokenIconFallback = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #FFBE1D;
+  background: #ffbe1d;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -474,10 +475,17 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      axios.get(`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`)
+      axios
+        .get(
+          `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+        )
         .then(({ data }) => {
-          const tokInData = data.tokens.find((t: TokenInfo) => t.symbol === tokIn);
-          const tokOutData = data.tokens.find((t: TokenInfo) => t.symbol === tokOut);
+          const tokInData = data.tokens.find(
+            (t: TokenInfo) => t.symbol === tokIn
+          );
+          const tokOutData = data.tokens.find(
+            (t: TokenInfo) => t.symbol === tokOut
+          );
           setTokInInfo(tokInData);
           setTokOutInfo(tokOutData);
         });
@@ -485,7 +493,7 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   }, [open, tokIn, tokOut]);
 
   const renderTokenIcon = (token: TokenInfo | null, symbol: string) => {
-    if (symbol === 'VOI') {
+    if (symbol === "VOI") {
       return (
         <Tooltip title="Voi" placement="top" arrow>
           <TokenIcon
@@ -496,12 +504,12 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
       );
     }
 
-    if (token?.verified > 0) {
+    if (token?.verified || 0 > 0) {
       return (
-        <Tooltip title={token.name} placement="top" arrow>
+        <Tooltip title={token?.name} placement="top" arrow>
           <TokenIcon
-            src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
-            alt={`${token.symbol} icon`}
+            src={`https://asset-verification.nautilus.sh/icons/${token?.contractId}.png`}
+            alt={`${token?.symbol} icon`}
           />
         </Tooltip>
       );
@@ -525,20 +533,24 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   const handleExplorerClick = () => {
     window.open(
       `https://block.voi.network/explorer/transaction/${txId}/arguments`,
-      '_blank'
+      "_blank"
     );
   };
 
-  const renderTokenLabel = (symbol: string, isVerified: boolean, isDarkTheme: boolean) => (
+  const renderTokenLabel = (
+    symbol: string,
+    isVerified: boolean,
+    isDarkTheme: boolean
+  ) => (
     <SwapInTokenLabel className={isDarkTheme ? "dark" : "light"}>
       <span>{symbol}</span>
       {isVerified && (
-        <VerifiedUserIcon 
-          fontSize="small" 
-          sx={{ 
-            color: symbol === 'VOI' ? "gold" : "inherit",
-            verticalAlign: 'middle'
-          }} 
+        <VerifiedUserIcon
+          fontSize="small"
+          sx={{
+            color: symbol === "VOI" ? "gold" : "inherit",
+            verticalAlign: "middle",
+          }}
         />
       )}
     </SwapInTokenLabel>
@@ -552,25 +564,29 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
           height={height}
           numberOfPieces={200}
           recycle={false}
-          colors={isDarkTheme ? ['#FFBE1D', '#9933FF', '#FFFFFF'] : ['#9933FF', '#41137E', '#FFBE1D']}
+          colors={
+            isDarkTheme
+              ? ["#FFBE1D", "#9933FF", "#FFFFFF"]
+              : ["#9933FF", "#41137E", "#FFBE1D"]
+          }
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
             zIndex: 1500,
-            pointerEvents: 'none',
+            pointerEvents: "none",
           }}
         />
       )}
-      
-      <CustomDialog 
-        open={open} 
+
+      <CustomDialog
+        open={open}
         onClose={handleClose}
         BackdropProps={{
           style: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(8px)',
-          }
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(8px)",
+          },
         }}
         fullWidth
       >
@@ -596,8 +612,8 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                     <SwapInTokenContainer>
                       {renderTokenIcon(tokInInfo, tokIn)}
                       {renderTokenLabel(
-                        tokIn, 
-                        (tokInInfo?.verified > 0 || tokIn === 'VOI'),
+                        tokIn,
+                        (tokInInfo?.verified || 0) > 0 || tokIn === "VOI",
                         isDarkTheme
                       )}
                     </SwapInTokenContainer>
@@ -617,13 +633,15 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                         {renderTokenIcon(tokOutInfo, tokOut)}
                         {renderTokenLabel(
                           tokOut,
-                          (tokOutInfo?.verified > 0 || tokOut === 'VOI'),
+                          (tokOutInfo?.verified || 0) > 0 || tokOut === "VOI",
                           isDarkTheme
                         )}
                       </SwapInTokenContainer>
                       <SwapInValueContainer>
                         <SwapInValue>
-                          <SwapInLabel className={isDarkTheme ? "dark" : "light"}>
+                          <SwapInLabel
+                            className={isDarkTheme ? "dark" : "light"}
+                          >
                             {swapOut}
                           </SwapInLabel>
                         </SwapInValue>
