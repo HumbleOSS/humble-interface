@@ -778,7 +778,7 @@ const Swap = () => {
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
-        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed()
+        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed(0)
       );
       ci.Trader_swapAForB(1, fromAmountBI, 0).then((r: any) => {
         if (r.success) {
@@ -795,7 +795,7 @@ const Swap = () => {
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
-        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed()
+        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed(0)
       );
       ci.Trader_swapBForA(1, fromAmountBI, 0).then((r: any) => {
         if (r.success) {
@@ -844,9 +844,9 @@ const Swap = () => {
       const toAmountBI = BigInt(
         toAmountBN
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
+          .decimalPlaces(0, BigNumber.ROUND_DOWN)
           .toFixed(0)
       );
-      // TODO consider using larger number
       ci.Trader_exactSwapBForA(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
         (r: any) => {
           console.log({ r });
@@ -868,13 +868,12 @@ const Swap = () => {
     } else if (pool.tokA === tokenId(token)) {
       const toAmountBN = new BigNumber(toAmount.replace(/,/g, ''));
       if (toAmountBN.isNaN()) return;
-      // convert to atomic unit
       const toAmountBI = BigInt(
         toAmountBN
           .multipliedBy(new BigNumber(10).pow(token2.decimals))
+          .decimalPlaces(0, BigNumber.ROUND_DOWN)
           .toFixed(0)
       );
-      // TODO consider using larger number
       ci.Trader_exactSwapAForB(1, Number.MAX_SAFE_INTEGER, toAmountBI).then(
         (r: any) => {
           console.log({ r });
