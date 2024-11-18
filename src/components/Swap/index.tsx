@@ -734,17 +734,24 @@ const Swap = () => {
   console.log("invRate", invRate);
 
   const fee = useMemo(() => {
-    if (!info) return "0";
-    const amount = Number(fromAmount.replace(/,/g, ''));
-    return ((amount * info?.protoInfo.totFee) / 10000).toFixed(6);
-  }, [info, fromAmount]);
+    if (!info || !token) return "0";
+    const amount = new BigNumber(fromAmount.replace(/,/g, ''));
+    if (amount.isNaN()) return "0";
+    return amount
+      .multipliedBy(info?.protoInfo.totFee)
+      .dividedBy(10000)
+      .decimalPlaces(token.decimals, BigNumber.ROUND_DOWN)
+      .toFixed(token.decimals);
+  }, [info, fromAmount, token]);
 
   console.log("fee", fee);
 
   const expectedOutcome = useMemo(() => {
     if (!rate || !fromAmount) return;
-    return Number(rate) * Number(fromAmount);
-  }, [rate, fromAmount]);
+    const amount = new BigNumber(fromAmount.replace(/,/g, ''));
+    if (amount.isNaN()) return;
+    return amount.multipliedBy(rate).decimalPlaces(token2?.decimals || 6, BigNumber.ROUND_DOWN).toNumber();
+  }, [rate, fromAmount, token2?.decimals]);
 
   console.log("expectedOutcome", expectedOutcome);
 
@@ -778,7 +785,10 @@ const Swap = () => {
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
-        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed(0)
+        fromAmountBN
+          .multipliedBy(10 ** token.decimals)
+          .decimalPlaces(0, BigNumber.ROUND_DOWN)
+          .toFixed(0)
       );
       ci.Trader_swapAForB(1, fromAmountBI, 0).then((r: any) => {
         if (r.success) {
@@ -786,6 +796,7 @@ const Swap = () => {
           if (toAmountBN.isNaN()) return;
           const toAmount = toAmountBN
             .div(10 ** token2.decimals)
+            .decimalPlaces(token2.decimals, BigNumber.ROUND_DOWN)
             .toFixed(token2.decimals);
           setActualOutcome(toAmount);
           setToAmount(toAmount);
@@ -795,7 +806,10 @@ const Swap = () => {
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
-        fromAmountBN.multipliedBy(10 ** token.decimals).toFixed(0)
+        fromAmountBN
+          .multipliedBy(10 ** token.decimals)
+          .decimalPlaces(0, BigNumber.ROUND_DOWN)
+          .toFixed(0)
       );
       ci.Trader_swapBForA(1, fromAmountBI, 0).then((r: any) => {
         if (r.success) {
@@ -803,6 +817,7 @@ const Swap = () => {
           if (toAmountBN.isNaN()) return;
           const toAmount = toAmountBN
             .div(10 ** token2.decimals)
+            .decimalPlaces(token2.decimals, BigNumber.ROUND_DOWN)
             .toFixed(token2.decimals);
           setActualOutcome(toAmount);
           setToAmount(toAmount);

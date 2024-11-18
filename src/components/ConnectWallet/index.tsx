@@ -796,23 +796,25 @@ function BasicMenu() {
                                 />
                               )}
                             </SettingsMenuItem>
-                            <SettingsMenuItem
-                              $isDarkTheme={isDarkTheme}
-                              onClick={() => {
-                                setIsWalletModalOpen(true);
-                                setShowSettings(false);
-                              }}
-                            >
-                              <SettingsLabel $isDarkTheme={isDarkTheme}>
-                                Wallet Connect
-                              </SettingsLabel>
-                              <AccountBalanceWalletIcon 
-                                sx={{ 
-                                  fontSize: 20, 
-                                  color: isDarkTheme ? "#FFBE1D" : "#9933FF" 
-                                }} 
-                              />
-                            </SettingsMenuItem>
+                            {activeWallet && (
+                              <SettingsMenuItem
+                                $isDarkTheme={isDarkTheme}
+                                onClick={() => {
+                                  setIsWalletModalOpen(true);
+                                  setShowSettings(false);
+                                }}
+                              >
+                                <SettingsLabel $isDarkTheme={isDarkTheme}>
+                                  Wallet Connect
+                                </SettingsLabel>
+                                <AccountBalanceWalletIcon 
+                                  sx={{ 
+                                    fontSize: 20, 
+                                    color: isDarkTheme ? "#FFBE1D" : "#9933FF" 
+                                  }} 
+                                />
+                              </SettingsMenuItem>
+                            )}
                           </>
                         </SettingsMenu>
                       )}
