@@ -22,17 +22,17 @@ const useDefiRewards = () => {
             },
             {
               poolId: 429999, // UNIT/VOI UNIT
-              aprBoost: 50,
+              aprBoost: 55,
             },
             {
               poolId: 395554, // GM/VOI GM
-              aprBoost: 50,
+              aprBoost: 55,
             },
+            /*
             {
               poolId: 440993, // F/UNIT UNIT
               aprBoost: 25,
             },
-            /*
             {
               poolId: 443619, // F/ROCKET ROCKET TVL 5%
               aprBoost: 10,
