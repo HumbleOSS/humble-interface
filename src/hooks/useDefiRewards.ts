@@ -22,7 +22,7 @@ const useDefiRewards = () => {
             },
             {
               poolId: 429999, // UNIT/VOI UNIT
-              aprBoost: 55,
+              aprBoost: 69,
             },
             {
               poolId: 395554, // GM/VOI GM
