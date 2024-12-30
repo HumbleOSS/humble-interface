@@ -747,7 +747,7 @@ const Swap = () => {
     }
   }, []);
   useEffect(() => {
-    if(!activeAccount) return;
+    if (!activeAccount) return;
     if (paramTokBId && !isNaN(Number(paramTokBId))) {
       if (paramTokBId === "0") {
         setToken2({
@@ -762,7 +762,7 @@ const Swap = () => {
         getToken(tokenId).then(setToken2);
       }
     }
-  }, [activeAccount, paramTokBId])
+  }, [activeAccount, paramTokBId]);
 
   // EFFECT
   useEffect(() => {
