@@ -22,7 +22,7 @@ const useDefiRewards = () => {
             },
             {
               poolId: 429999, // UNIT/VOI UNIT
-              aprBoost: 69,
+              aprBoost: 99,
             },
             {
               poolId: 395554, // GM/VOI GM
@@ -50,6 +50,10 @@ const useDefiRewards = () => {
               aprBoost: 10,
             },
             */
+            {
+              poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
+              aprBoost: 10,
+            },
           ],
         };
         // Assuming the API returns an array of objects with poolId and aprBoost
