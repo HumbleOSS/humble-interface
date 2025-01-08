@@ -735,7 +735,7 @@ const Swap = () => {
 
   const fee = useMemo(() => {
     if (!info || !token) return "0";
-    const amount = new BigNumber(fromAmount.replace(/,/g, ''));
+    const amount = new BigNumber(fromAmount.replace(/,/g, ""));
     if (amount.isNaN()) return "0";
     return amount
       .multipliedBy(info?.protoInfo.totFee)
@@ -748,9 +748,12 @@ const Swap = () => {
 
   const expectedOutcome = useMemo(() => {
     if (!rate || !fromAmount) return;
-    const amount = new BigNumber(fromAmount.replace(/,/g, ''));
+    const amount = new BigNumber(fromAmount.replace(/,/g, ""));
     if (amount.isNaN()) return;
-    return amount.multipliedBy(rate).decimalPlaces(token2?.decimals || 6, BigNumber.ROUND_DOWN).toNumber();
+    return amount
+      .multipliedBy(rate)
+      .decimalPlaces(token2?.decimals || 6, BigNumber.ROUND_DOWN)
+      .toNumber();
   }, [rate, fromAmount, token2?.decimals]);
 
   console.log("expectedOutcome", expectedOutcome);
@@ -782,7 +785,7 @@ const Swap = () => {
     );
     ci.setFee(4000);
     if (pool.tokA === tokenId(token)) {
-      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
+      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ""));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
         fromAmountBN
@@ -803,7 +806,7 @@ const Swap = () => {
         }
       });
     } else if (pool.tokB === tokenId(token)) {
-      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ''));
+      const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ""));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
         fromAmountBN
@@ -854,7 +857,7 @@ const Swap = () => {
     );
     ci.setFee(4000);
     if (pool.tokA === tokenId(token2)) {
-      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ''));
+      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ""));
       if (toAmountBN.isNaN()) return;
       const toAmountBI = BigInt(
         toAmountBN
@@ -881,7 +884,7 @@ const Swap = () => {
         }
       );
     } else if (pool.tokA === tokenId(token)) {
-      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ''));
+      const toAmountBN = new BigNumber(toAmount.replace(/,/g, ""));
       if (toAmountBN.isNaN()) return;
       const toAmountBI = BigInt(
         toAmountBN
@@ -1014,12 +1017,12 @@ const Swap = () => {
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token.decimals
-              ).toLocaleString()
-            );
+            const arc200_balanceOf = arc200_balanceOfR.returnValue;
+            const balanceBn = new BigNumber(arc200_balanceOf);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token.decimals))
+              .toFixed(token.decimals);
+            setBalance(balanceStr);
           }
         }
       );
@@ -1064,12 +1067,11 @@ const Swap = () => {
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance2(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token2.decimals
-              ).toLocaleString()
-            );
+            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token2.decimals))
+              .toFixed(token2.decimals);
+            setBalance2(balanceStr);
           }
         }
       );

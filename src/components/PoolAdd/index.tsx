@@ -1141,8 +1141,11 @@ const Swap = () => {
         .then((accInfo: any) => {
           const balance = accInfo.amount;
           const minBalance = accInfo["min-balance"];
-          const availableBalance = balance - minBalance;
-          setBalance((availableBalance / 1e6).toLocaleString());
+          const availableBalance = Math.max(0, balance - (minBalance - 0.1));
+          const balanceStr = new BigNumber(availableBalance)
+            .dividedBy(new BigNumber(10).pow(6))
+            .toFixed(6);
+          setBalance(balanceStr);
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
       algodClient
@@ -1165,12 +1168,11 @@ const Swap = () => {
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token.decimals
-              ).toLocaleString()
-            );
+            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token.decimals))
+              .toFixed(token.decimals);
+            setBalance(balanceStr);
           }
         }
       );
@@ -1192,8 +1194,11 @@ const Swap = () => {
         .then((accInfo: any) => {
           const balance = accInfo.amount;
           const minBalance = accInfo["min-balance"];
-          const availableBalance = balance - minBalance;
-          setBalance2((availableBalance / 1e6).toLocaleString());
+          const availableBalance = Math.max(0, balance - (minBalance - 0.1));
+          const balanceStr = new BigNumber(availableBalance)
+            .dividedBy(new BigNumber(10).pow(6))
+            .toFixed(6);
+          setBalance2(balanceStr);
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
       algodClient
@@ -1215,12 +1220,11 @@ const Swap = () => {
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance2(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token2.decimals
-              ).toLocaleString()
-            );
+            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token2.decimals))
+              .toFixed(token2.decimals);
+            setBalance2(balanceStr);
           }
         }
       );
@@ -1331,7 +1335,7 @@ const Swap = () => {
       console.log({ A, B, acc, pool });
 
       const swapR = await ci.deposit(acc.addr, pool.poolId, A, B, [], {
-        debug: true
+        debug: true,
       });
 
       if (!swapR.success) {
@@ -1455,18 +1459,19 @@ const Swap = () => {
     }, 1000);
     return () => clearTimeout(timeout);
   }, [progress]);
-  
+
   const findTokenInfo = (token: ARC200TokenI, tokens2: any[]) => {
     if (!token || !tokens2) return undefined;
     return tokens2.find(
-      (t) => t.contractId === token.tokenId || t.tokenId === String(token.tokenId)
+      (t) =>
+        t.contractId === token.tokenId || t.tokenId === String(token.tokenId)
     );
   };
 
   const [tokAInfo, setTokAInfo] = useState<any>();
   useEffect(() => {
     if (!token || !tokens2) return;
-    const tokA = findTokenInfo(token, tokens2)
+    const tokA = findTokenInfo(token, tokens2);
     if (!tokA) return;
     setTokAInfo(tokA);
   }, [token, tokens2]);
@@ -1474,7 +1479,7 @@ const Swap = () => {
   const [tokBInfo, setTokBInfo] = useState<any>();
   useEffect(() => {
     if (!token2 || !tokens2) return;
-    const tokB = findTokenInfo(token2, tokens2)
+    const tokB = findTokenInfo(token2, tokens2);
     if (!tokB) return;
     setTokBInfo(tokB);
   }, [token2, tokens2]);
