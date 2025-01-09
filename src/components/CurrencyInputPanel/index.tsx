@@ -11,6 +11,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import BigNumber from "bignumber.js";
+import { useWallet } from "@txnlab/use-wallet-react";
 
 // Add interface for token data
 interface TokenBalance {
@@ -54,6 +55,7 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   id,
   onValidationChange,
 }) => {
+  const { activeAccount } = useWallet();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tokens, setTokens] = useState<TokenBalance[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +64,7 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   const handleOpenModal = async () => {
     try {
       const response = await fetch(
-        "https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ"
+        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount?.address}`
       );
       const data = await response.json();
       setTokens(
