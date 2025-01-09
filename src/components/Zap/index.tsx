@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Card,
-  TextField,
   List,
   ListItem,
   Typography,
@@ -316,11 +315,13 @@ const Zap: React.FC = () => {
 
       const dA = {
         ...mA,
+        decimals: `${mA.decimals}`,
         amount: swapAForB ? fromAmount : outN,
       };
 
       const dB = {
         ...mB,
+        decimals: `${mB.decimals}`,
         amount: swapAForB ? outN : fromAmount,
       };
 
@@ -404,7 +405,6 @@ const Zap: React.FC = () => {
             onUserInput={handleInputAmountChange}
             onCurrencySelect={handleInputSelect}
             currency={inputCurrency}
-            label="Input"
             id="zap-input-token"
           />
         </Box>
@@ -420,7 +420,6 @@ const Zap: React.FC = () => {
                 .map((pool) => (
                   <ListItem
                     key={pool.poolId}
-                    button
                     onClick={() =>
                       handlePoolSelect(pool.poolId, pool.contractId.toString())
                     }
@@ -555,15 +554,15 @@ const Zap: React.FC = () => {
         </Dialog>
       </Card>
 
-      <Dialog 
-        open={isSigningModalOpen} 
+      <Dialog
+        open={isSigningModalOpen}
         sx={{
-          '& .MuiDialog-paper': {
-            minWidth: '400px',
+          "& .MuiDialog-paper": {
+            minWidth: "400px",
           },
-          '& .MuiBackdrop-root': {
-            backdropFilter: 'grayscale(1)',
-          }
+          "& .MuiBackdrop-root": {
+            backdropFilter: "grayscale(1)",
+          },
         }}
       >
         <DialogTitle>Almost there!</DialogTitle>
@@ -581,7 +580,7 @@ const Zap: React.FC = () => {
           >
             <ZapAnimation />
             <Typography
-              align="center" 
+              align="center"
               sx={{
                 minHeight: "3em",
                 display: "flex",

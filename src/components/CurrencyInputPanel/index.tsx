@@ -39,9 +39,10 @@ interface CurrencyInputPanelProps {
   onCurrencySelect: (currency: Currency) => void;
   currency: Currency | null;
   id: string;
+  onValidationChange?: (isValid: boolean, errorMessage?: string) => void;
 }
 
-const getTokenIconUrl = (contractId) => {
+const getTokenIconUrl = (contractId: string) => {
   return `https://asset-verification.nautilus.sh/icons/${contractId}.png`;
 };
 
@@ -67,16 +68,18 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
       setTokens(
         data.balances
           .filter(
-            (token) =>
+            (token: TokenBalance) =>
               token.balance !== "0" && token.verified === 1 && !token.tokenId
           )
-          .map((token) => ({
+          .map((token: TokenBalance) => ({
             ...token,
             balance: new BigNumber(token.balance)
-              .dividedBy(10 ** token.decimals)
-              .toFixed(token.decimals),
+              .dividedBy(10 ** (token.decimals || 0))
+              .toFixed(token.decimals || 0),
           }))
-          .sort((a, b) => a.contractId - b.contractId)
+          .sort(
+            (a: TokenBalance, b: TokenBalance) => a.contractId - b.contractId
+          )
       );
       setIsModalOpen(true);
     } catch (error) {
@@ -87,6 +90,7 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   const handleSelectToken = (token: TokenBalance) => {
     onCurrencySelect({
       contractId: token.contractId,
+      tokenId: null,
       balance: token.balance,
       symbol: token.symbol,
       decimals: token.decimals,
@@ -138,38 +142,38 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
     <>
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          '& .MuiOutlinedInput-root': {
-            paddingLeft: '120px',
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          "& .MuiOutlinedInput-root": {
+            paddingLeft: "120px",
           },
-          '& .MuiOutlinedInput-notchedOutline': {
+          "& .MuiOutlinedInput-notchedOutline": {
             zIndex: 0,
           },
         }}
       >
-        <Box sx={{ position: 'relative' }}>
+        <Box sx={{ position: "relative" }}>
           <Button
             variant="text"
             onClick={handleOpenModal}
             sx={{
-              position: 'absolute',
+              position: "absolute",
               left: 0,
               top: 0,
-              height: '56px',
-              minWidth: '120px',
+              height: "56px",
+              minWidth: "120px",
               zIndex: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: '4px 0 0 4px',
-              backgroundColor: 'background.paper',
-              '&:hover': {
-                backgroundColor: 'action.hover',
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "4px 0 0 4px",
+              backgroundColor: "background.paper",
+              "&:hover": {
+                backgroundColor: "action.hover",
               },
-              display: 'flex',
+              display: "flex",
               gap: 1,
-              alignItems: 'center',
+              alignItems: "center",
             }}
           >
             {currency && currency.verified === 1 && (
@@ -246,7 +250,6 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
               filteredTokens.map((token) => (
                 <ListItem
                   key={token.contractId}
-                  button
                   onClick={() => handleSelectToken(token)}
                   sx={{
                     display: "flex",
