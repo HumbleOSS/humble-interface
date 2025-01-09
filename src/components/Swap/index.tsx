@@ -1129,6 +1129,7 @@ const Swap = () => {
       toast.info("Please connect your wallet first");
       return;
     }
+    
     const acc = {
       addr: activeAccount.address,
       sk: new Uint8Array(0),

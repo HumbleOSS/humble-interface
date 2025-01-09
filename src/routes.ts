@@ -9,6 +9,10 @@ export const routes = [
     Component: Page.Swap,
   },
   {
+    path: "/zap",
+    Component: Page.Zap,
+  },
+  {
     path: "/pool",
     Component: Page.Pool,
   },
