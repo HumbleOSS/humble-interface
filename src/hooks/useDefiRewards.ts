@@ -52,7 +52,11 @@ const useDefiRewards = () => {
             */
             {
               poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
-              aprBoost: 10,
+              aprBoost: 55,
+            },
+            {
+              poolId: 441951, // CORN/VOI CORN TVL 5%
+              aprBoost: 99,
             },
           ],
         };
