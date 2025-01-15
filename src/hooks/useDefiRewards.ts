@@ -20,10 +20,12 @@ const useDefiRewards = () => {
               poolId: 395553,
               aprBoost: 28.75, // TVL lte 250k USD
             },
+            /*
             {
               poolId: 429999, // UNIT/VOI UNIT
               aprBoost: 99,
             },
+            */
             {
               poolId: 395554, // GM/VOI GM
               aprBoost: 55,
