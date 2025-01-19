@@ -553,7 +553,12 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   const rewards = useDefiRewards();
   const reward = rewards.find((r) => r.poolId === pool.contractId) || {
     aprBoost: 0,
+    blockReward: 0,
+    additionalAprBoost: 0,
   };
+  if ([pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)) {
+    reward.blockReward = 18.78;
+  }
   const tokA = tokens?.find((t) => `${t.contractId}` === `${pool.tokAId}`);
   const tokB = tokens?.find((t) => `${t.contractId}` === `${pool.tokBId}`);
   const isWVOIf = (token: any) => {
@@ -626,7 +631,12 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
 
   const aprTooltipContent = () => {
     const baseApr = Number(pool?.apr || 0);
-    const totalApr = baseApr + reward.aprBoost;
+    const totalApr =
+      baseApr +
+      (reward?.aprBoost || 0) +
+      (reward?.blockReward || 0) +
+      (reward?.additionalAprBoost || 0);
+
     return (
       <div>
         <p>Total APR: {totalApr.toFixed(2)}%</p>
@@ -634,7 +644,23 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
         {reward.aprBoost > 0 && (
           <p>DeFi Boost: {reward.aprBoost.toFixed(2)}%</p>
         )}
+        {reward.blockReward > 0 && (
+          <p>Block Rewards: {reward.blockReward.toFixed(2)}%</p>
+        )}
+        {reward.additionalAprBoost > 0 && (
+          <p>Additional APR Boost: {reward.additionalAprBoost.toFixed(2)}%</p>
+        )}
       </div>
+    );
+  };
+
+  const calculateTotalApr = () => {
+    const baseApr = Number(pool?.apr || 0);
+    return (
+      baseApr +
+      (reward?.aprBoost || 0) +
+      (reward?.blockReward || 0) +
+      (reward?.additionalAprBoost || 0)
     );
   };
 
@@ -789,45 +815,16 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 </LabelWrapper>
                 <Tooltip title={aprTooltipContent()} arrow placement="top">
                   <APRLabelContainer>
-                    {reward.aprBoost > 0 ? (
-                      <>
-                        {Number(pool.apr) + reward.aprBoost >= 30 ? (
-                          <BlueFlameAPRLabel>
-                            {Number(pool.apr) + reward.aprBoost
-                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
-                              : "0.00"}
-                            %
-                          </BlueFlameAPRLabel>
-                        ) : null}
-                        {Number(pool.apr) + reward.aprBoost >= 10 &&
-                        Number(pool.apr) + reward.aprBoost < 30 ? (
-                          <APRBoostLabel>
-                            {Number(pool.apr) + reward.aprBoost
-                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
-                              : "0.00"}
-                            %
-                          </APRBoostLabel>
-                        ) : null}
-                        {Number(pool.apr) + reward.aprBoost < 10 ? (
-                          <APRLabel>
-                            {Number(pool.apr) + reward.aprBoost
-                              ? (Number(pool.apr) + reward.aprBoost).toFixed(2)
-                              : "0.00"}
-                            %
-                          </APRLabel>
-                        ) : null}
-                      </>
+                    {calculateTotalApr() >= 30 ? (
+                      <BlueFlameAPRLabel>
+                        {calculateTotalApr().toFixed(2)}%
+                      </BlueFlameAPRLabel>
+                    ) : calculateTotalApr() >= 10 ? (
+                      <APRBoostLabel>
+                        {calculateTotalApr().toFixed(2)}%
+                      </APRBoostLabel>
                     ) : (
-                      <>
-                        {Number(pool?.apr || 0) < 10 ? (
-                          <APRLabel>{pool?.apr || "0.00"}%</APRLabel>
-                        ) : null}
-                        {Number(pool?.apr || 0) >= 10 ? (
-                          <APRBoostLabel>
-                            {Number(pool?.apr || 0).toFixed(2)}%
-                          </APRBoostLabel>
-                        ) : null}
-                      </>
+                      <APRLabel>{calculateTotalApr().toFixed(2)}%</APRLabel>
                     )}
                   </APRLabelContainer>
                 </Tooltip>
