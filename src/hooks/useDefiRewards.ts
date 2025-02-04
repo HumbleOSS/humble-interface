@@ -31,7 +31,7 @@ const useDefiRewards = () => {
             */
             {
               poolId: 395554, // GM/VOI GM
-              aprBoost: 55,
+              aprBoost: 35,
               additionalAprBoost: 0,
             },
             /*
@@ -58,22 +58,22 @@ const useDefiRewards = () => {
             */
             {
               poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
-              aprBoost: 55,
+              aprBoost: 99,
               additionalAprBoost: 0,
             },
             {
               poolId: 441951, // CORN/VOI CORN TVL 5%
-              aprBoost: 99,
+              aprBoost: 9,
               additionalAprBoost: 0,
             },
             {
               poolId: 404246, // COOL/VOI COOL TVL
-              aprBoost: 55,
+              aprBoost: 5,
               additionalAprBoost: 0,
             },
             {
               poolId: 395510, // F/VOI F TVL
-              aprBoost: 99,
+              aprBoost: 8,
               additionalAprBoost: 0,
             },
           ],
