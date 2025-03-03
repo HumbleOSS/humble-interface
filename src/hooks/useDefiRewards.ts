@@ -76,6 +76,11 @@ const useDefiRewards = () => {
               aprBoost: 8,
               additionalAprBoost: 0,
             },
+            {
+              poolId: 8357620, // pix/VOI
+              aprBoost: 15,
+              additionalAprBoost: 0,
+            },
           ],
         };
         // Assuming the API returns an array of objects with poolId and aprBoost
