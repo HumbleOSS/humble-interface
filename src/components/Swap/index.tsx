@@ -37,6 +37,8 @@ import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import axios from "axios";
 import ProgressBar from "../ProgressBar";
 import algosdk from "algosdk";
+import SettingsIcon from "@mui/icons-material/Settings";
+import { SwapOptionsModal } from "../modals/SwapOptionsModal";
 
 const SwapDisplay = styled.div`
   display: flex;
@@ -361,6 +363,7 @@ const SwapRoot = styled.div`
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+  position: relative;
   @media screen and (min-width: 600px) {
     transition: all 1s;
     width: 630px;
@@ -834,6 +837,27 @@ const RefreshIcon = () => {
     </svg>
   );
 };
+
+// Add new styled component for settings button
+const SettingsButton = styled(BaseButton)<{ isDarkTheme: boolean }>`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  color: ${(props) => (props.isDarkTheme ? "#fff" : "#41137E")};
+  z-index: 1;
+
+  &:hover {
+    background: ${(props) =>
+      props.isDarkTheme ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
+  }
+`;
 
 const Swap = () => {
   /* Theme */
@@ -1597,9 +1621,17 @@ const Swap = () => {
 
   console.log({ token, token2, tokens, tokens2 });
 
+  const [showSettings, setShowSettings] = useState(false);
+
   return !isLoading ? (
     <>
       <SwapRoot className={isDarkTheme ? "dark" : "light"}>
+        {/*<SettingsButton
+          onClick={() => setShowSettings(true)}
+          isDarkTheme={isDarkTheme}
+        >
+          <SettingsIcon />
+        </SettingsButton>*/}
         <SwapContainer gap={on ? 1.43 : 0}>
           <TokenInput
             label="Swap from"
@@ -1650,279 +1682,282 @@ const Swap = () => {
           />
         </SwapContainer>
 
-        {buttonLabel !== "" ? (
-          <Button
-            className={isValid ? "active" : undefined}
-            onClick={() => {
-              if (!on) {
-                handleSwap();
-              }
-            }}
-          >
-            {buttonLabel}
-          </Button>
-        ) : null}
-      </SwapRoot>
-
-      {/* Add confirmation modal */}
-      {showConfirmation && <ModalOverlay />}
-      <Modal
-        open={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: 0,
-          padding: 0,
-          backgroundColor: "transparent", // Make modal background transparent
-        }}
-      >
-        <ConfirmationModalContent className={isDarkTheme ? "dark" : "light"}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <h2
+        {/* Add confirmation modal */}
+        {showConfirmation && <ModalOverlay />}
+        <Modal
+          open={showConfirmation}
+          onClose={() => setShowConfirmation(false)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: 0,
+            padding: 0,
+            backgroundColor: "transparent", // Make modal background transparent
+          }}
+        >
+          <ConfirmationModalContent className={isDarkTheme ? "dark" : "light"}>
+            <div
               style={{
-                color: isDarkTheme ? "#fff" : "#141010",
-                fontSize: "20px",
-                fontFamily: "Plus Jakarta Sans",
-                fontWeight: "700",
-                margin: 0,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
               }}
             >
-              Confirm Swap
-            </h2>
-            <RefreshButton
-              onClick={() => {
-                // Retrigger the amount calculations
-                if (focus === "from") {
-                  const currentAmount = fromAmount;
-                  setFromAmount("");
-                  setTimeout(() => setFromAmount(currentAmount), 100);
-                } else {
-                  const currentAmount = toAmount;
-                  setToAmount("");
-                  setTimeout(() => setToAmount(currentAmount), 100);
-                }
-              }}
-              style={{
-                color: isDarkTheme ? "#fff" : "#141010",
-              }}
-            >
-              <RefreshIcon />
-            </RefreshButton>
-          </div>
-          {/* Add swap amount display */}1
-          <SwapAmountContainer
-            className={isDarkTheme ? "dark" : "light"}
-            style={{
-              flexDirection: window.innerWidth < 600 ? "row" : "column",
-              gap: window.innerWidth < 600 ? "8px" : "0",
-            }}
-          >
-            <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
-              <TokenIconContainer>
-                <img
-                  src={`https://asset-verification.nautilus.sh/icons/${
-                    token?.tokenId === 0
-                      ? 0
-                      : tokens2?.find((t) => t.tokenId === token?.tokenId)
-                          ?.contractId ||
-                        token?.tokenId ||
-                        0
-                  }.png`}
-                  alt={token?.symbol}
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://asset-verification.nautilus.sh/icons/0.png";
-                  }}
-                />
-              </TokenIconContainer>
-              {Number(fromAmount).toLocaleString(undefined, {
-                maximumFractionDigits: token?.decimals || 6,
-              })}{" "}
-              {token?.symbol || "---"}
-            </SwapAmountRow>
-            <SwapDirectionLabel
-              style={{
-                display: window.innerWidth < 600 ? "none" : undefined,
-              }}
+              <h2
+                style={{
+                  color: isDarkTheme ? "#fff" : "#141010",
+                  fontSize: "20px",
+                  fontFamily: "Plus Jakarta Sans",
+                  fontWeight: "700",
+                  margin: 0,
+                }}
+              >
+                Confirm Swap
+              </h2>
+              <RefreshButton
+                onClick={() => {
+                  // Retrigger the amount calculations
+                  if (focus === "from") {
+                    const currentAmount = fromAmount;
+                    setFromAmount("");
+                    setTimeout(() => setFromAmount(currentAmount), 100);
+                  } else {
+                    const currentAmount = toAmount;
+                    setToAmount("");
+                    setTimeout(() => setToAmount(currentAmount), 100);
+                  }
+                }}
+                style={{
+                  color: isDarkTheme ? "#fff" : "#141010",
+                }}
+              >
+                <RefreshIcon />
+              </RefreshButton>
+            </div>
+            {/* Add swap amount display */}1
+            <SwapAmountContainer
               className={isDarkTheme ? "dark" : "light"}
+              style={{
+                flexDirection: window.innerWidth < 600 ? "row" : "column",
+                gap: window.innerWidth < 600 ? "8px" : "0",
+              }}
             >
-              TO
-            </SwapDirectionLabel>
-            <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
-              <TokenIconContainer>
-                <img
-                  src={`https://asset-verification.nautilus.sh/icons/${
-                    token2?.tokenId === 0
-                      ? 0
-                      : tokens2?.find((t) => t.tokenId === token2?.tokenId)
-                          ?.contractId ||
-                        token2?.tokenId ||
-                        0
-                  }.png`}
-                  alt={token2?.symbol}
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://asset-verification.nautilus.sh/icons/0.png";
-                  }}
-                />
-              </TokenIconContainer>
-              {Number(toAmount).toLocaleString(undefined, {
-                maximumFractionDigits: token2?.decimals || 6,
-              })}{" "}
-              {token2?.symbol || "---"}
-            </SwapAmountRow>
-          </SwapAmountContainer>
-          <div style={{ height: "16px" }} />
-          <SummaryContainer className={isDarkTheme ? "dark" : "light"}>
-            {!!token2 &&
-            (info?.poolBals?.A !== "0" || info?.poolBals?.B !== "0") ? (
-              <RateContainer>
-                <RateLabel className={isDarkTheme ? "dark" : "light"}>
-                  Rate
-                </RateLabel>
-                <RateValue>
-                  {window.innerWidth > 600 && (
-                    <RateMain className={isDarkTheme ? "dark" : "light"}>
-                      {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
-                      {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
-                    </RateMain>
-                  )}
-                  <RateSub>
-                    {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
-                    {invRate?.toFixed(6)} {tokenSymbol(token)}
-                  </RateSub>
-                </RateValue>
-              </RateContainer>
-            ) : null}
-            <BreakdownContainer>
-              <BreakdownStack>
-                <BreakdownRow>
-                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                    <span>Pool balance</span>
-                    <InfoCircleIcon />
-                  </BreakdownLabel>
-                  <BreakdownValueContiner>
-                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
-                      {poolBalance}
-                    </BreakdownValue>
-                  </BreakdownValueContiner>
-                </BreakdownRow>
-                {window.innerWidth > 600 && (
+              <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
+                <TokenIconContainer>
+                  <img
+                    src={`https://asset-verification.nautilus.sh/icons/${
+                      token?.tokenId === 0
+                        ? 0
+                        : tokens2?.find((t) => t.tokenId === token?.tokenId)
+                            ?.contractId ||
+                          token?.tokenId ||
+                          0
+                    }.png`}
+                    alt={token?.symbol}
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://asset-verification.nautilus.sh/icons/0.png";
+                    }}
+                  />
+                </TokenIconContainer>
+                {Number(fromAmount).toLocaleString(undefined, {
+                  maximumFractionDigits: token?.decimals || 6,
+                })}{" "}
+                {token?.symbol || "---"}
+              </SwapAmountRow>
+              <SwapDirectionLabel
+                style={{
+                  display: window.innerWidth < 600 ? "none" : undefined,
+                }}
+                className={isDarkTheme ? "dark" : "light"}
+              >
+                TO
+              </SwapDirectionLabel>
+              <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
+                <TokenIconContainer>
+                  <img
+                    src={`https://asset-verification.nautilus.sh/icons/${
+                      token2?.tokenId === 0
+                        ? 0
+                        : tokens2?.find((t) => t.tokenId === token2?.tokenId)
+                            ?.contractId ||
+                          token2?.tokenId ||
+                          0
+                    }.png`}
+                    alt={token2?.symbol}
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://asset-verification.nautilus.sh/icons/0.png";
+                    }}
+                  />
+                </TokenIconContainer>
+                {Number(toAmount).toLocaleString(undefined, {
+                  maximumFractionDigits: token2?.decimals || 6,
+                })}{" "}
+                {token2?.symbol || "---"}
+              </SwapAmountRow>
+            </SwapAmountContainer>
+            <div style={{ height: "16px" }} />
+            <SummaryContainer className={isDarkTheme ? "dark" : "light"}>
+              {!!token2 &&
+              (info?.poolBals?.A !== "0" || info?.poolBals?.B !== "0") ? (
+                <RateContainer>
+                  <RateLabel className={isDarkTheme ? "dark" : "light"}>
+                    Rate
+                  </RateLabel>
+                  <RateValue>
+                    {window.innerWidth > 600 && (
+                      <RateMain className={isDarkTheme ? "dark" : "light"}>
+                        {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
+                        {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
+                      </RateMain>
+                    )}
+                    <RateSub>
+                      {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
+                      {invRate?.toFixed(6)} {tokenSymbol(token)}
+                    </RateSub>
+                  </RateValue>
+                </RateContainer>
+              ) : null}
+              <BreakdownContainer>
+                <BreakdownStack>
                   <BreakdownRow>
                     <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Liquidity provider fee</span>
+                      <span>Pool balance</span>
                       <InfoCircleIcon />
                     </BreakdownLabel>
                     <BreakdownValueContiner>
                       <BreakdownValue
                         className={isDarkTheme ? "dark" : "light"}
                       >
-                        {fee} {token?.symbol}
+                        {poolBalance}
                       </BreakdownValue>
                     </BreakdownValueContiner>
                   </BreakdownRow>
-                )}
-                <BreakdownRow>
-                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                    <span>Price impact</span>
-                    <InfoCircleIcon />
-                  </BreakdownLabel>
-                  <BreakdownValueContiner>
-                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
-                      {slippage}%
-                    </BreakdownValue>
-                  </BreakdownValueContiner>
-                </BreakdownRow>
-                <BreakdownRow>
-                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                    <span>Allowed slippage</span>
-                    <InfoCircleIcon />
-                  </BreakdownLabel>
-                  <BreakdownValueContiner>
-                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
-                      0.50%
-                    </BreakdownValue>
-                  </BreakdownValueContiner>
-                </BreakdownRow>
-                <BreakdownRow>
-                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                    <span>Minimum received</span>
-                    <InfoCircleIcon />
-                  </BreakdownLabel>
-                  <BreakdownValueContiner>
-                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
-                      {minRecieved} {token2?.symbol}
-                    </BreakdownValue>
-                  </BreakdownValueContiner>
-                </BreakdownRow>
-              </BreakdownStack>
-            </BreakdownContainer>
-          </SummaryContainer>
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginTop: "24px",
-              flexDirection: window.innerWidth < 600 ? "column" : "row",
-            }}
-          >
-            <Button
-              style={{ flex: 1 }}
-              onClick={() => {
-                setOn(false);
-                setShowConfirmation(false);
-                setProgress(0);
+                  {window.innerWidth > 600 && (
+                    <BreakdownRow>
+                      <BreakdownLabel
+                        className={isDarkTheme ? "dark" : "light"}
+                      >
+                        <span>Liquidity provider fee</span>
+                        <InfoCircleIcon />
+                      </BreakdownLabel>
+                      <BreakdownValueContiner>
+                        <BreakdownValue
+                          className={isDarkTheme ? "dark" : "light"}
+                        >
+                          {fee} {token?.symbol}
+                        </BreakdownValue>
+                      </BreakdownValueContiner>
+                    </BreakdownRow>
+                  )}
+                  <BreakdownRow>
+                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                      <span>Price impact</span>
+                      <InfoCircleIcon />
+                    </BreakdownLabel>
+                    <BreakdownValueContiner>
+                      <BreakdownValue
+                        className={isDarkTheme ? "dark" : "light"}
+                      >
+                        {slippage}%
+                      </BreakdownValue>
+                    </BreakdownValueContiner>
+                  </BreakdownRow>
+                  <BreakdownRow>
+                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                      <span>Allowed slippage</span>
+                      <InfoCircleIcon />
+                    </BreakdownLabel>
+                    <BreakdownValueContiner>
+                      <BreakdownValue
+                        className={isDarkTheme ? "dark" : "light"}
+                      >
+                        0.50%
+                      </BreakdownValue>
+                    </BreakdownValueContiner>
+                  </BreakdownRow>
+                  <BreakdownRow>
+                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                      <span>Minimum received</span>
+                      <InfoCircleIcon />
+                    </BreakdownLabel>
+                    <BreakdownValueContiner>
+                      <BreakdownValue
+                        className={isDarkTheme ? "dark" : "light"}
+                      >
+                        {minRecieved} {token2?.symbol}
+                      </BreakdownValue>
+                    </BreakdownValueContiner>
+                  </BreakdownRow>
+                </BreakdownStack>
+              </BreakdownContainer>
+            </SummaryContainer>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginTop: "24px",
+                flexDirection: window.innerWidth < 600 ? "column" : "row",
               }}
             >
-              Cancel
-            </Button>
-            {on ? (
-              <Button className="active" style={{ flex: 1 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={16} sx={{ color: "#fff" }} />
-                  <Typography variant="body2" sx={{ color: "#fff" }}>
-                    Transaction in progress...
-                  </Typography>
-                </Stack>
-              </Button>
-            ) : (
               <Button
                 style={{ flex: 1 }}
-                className="active"
-                onClick={handleConfirmedSwap}
+                onClick={() => {
+                  setOn(false);
+                  setShowConfirmation(false);
+                  setProgress(0);
+                }}
               >
-                Confirm Swap
+                Cancel
               </Button>
-            )}
-          </div>
-        </ConfirmationModalContent>
-      </Modal>
+              {on ? (
+                <Button className="active" style={{ flex: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    <Typography variant="body2" sx={{ color: "#fff" }}>
+                      Transaction in progress...
+                    </Typography>
+                  </Stack>
+                </Button>
+              ) : (
+                <Button
+                  style={{ flex: 1 }}
+                  className="active"
+                  onClick={handleConfirmedSwap}
+                >
+                  Confirm Swap
+                </Button>
+              )}
+            </div>
+          </ConfirmationModalContent>
+        </Modal>
 
-      <SwapSuccessfulModal
-        open={swapModalOpen}
-        handleClose={() => setSwapModalOpen(false)}
-        poolId={poolId}
-        tokIn={tokIn}
-        tokOut={tokOut}
-        swapIn={swapIn}
-        swapOut={swapOut}
-        txId={txId}
-      />
-      <ProgressBar
-        message={message}
-        isActive={![0, 100].includes(progress)}
-        currentStep={progress}
-        totalSteps={100}
-      />
+        <SwapSuccessfulModal
+          open={swapModalOpen}
+          handleClose={() => setSwapModalOpen(false)}
+          poolId={poolId}
+          tokIn={tokIn}
+          tokOut={tokOut}
+          swapIn={swapIn}
+          swapOut={swapOut}
+          txId={txId}
+        />
+        <ProgressBar
+          message={message}
+          isActive={![0, 100].includes(progress)}
+          currentStep={progress}
+          totalSteps={100}
+        />
+
+        <SwapOptionsModal
+          isDarkTheme={isDarkTheme}
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      </SwapRoot>
     </>
   ) : null;
 };

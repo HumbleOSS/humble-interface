@@ -1,14 +1,8 @@
 import * as React from "react";
 import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import styled from "styled-components";
-import { useWallet } from "@txnlab/use-wallet-react";
-import ArrowDownwardIcon from "static/icon/icon-arrow-downward.svg";
 import CogIcon from "static/icon/icon-cog.svg";
 import ArrowDownwardIcon2 from "static/icon/icon-arrow-downward-color.svg";
-import OnIcon from "static/icon/icon-on.svg";
-import { compactAddress } from "../../utils/mp";
-import { Box, Divider } from "@mui/material";
 import ThemeSelector from "../ThemeSelector";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -106,10 +100,6 @@ function BasicMenu() {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
-  /* Wallet */
-  const { activeAccount, 
-    //providers, connectedAccounts 
-  } = useWallet();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
