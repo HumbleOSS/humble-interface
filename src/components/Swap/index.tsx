@@ -11,6 +11,8 @@ import {
   Fade,
   Skeleton,
   Stack,
+  Modal,
+  Typography,
 } from "@mui/material";
 import { CONTRACT, arc200, swap, abi } from "ulujs";
 import {
@@ -35,6 +37,45 @@ import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import axios from "axios";
 import ProgressBar from "../ProgressBar";
 import algosdk from "algosdk";
+
+const SwapDisplay = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+`;
+
+const SwapDisplayTop = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: stretch;
+`;
+
+const SwapDisplayBottom = styled.div`
+  display: flex;
+  width: 420px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 0px 0px 26px 26px;
+  border-right: 1px solid #b8b8cc;
+  border-bottom: 1px solid #b8b8cc;
+  border-left: 1px solid #b8b8cc;
+`;
+
+const SwapDisplayMiddle = styled.div`
+  display: flex;
+  padding: 8px 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  position: absolute;
+  right: 167px;
+  top: 66.252px;
+  border-radius: 9.6px;
+  border: 0.6px solid var(--Color-Brand-Element-Primary, #fff);
+  background: #fff;
+`;
 
 const spec = {
   name: "pool",
@@ -323,7 +364,7 @@ const SwapRoot = styled.div`
   @media screen and (min-width: 600px) {
     transition: all 1s;
     width: 630px;
-    padding: 40px;
+    padding: 40px 40px 0 40px;
 
     &.light {
       border: 1px solid
@@ -375,16 +416,20 @@ const Button = styled(BaseButton)`
 `;
 
 const SummaryContainer = styled.div`
-  padding: 40px;
+  padding: 16px;
   border-radius: 24px;
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 8px;
   align-self: stretch;
-  display: flex;
+
+  @media screen and (min-width: 600px) {
+    padding: 40px;
+    gap: 12px;
+  }
+
   &.dark {
     background: #070709;
   }
@@ -468,23 +513,33 @@ const BreakdownStack = styled.div`
 
 const BreakdownRow = styled.div`
   display: flex;
-  padding: 4px 0px;
+  padding: 2px 0px;
   justify-content: space-between;
   align-items: flex-start;
   align-self: stretch;
+
+  @media screen and (min-width: 600px) {
+    padding: 4px 0px;
+  }
 `;
 
 const BreakdownLabel = styled.div`
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
-  font-size: 16px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 180%; /* 28.8px */
+  line-height: 160%;
   gap: 4px;
   display: flex;
   flex-direction: row;
   align-items: center;
+
+  @media screen and (min-width: 600px) {
+    font-size: 16px;
+    line-height: 180%;
+  }
+
   &.dark {
     color: var(--Color-Neutral-Element-Primary, #fff);
   }
@@ -504,10 +559,15 @@ const BreakdownValue = styled.div`
   text-edge: cap;
   font-feature-settings: "clig" off, "liga" off;
   font-family: "IBM Plex Sans Condensed";
-  font-size: 15px;
+  font-size: 13px;
   font-style: normal;
   font-weight: 600;
-  line-height: 120%; /* 18px */
+  line-height: 120%;
+
+  @media screen and (min-width: 600px) {
+    font-size: 15px;
+  }
+
   &.dark {
     color: var(--Color-Neutral-Element-Primary, #fff);
   }
@@ -543,6 +603,231 @@ const InfoCircleIcon = () => {
         d="M7.99634 5.33301H8.00233"
         stroke="white"
         strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+const SwapAmountContainer = styled.div`
+  padding: 12px;
+  border-radius: 24px;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4px;
+  align-self: stretch;
+  @media screen and (min-width: 600px) {
+    padding: 24px;
+    gap: 8px;
+  }
+  &.dark {
+    background: #070709;
+  }
+  &.light {
+    background: #f1eafc;
+  }
+`;
+
+// Add new styled component for token icon container
+const TokenIconContainer = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+// Update SwapAmountRow to include icon
+const SwapAmountRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Plus Jakarta Sans";
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 120%;
+  padding: 8px;
+  width: 100%;
+
+  &.dark {
+    color: #fff;
+  }
+  &.light {
+    color: #141010;
+  }
+`;
+
+const SwapDirectionLabel = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  font-family: "IBM Plex Sans Condensed";
+  font-size: 12px;
+  font-weight: 500;
+  width: 100%;
+  position: relative;
+  margin: 4px 0;
+
+  &.dark {
+    color: #7e7e9a;
+  }
+  &.light {
+    color: #41137e;
+  }
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+
+    &.dark {
+      background: #1f1f2c;
+    }
+    &.light {
+      background: #b8b8cc;
+    }
+  }
+
+  &::before {
+    top: -4px;
+  }
+
+  &::after {
+    bottom: -4px;
+  }
+`;
+
+// Add new styled component for modal content
+const ConfirmationModalContent = styled.div`
+  max-width: 630px;
+  width: 90%;
+  border-radius: 24px;
+  padding: 16px;
+  outline: none;
+  margin: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+  gap: 16px;
+  &.dark {
+    background: #070709;
+    border: 1px solid #41137e;
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  }
+  &.light {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #7e7e9a;
+  }
+
+  @media screen and (min-width: 600px) {
+    padding: 32px;
+  }
+`;
+
+const ArrowDownIcon = () => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path
+        d="M7.99992 14.6663C11.6666 14.6663 14.6666 11.6663 14.6666 7.99967C14.6666 4.33301 11.6666 1.33301 7.99992 1.33301C4.33325 1.33301 1.33325 4.33301 1.33325 7.99967C1.33325 11.6663 4.33325 14.6663 7.99992 14.6663Z"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 8V11.3333"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7.99634 5.33301H8.00233"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+// Add new styled component for modal overlay
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(41, 88, 255, 0.15);
+  backdrop-filter: blur(4px);
+  z-index: 1300;
+`;
+
+// Add new styled component for refresh button
+const RefreshButton = styled(BaseButton)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${(props) =>
+      props.theme.isDarkTheme ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
+  }
+`;
+
+// Add RefreshIcon component
+const RefreshIcon = () => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M14.6667 2.66667V6.66667H10.6667"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M1.33325 13.3333V9.33333H5.33325"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M2.34658 6.00001C2.73324 4.90001 3.41324 3.92668 4.31991 3.19334C5.22658 2.46001 6.31991 2.00001 7.46658 1.86668C8.61324 1.73334 9.77324 1.93334 10.8199 2.44668C11.8666 2.96001 12.7666 3.76668 13.4133 4.78668L14.6666 6.66668M1.33325 9.33334L2.58658 11.2133C3.23325 12.2333 4.13325 13.04 5.17991 13.5533C6.22658 14.0667 7.38658 14.2667 8.53325 14.1333C9.67991 14 10.7733 13.54 11.6799 12.8067C12.5866 12.0733 13.2666 11.1 13.6533 10"
+        stroke="currentColor"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -1123,31 +1408,37 @@ const Swap = () => {
     return `${balBF} ${token2.symbol} / ${balAF} ${token.symbol}`;
   }, [pool, info, token, token2]);
 
+  // Add new state for confirmation modal
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Modify handleSwap to show confirmation first
   const handleSwap = async () => {
     if (!isValid || !tokens2) return;
     if (!activeAccount) {
       toast.info("Please connect your wallet first");
       return;
     }
-    
-    const acc = {
-      addr: activeAccount.address,
-      sk: new Uint8Array(0),
-    };
+
+    // Show confirmation modal first
+    setShowConfirmation(true);
+  };
+
+  // Add new function to handle actual swap after confirmation
+  const handleConfirmedSwap = async () => {
+    setOn(true);
+    setProgress(0);
     try {
-      setOn(true);
-      setProgress(0);
       setMessage("Building transaction...");
-      setProgress(25);
-
+      const acc = {
+        addr: activeAccount.address,
+        sk: new Uint8Array(0),
+      };
       const { algodClient, indexerClient } = getAlgorandClients();
-      // pick a pool with best rate
 
-      // get last round
       const status = await algodClient.status().do();
       const { ["last-round"]: lastRound } = status;
 
-      const pool = eligiblePools.slice(-1)[0]; // last pools
+      const pool = eligiblePools.slice(-1)[0];
       const { poolId } = pool;
       const ci = new swap(poolId, algodClient, indexerClient, { acc });
 
@@ -1192,35 +1483,50 @@ const Swap = () => {
 
       const swapR = await ci.swap(acc.addr, pool2.poolId, A, B);
 
-      console.log({ swapR });
-
-      if (!swapR.success) throw new Error("Swap simulation failed");
+      if (!swapR.success) {
+        // Retrigger the amount calculations
+        if (focus === "from") {
+          const currentAmount = fromAmount;
+          setFromAmount("");
+          setTimeout(() => setFromAmount(currentAmount), 100);
+        } else {
+          const currentAmount = toAmount;
+          setToAmount("");
+          setTimeout(() => setToAmount(currentAmount), 100);
+        }
+        toast.info(
+          "Swap cancelled due to high slippage. Please try again, adjust slippage tolerance, or specify a smaller amount."
+        );
+        return;
+      }
 
       setMessage("Signing transaction...");
       setProgress(50);
 
-      const stxns = await signTransactions(
-        swapR.txns.map((t: string) => new Uint8Array(Buffer.from(t, "base64")))
-      );
+      let stxns;
+      try {
+        stxns = await signTransactions(
+          swapR.txns.map(
+            (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+          )
+        );
+      } catch (e: any) {
+        // Handle user rejection or cancellation
+        setOn(false);
+        setMessage("");
+        setProgress(0);
+        setShowConfirmation(false);
+        return;
+      }
 
-      // TODO show toast
-      // const stxns = await toast.promise(
-      //   signTransactions(
-      //     swapR.txns.map(
-      //       (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-      //     )
-      //   ),
-      //   {
-      //     pending: `Swap ${fromAmount} ${tokenSymbol(
-      //       token
-      //     )} -> ${toAmount} ${tokenSymbol(token2)}`,
-      //   },
-      //   {
-      //     type: "default",
-      //     position: "top-right",
-      //     theme: "dark",
-      //   }
-      // );
+      if (!stxns) {
+        // Handle case where stxns is undefined (user cancelled)
+        setOn(false);
+        setMessage("");
+        setProgress(0);
+        setShowConfirmation(false);
+        return;
+      }
 
       const res = await algodClient
         .sendRawTransaction(stxns as Uint8Array[])
@@ -1235,7 +1541,7 @@ const Swap = () => {
       do {
         swapEvents = await ci.SwapEvents({
           minRound: lastRound,
-          sender: activeAccount.address,
+          sender: activeAccount?.address,
         });
       } while (!swapEvents.length);
 
@@ -1249,36 +1555,8 @@ const Swap = () => {
       setSwapOut(toAmount);
       setTokIn(token?.symbol || "");
       setTokOut(token2?.symbol || "");
+      setShowConfirmation(false);
       setSwapModalOpen(true);
-
-      // -----------------------------------------
-      // QUEST HERE hmbl_pool_swap
-      // -----------------------------------------
-      // setMessage("Updating quests...");
-      // do {
-      //   const address = activeAccount.address;
-      //   const actions: string[] = [
-      //     QUEST_ACTION.SWAP_TOKEN,
-      //     QUEST_ACTION.SWAP_TOKEN_DAILY,
-      //   ];
-      //   const {
-      //     data: { results },
-      //   } = await getActions(address);
-      //   for (const action of actions) {
-      //     const address = activeAccount.address;
-      //     const key = `${action}:${address}`;
-      //     const completedAction = results.find(
-      //       (el: any) => el.key === key && !el.key.match(/daily/)
-      //     );
-      //     if (!completedAction) {
-      //       await submitAction(action, address, {
-      //         poolId,
-      //       });
-      //     }
-      //     // TODO notify quest completion here
-      //   }
-      // } while (0);
-      // -----------------------------------------
     } catch (e: any) {
       console.log(e);
       toast.error(e.message);
@@ -1316,6 +1594,8 @@ const Swap = () => {
     if (!tokB) return;
     setTokBInfo(tokB);
   }, [token2, tokens2]);
+
+  console.log({ token, token2, tokens, tokens2 });
 
   return !isLoading ? (
     <>
@@ -1369,99 +1649,7 @@ const Swap = () => {
             tokInfo={tokBInfo}
           />
         </SwapContainer>
-        {!!token2 ? (
-          <>
-            <SummaryContainer className={isDarkTheme ? "dark" : "light"}>
-              {!!token2 &&
-              (info?.poolBals?.A !== "0" || info?.poolBals?.B !== "0") ? (
-                <RateContainer>
-                  <RateLabel className={isDarkTheme ? "dark" : "light"}>
-                    Rate
-                  </RateLabel>
-                  <RateValue>
-                    <RateMain className={isDarkTheme ? "dark" : "light"}>
-                      {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
-                      {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
-                    </RateMain>
-                    <RateSub>
-                      {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
-                      {invRate?.toFixed(6)} {tokenSymbol(token)}
-                    </RateSub>
-                  </RateValue>
-                </RateContainer>
-              ) : null}
-              <BreakdownContainer>
-                <BreakdownStack>
-                  <BreakdownRow>
-                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Pool balance</span>
-                      <InfoCircleIcon />
-                    </BreakdownLabel>
-                    <BreakdownValueContiner>
-                      <BreakdownValue
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        {poolBalance}
-                      </BreakdownValue>
-                    </BreakdownValueContiner>
-                  </BreakdownRow>
-                  <BreakdownRow>
-                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Liquidity provider fee</span>
-                      <InfoCircleIcon />
-                    </BreakdownLabel>
-                    <BreakdownValueContiner>
-                      <BreakdownValue
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        {fee} {token?.symbol}
-                      </BreakdownValue>
-                    </BreakdownValueContiner>
-                  </BreakdownRow>
-                  <BreakdownRow>
-                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Price impact</span>
-                      <InfoCircleIcon />
-                    </BreakdownLabel>
-                    <BreakdownValueContiner>
-                      <BreakdownValue
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        {slippage}%
-                      </BreakdownValue>
-                    </BreakdownValueContiner>
-                  </BreakdownRow>
-                  <BreakdownRow>
-                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Allowed slippage</span>
-                      <InfoCircleIcon />
-                    </BreakdownLabel>
-                    <BreakdownValueContiner>
-                      <BreakdownValue
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        0.50%
-                      </BreakdownValue>
-                    </BreakdownValueContiner>
-                  </BreakdownRow>
-                  <BreakdownRow>
-                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                      <span>Minimum received</span>
-                      <InfoCircleIcon />
-                    </BreakdownLabel>
-                    <BreakdownValueContiner>
-                      <BreakdownValue
-                        className={isDarkTheme ? "dark" : "light"}
-                      >
-                        {minRecieved} {token2?.symbol}
-                      </BreakdownValue>
-                    </BreakdownValueContiner>
-                  </BreakdownRow>
-                </BreakdownStack>
-              </BreakdownContainer>
-            </SummaryContainer>
-          </>
-        ) : null}
+
         {buttonLabel !== "" ? (
           <Button
             className={isValid ? "active" : undefined}
@@ -1475,6 +1663,250 @@ const Swap = () => {
           </Button>
         ) : null}
       </SwapRoot>
+
+      {/* Add confirmation modal */}
+      {showConfirmation && <ModalOverlay />}
+      <Modal
+        open={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: 0,
+          padding: 0,
+          backgroundColor: "transparent", // Make modal background transparent
+        }}
+      >
+        <ConfirmationModalContent className={isDarkTheme ? "dark" : "light"}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <h2
+              style={{
+                color: isDarkTheme ? "#fff" : "#141010",
+                fontSize: "20px",
+                fontFamily: "Plus Jakarta Sans",
+                fontWeight: "700",
+                margin: 0,
+              }}
+            >
+              Confirm Swap
+            </h2>
+            <RefreshButton
+              onClick={() => {
+                // Retrigger the amount calculations
+                if (focus === "from") {
+                  const currentAmount = fromAmount;
+                  setFromAmount("");
+                  setTimeout(() => setFromAmount(currentAmount), 100);
+                } else {
+                  const currentAmount = toAmount;
+                  setToAmount("");
+                  setTimeout(() => setToAmount(currentAmount), 100);
+                }
+              }}
+              style={{
+                color: isDarkTheme ? "#fff" : "#141010",
+              }}
+            >
+              <RefreshIcon />
+            </RefreshButton>
+          </div>
+          {/* Add swap amount display */}1
+          <SwapAmountContainer
+            className={isDarkTheme ? "dark" : "light"}
+            style={{
+              flexDirection: window.innerWidth < 600 ? "row" : "column",
+              gap: window.innerWidth < 600 ? "8px" : "0",
+            }}
+          >
+            <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
+              <TokenIconContainer>
+                <img
+                  src={`https://asset-verification.nautilus.sh/icons/${
+                    token?.tokenId === 0
+                      ? 0
+                      : tokens2?.find((t) => t.tokenId === token?.tokenId)
+                          ?.contractId ||
+                        token?.tokenId ||
+                        0
+                  }.png`}
+                  alt={token?.symbol}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://asset-verification.nautilus.sh/icons/0.png";
+                  }}
+                />
+              </TokenIconContainer>
+              {Number(fromAmount).toLocaleString(undefined, {
+                maximumFractionDigits: token?.decimals || 6,
+              })}{" "}
+              {token?.symbol || "---"}
+            </SwapAmountRow>
+            <SwapDirectionLabel
+              style={{
+                display: window.innerWidth < 600 ? "none" : undefined,
+              }}
+              className={isDarkTheme ? "dark" : "light"}
+            >
+              TO
+            </SwapDirectionLabel>
+            <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
+              <TokenIconContainer>
+                <img
+                  src={`https://asset-verification.nautilus.sh/icons/${
+                    token2?.tokenId === 0
+                      ? 0
+                      : tokens2?.find((t) => t.tokenId === token2?.tokenId)
+                          ?.contractId ||
+                        token2?.tokenId ||
+                        0
+                  }.png`}
+                  alt={token2?.symbol}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://asset-verification.nautilus.sh/icons/0.png";
+                  }}
+                />
+              </TokenIconContainer>
+              {Number(toAmount).toLocaleString(undefined, {
+                maximumFractionDigits: token2?.decimals || 6,
+              })}{" "}
+              {token2?.symbol || "---"}
+            </SwapAmountRow>
+          </SwapAmountContainer>
+          <div style={{ height: "16px" }} />
+          <SummaryContainer className={isDarkTheme ? "dark" : "light"}>
+            {!!token2 &&
+            (info?.poolBals?.A !== "0" || info?.poolBals?.B !== "0") ? (
+              <RateContainer>
+                <RateLabel className={isDarkTheme ? "dark" : "light"}>
+                  Rate
+                </RateLabel>
+                <RateValue>
+                  {window.innerWidth > 600 && (
+                    <RateMain className={isDarkTheme ? "dark" : "light"}>
+                      {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
+                      {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
+                    </RateMain>
+                  )}
+                  <RateSub>
+                    {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
+                    {invRate?.toFixed(6)} {tokenSymbol(token)}
+                  </RateSub>
+                </RateValue>
+              </RateContainer>
+            ) : null}
+            <BreakdownContainer>
+              <BreakdownStack>
+                <BreakdownRow>
+                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                    <span>Pool balance</span>
+                    <InfoCircleIcon />
+                  </BreakdownLabel>
+                  <BreakdownValueContiner>
+                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                      {poolBalance}
+                    </BreakdownValue>
+                  </BreakdownValueContiner>
+                </BreakdownRow>
+                {window.innerWidth > 600 && (
+                  <BreakdownRow>
+                    <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                      <span>Liquidity provider fee</span>
+                      <InfoCircleIcon />
+                    </BreakdownLabel>
+                    <BreakdownValueContiner>
+                      <BreakdownValue
+                        className={isDarkTheme ? "dark" : "light"}
+                      >
+                        {fee} {token?.symbol}
+                      </BreakdownValue>
+                    </BreakdownValueContiner>
+                  </BreakdownRow>
+                )}
+                <BreakdownRow>
+                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                    <span>Price impact</span>
+                    <InfoCircleIcon />
+                  </BreakdownLabel>
+                  <BreakdownValueContiner>
+                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                      {slippage}%
+                    </BreakdownValue>
+                  </BreakdownValueContiner>
+                </BreakdownRow>
+                <BreakdownRow>
+                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                    <span>Allowed slippage</span>
+                    <InfoCircleIcon />
+                  </BreakdownLabel>
+                  <BreakdownValueContiner>
+                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                      0.50%
+                    </BreakdownValue>
+                  </BreakdownValueContiner>
+                </BreakdownRow>
+                <BreakdownRow>
+                  <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                    <span>Minimum received</span>
+                    <InfoCircleIcon />
+                  </BreakdownLabel>
+                  <BreakdownValueContiner>
+                    <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                      {minRecieved} {token2?.symbol}
+                    </BreakdownValue>
+                  </BreakdownValueContiner>
+                </BreakdownRow>
+              </BreakdownStack>
+            </BreakdownContainer>
+          </SummaryContainer>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "24px",
+              flexDirection: window.innerWidth < 600 ? "column" : "row",
+            }}
+          >
+            <Button
+              style={{ flex: 1 }}
+              onClick={() => {
+                setOn(false);
+                setShowConfirmation(false);
+                setProgress(0);
+              }}
+            >
+              Cancel
+            </Button>
+            {on ? (
+              <Button className="active" style={{ flex: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={16} sx={{ color: "#fff" }} />
+                  <Typography variant="body2" sx={{ color: "#fff" }}>
+                    Transaction in progress...
+                  </Typography>
+                </Stack>
+              </Button>
+            ) : (
+              <Button
+                style={{ flex: 1 }}
+                className="active"
+                onClick={handleConfirmedSwap}
+              >
+                Confirm Swap
+              </Button>
+            )}
+          </div>
+        </ConfirmationModalContent>
+      </Modal>
+
       <SwapSuccessfulModal
         open={swapModalOpen}
         handleClose={() => setSwapModalOpen(false)}

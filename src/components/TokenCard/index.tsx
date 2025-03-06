@@ -40,9 +40,9 @@ const PoolCardRoot = styled.div`
   border-radius: var(--Radius-500, 12px);
   border: 1px solid
     var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
-    &.light{
-      background: #fff;
-    }
+  &.light {
+    background: #fff;
+  }
 `;
 
 const PoolCardRow = styled.div`
@@ -327,14 +327,15 @@ const APRLabel = styled.div`
   line-height: 120%; /* 16.8px */
 `;
 
-const Col3 = styled(Box)<{isDarkTheme: boolean}>`
+const Col3 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: 11px 0px var(--Spacing-400, 8px) 0px;
   align-items: baseline;
   gap: 8px;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid ${({isDarkTheme}) => isDarkTheme ? "#ffffff5c" : "#D8D8E1"};
+  border-bottom: 1px solid
+    ${({ isDarkTheme }) => (isDarkTheme ? "#ffffff5c" : "#D8D8E1")};
   @media screen and (min-width: 600px) {
     flex-direction: column;
     justify-content: start;
@@ -343,7 +344,7 @@ const Col3 = styled(Box)<{isDarkTheme: boolean}>`
   }
 `;
 
-const Col4 = styled(Box)<{isDarkTheme: boolean}>`
+const Col4 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
   justify-content: center;
@@ -351,7 +352,8 @@ const Col4 = styled(Box)<{isDarkTheme: boolean}>`
   gap: 8px;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid ${({isDarkTheme}) => isDarkTheme ? "#ffffff5c" : "#D8D8E1"};
+  border-bottom: 1px solid
+    ${({ isDarkTheme }) => (isDarkTheme ? "#ffffff5c" : "#D8D8E1")};
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
@@ -382,7 +384,6 @@ const Col5 = styled(Box)`
     justify-content: start;
     width: fit-content;
     height: 65px;
-
   }
 `;
 
@@ -461,7 +462,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
         });
   }, [pools]);
   const isWVOIf = (contractId: number) => {
-    return [TOKEN_WVOI1].includes(contractId);
+    return [TOKEN_WVOI1, 0].includes(contractId);
   };
   const isWVOI = isWVOIf(token.contractId);
   const displayTokenId = token.tokenId || token.contractId;
@@ -576,7 +577,7 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
           )}
           {tokenPools.length > 0 ? (
             <>
-              <Col5 >
+              <Col5>
                 <StyledLink
                   to={`/pool?filter=${String(token.symbol).toUpperCase()}`}
                   style={{

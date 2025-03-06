@@ -1,6 +1,4 @@
 import * as React from "react";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -8,12 +6,16 @@ import { ARC200TokenI } from "../../types";
 import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { tokenSymbol } from "../../utils/dex";
-const Wrapper=styled.div`
-  width:86%;
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+
+const Wrapper = styled.div`
+  width: 86%;
   @media screen and (min-width: 640px) {
     width: fit-content;
-  } 
-`
+  }
+`;
+
 const TokenButton = styled.div`
   display: flex;
   padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
@@ -22,7 +24,6 @@ const TokenButton = styled.div`
   align-items: center;
   gap: 10px;
   width: 100%;
-  
   border-radius: var(--Radius-600, 13px);
   &.light {
     background: var(--Color-Accent-Primary-Background-Default, #41137e);
@@ -42,7 +43,6 @@ const TokenButtonGroup = styled.div`
   gap: 8px;
   width: 100%;
   cursor: pointer;
-
 `;
 
 const TokenButtonLabel = styled.div`
@@ -62,16 +62,20 @@ const TokenButtonLabel = styled.div`
   }
 `;
 
-const StyledMenuItem = styled(MenuItem)`
+const StyledMenuItem = styled.div`
   display: flex;
-  width: var(--select-token-width, 153px);
   padding: 8px 12px;
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  border-radius: var(--Radius-600, 13px) var(--Radius-600, 13px) 0px 0px;
+  border-radius: var(--Radius-600, 13px);
   border: 1px solid var(--Color-Neutral-Stroke-Primary, #d8d8e1);
   background: var(--Color-Neutral-Background-Base, #fff);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--Color-Neutral-Background-Hover, #f5f5f7);
+  }
 `;
 
 const MenuContent = styled.div`
@@ -79,6 +83,7 @@ const MenuContent = styled.div`
   align-items: center;
   gap: 10px;
   align-self: stretch;
+  width: 100%;
 `;
 
 const IconContainer = styled.div`
@@ -86,8 +91,9 @@ const IconContainer = styled.div`
   align-items: center;
   gap: 10px;
   align-self: stretch;
-  border-radius: var(--Radius-400, 10px);
-  background: var(--Color-Brand-Atomic, #ff6438);
+  border-radius: 16px;
+  background: transparent;
+  overflow: hidden;
 `;
 
 const IconButton = styled.div`
@@ -97,17 +103,15 @@ const IconButton = styled.div`
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
-  border-radius: var(--Radius-300, 8px);
-  background: var(
-    --Color-Neutral-Background-Transparent,
-    rgba(255, 255, 255, 0)
-  );
+  border-radius: 8px;
+  background: transparent;
 `;
 
 const ContentBody = styled.div`
   display: flex;
   align-items: flex-start;
   flex: 1 0 0;
+  width: 100%;
 `;
 
 const ContentText = styled.div`
@@ -168,6 +172,55 @@ interface LongMenuProps {
   token?: ARC200TokenI;
 }
 
+const ModalBox = styled(Box)`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 400px;
+  background-color: ${(props) => (props.theme.isDarkTheme ? "#000" : "#fff")};
+  border-radius: 13px;
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+`;
+
+const ModalHeading = styled.h2`
+  color: ${(props) => (props.theme.isDarkTheme ? "#fff" : "#000")};
+  font-family: "Plus Jakarta Sans";
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+`;
+
+const TokenList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const SearchInput = styled.input`
+  width: 93%;
+  padding: 12px;
+  border: 1px solid ${(props) => (props.theme.isDarkTheme ? "#333" : "#d8d8e1")};
+  border-radius: 10px;
+  margin-bottom: 16px;
+  background: transparent;
+  color: ${(props) => (props.theme.isDarkTheme ? "#fff" : "#000")};
+  font-family: "Plus Jakarta Sans";
+  font-size: 14px;
+
+  &::placeholder {
+    color: ${(props) => (props.theme.isDarkTheme ? "#888" : "#666")};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--Color-Accent-Primary-Background-Default, #41137e);
+  }
+`;
+
 const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -188,95 +241,76 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   const handleClose = () => {
     setAnchorEl(null);
   };
-  //const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  const filteredTokens = React.useMemo(() => {
+    return (options || tokens).filter((t) =>
+      tokenSymbol(t).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [options, tokens, searchTerm]);
+
   return (
     <Wrapper>
       <TokenButton
         className={isDarkTheme ? "dark" : "light"}
-        aria-label="more"
-        id="long-button"
-        aria-controls={open ? "long-menu" : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
         onClick={handleClick}
-        style={{
-          width:"100%"
-        }}
       >
         <TokenButtonGroup>
-          <TokenButtonLabel  className={isDarkTheme ? "dark" : "light"}>
+          <TokenButtonLabel className={isDarkTheme ? "dark" : "light"}>
             {tokenSymbol(token)}
           </TokenButtonLabel>
           <ArrowDownwardIcon />
         </TokenButtonGroup>
       </TokenButton>
-      <Menu
-        id="long-menu"
-        MenuListProps={{
-          "aria-labelledby": "long-button",
-        }}
-        anchorEl={anchorEl}
+      <Modal
         open={open}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "left",
-        }}
-        PaperProps={{
-          sx: {
-            mt: 0,
-          },
-          style: {
-            maxHeight: ITEM_HEIGHT * 4.5,
-            //width: "20ch",
-            display: "inline-flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            borderRadius: "13px",
-          },
-        }}
+        aria-labelledby="token-select-modal"
       >
-        {(options || tokens)
-          .map((t) => tokenSymbol(t))
-          .map((option, i) => (
-            <StyledMenuItem
-              key={option}
-              selected={option === tokenSymbol(token)}
-              onClick={(e: any) => {
-                onSelect((options || tokens)[i]);
-                handleClose();
-              }}
-            >
-              <MenuContent>
-                <IconContainer>
-                  <IconButton>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="32"
-                      height="32"
-                      viewBox="0 0 32 32"
-                      fill="none"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M12.6187 7.38128C12.9604 7.72299 12.9604 8.27701 12.6187 8.61872L8.61872 12.6187C8.27701 12.9604 7.72299 12.9604 7.38128 12.6187C7.03957 12.277 7.03957 11.723 7.38128 11.3813L11.3813 7.38128C11.723 7.03957 12.277 7.03957 12.6187 7.38128ZM18.6187 7.38128C18.9604 7.72299 18.9604 8.27701 18.6187 8.61872L8.61872 18.6187C8.27701 18.9604 7.72299 18.9604 7.38128 18.6187C7.03957 18.277 7.03957 17.723 7.38128 17.3813L17.3813 7.38128C17.723 7.03957 18.277 7.03957 18.6187 7.38128ZM24.6187 7.38128C24.9604 7.72299 24.9604 8.27701 24.6187 8.61872L8.61872 24.6187C8.27701 24.9604 7.72299 24.9604 7.38128 24.6187C7.03957 24.277 7.03957 23.723 7.38128 23.3813L23.3813 7.38128C23.723 7.03957 24.277 7.03957 24.6187 7.38128ZM24.6187 13.3813C24.9604 13.723 24.9604 14.277 24.6187 14.6187L14.6187 24.6187C14.277 24.9604 13.723 24.9604 13.3813 24.6187C13.0396 24.277 13.0396 23.723 13.3813 23.3813L23.3813 13.3813C23.723 13.0396 24.277 13.0396 24.6187 13.3813ZM24.6187 19.3813C24.9604 19.723 24.9604 20.277 24.6187 20.6187L20.6187 24.6187C20.277 24.9604 19.723 24.9604 19.3813 24.6187C19.0396 24.277 19.0396 23.723 19.3813 23.3813L23.3813 19.3813C23.723 19.0396 24.277 19.0396 24.6187 19.3813Z"
-                        fill="#0C0C10"
-                      />
-                    </svg>
-                  </IconButton>
-                </IconContainer>
-                <ContentBody>
-                  <ContentText>{option}</ContentText>
-                </ContentBody>
-              </MenuContent>
-            </StyledMenuItem>
-          ))}
-      </Menu>
+        <ModalBox>
+          <ModalHeading>Select Token</ModalHeading>
+          <SearchInput
+            placeholder="Search tokens..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
+          />
+          <TokenList>
+            {filteredTokens
+              .map((t) => tokenSymbol(t))
+              .map((option, i) => (
+                <StyledMenuItem
+                  key={option}
+                  selected={option === tokenSymbol(token)}
+                  onClick={() => {
+                    onSelect(filteredTokens[i]);
+                    handleClose();
+                  }}
+                >
+                  <MenuContent>
+                    <IconContainer>
+                      <IconButton>
+                        <img
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                          }}
+                          src={`https://asset-verification.nautilus.sh/icons/${
+                            filteredTokens[i].tokenId || 0
+                          }.png`}
+                          alt="Icon 401384"
+                        />
+                      </IconButton>
+                    </IconContainer>
+                    <ContentBody>
+                      <ContentText>{option}</ContentText>
+                    </ContentBody>
+                  </MenuContent>
+                </StyledMenuItem>
+              ))}
+          </TokenList>
+        </ModalBox>
+      </Modal>
     </Wrapper>
   );
 };

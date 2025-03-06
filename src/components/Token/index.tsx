@@ -103,8 +103,6 @@ const Pool = () => {
     (state: RootState) => state.pools.pools
   );
 
-  console.log({ storedPools });
-
   const [pools, setPools] = React.useState<IndexerPoolI[]>();
   useEffect(() => {
     axios
@@ -162,7 +160,6 @@ const Pool = () => {
       };
     });
     const wntTokens = pTokens?.filter((t) => t.tokenId === "0") || [];
-    console.log({ wntTokens });
     const nt = {
       name: "Voi",
       symbol: "VOI",
@@ -170,10 +167,11 @@ const Pool = () => {
       price: "1.000000",
       tvl: wntTokens.reduce((acc, val) => acc + val.tvl, 0),
       contractId: wntTokens.reduce(
-        (acc, val) => Math.max(acc, val.contractId),
+        (acc, val) => Math.min(acc, val.contractId),
         0
       ),
       pools: wntTokens.flatMap((t) => t.pools),
+      icon: "https://asset-verification.nautilus.sh/icons/0.png",
     };
     const pts = pTokens.filter((t) => t.tokenId !== "0");
     const tokens = pts.length > 0 ? [nt, ...pts] : [];

@@ -121,12 +121,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setNotifications([
+        /*
         {
           id: 1,
           title: "Voi DeFi Boost Program Goes Live on October 28th, 2024!",
           link: "https://medium.com/humbledefi/voi-defi-boost-program-goes-live-on-october-28th-2024-7d8b4c99c20a",
           date: "October 26th, 2024",
         },
+        */
       ]);
     }, 2000);
 
@@ -189,7 +191,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         id="content-layer"
         sx={{
           mt: 5,
-          mb: 20,
+          mb: 5,
           display: "flex",
           justifyContent: "center",
           border: "none",
