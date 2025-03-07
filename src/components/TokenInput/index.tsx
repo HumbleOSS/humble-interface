@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import React, { FC } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
 import TokenSelect from "../TokenSelect";
@@ -46,11 +46,10 @@ const SwapTokenContainer = styled.div`
     background: var(--Color-Brand-Background-Primary-30, #f1eafc);
   }
   &.dark {
-    background: var(--Color-Brand-Background-Primary-30, #291C47);
+    background: var(--Color-Brand-Background-Primary-30, #291c47);
   }
-  @media screen and (min-width:600px) {
-  align-self: stretch;
-    
+  @media screen and (min-width: 600px) {
+    align-self: stretch;
   }
 `;
 
@@ -102,7 +101,6 @@ const TokenContainer = styled.div`
   align-items: flex-start;
   gap: 6px;
   width: 100%;
-
 `;
 
 const TokenRow = styled.div`
@@ -110,7 +108,6 @@ const TokenRow = styled.div`
   align-items: flex-start;
   gap: 6px;
   width: 100%;
-
 `;
 
 const TokenLogo = styled.div`
@@ -139,7 +136,6 @@ const TokenButtonContainer = styled.div`
   align-items: flex-start;
   gap: 6px;
   width: 100%;
-
 `;
 
 const TokenButtonWrapper = styled.div`
@@ -148,8 +144,6 @@ const TokenButtonWrapper = styled.div`
   align-items: flex-start;
   gap: 2px;
   width: 100%;
-
-
 `;
 
 const TokenLabel = styled.div`
@@ -390,6 +384,7 @@ interface SwapProps {
   showInput?: boolean;
   displayId?: number;
   tokInfo?: any;
+  voiPrice?: number;
 }
 const Swap: FC<SwapProps> = ({
   label,
@@ -404,6 +399,7 @@ const Swap: FC<SwapProps> = ({
   showInput = true,
   displayId,
   tokInfo,
+  voiPrice,
 }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -467,6 +463,55 @@ const Swap: FC<SwapProps> = ({
     );
   }
 
+  interface PriceData {
+    contractId: number;
+    poolBalA: string;
+    poolBalB: string;
+    poolId: string;
+    price: number;
+    symbolA: string;
+    symbolB: string;
+  }
+
+  const [prices, setPrices] = useState<PriceData[]>([]);
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch(
+          "https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices"
+        );
+        const data = await response.json();
+        setPrices(data.prices);
+      } catch (error) {
+        console.error("Error fetching prices:", error);
+      }
+    };
+    fetchPrices();
+  }, []);
+
+  // Calculate VOI value
+  const getVoiValue = () => {
+    if (!amount || !token) return "0";
+    const numAmount = parseFloat(amount.replace(/,/g, ""));
+    if (isNaN(numAmount)) return "0";
+
+    // If the token is VOI, just multiply by amount
+    if (isWVOI) {
+      return numAmount.toFixed(2);
+    }
+
+    // Find the price data for this token
+    const tokenPrice = prices.find(
+      (p) =>
+        Math.max(...p.poolId.split("-").map(Number)) === Number(token.tokenId)
+    );
+    if (!tokenPrice) return "0";
+
+    // Calculate VOI value using price from API
+    return (numAmount / tokenPrice.price).toFixed(2);
+  };
+
   return (
     <SwapTokenContainer className={isDarkTheme ? "dark" : "light"}>
       <SwapTokenLabel className={isDarkTheme ? "dark" : "light"}>
@@ -515,30 +560,30 @@ const Swap: FC<SwapProps> = ({
                   onKeyDown={() => onFocus()}
                   onChange={(e) => {
                     const value = e.target.value;
-                    
+
                     // Only allow numbers, decimal point, and commas
                     if (!/^[0-9.,]*$/.test(value)) {
                       return;
                     }
 
                     // Remove commas for processing
-                    const noCommas = value.replace(/,/g, '');
-                    
+                    const noCommas = value.replace(/,/g, "");
+
                     // Split on decimal point
-                    const parts = noCommas.split('.');
-                    
+                    const parts = noCommas.split(".");
+
                     // If no decimal or token doesn't exist, pass through
                     if (parts.length === 1 || !token?.decimals) {
                       setAmount(value);
                       return;
                     }
-                    
+
                     // If decimal places exceed token decimals, truncate
                     if (parts[1].length > token.decimals) {
                       parts[1] = parts[1].substring(0, token.decimals);
                       // Reconstruct with original commas in integer part
-                      const integerPartWithCommas = value.split('.')[0];
-                      setAmount(integerPartWithCommas + '.' + parts[1]);
+                      const integerPartWithCommas = value.split(".")[0];
+                      setAmount(integerPartWithCommas + "." + parts[1]);
                       return;
                     }
 
@@ -549,7 +594,7 @@ const Swap: FC<SwapProps> = ({
               </TokenInputContainer>
             </TokenInput>
             <InputValueHelperText className={isDarkTheme ? "dark" : "light"}>
-              ~ 0 VOI
+              ~ {getVoiValue()} VOI
             </InputValueHelperText>
           </TokenInputGroup>
         </Fade>
