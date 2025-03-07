@@ -5,7 +5,7 @@ import ActiveSwapIcon from "static/icon/icon-swap-active-light.svg";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { CircularProgress, Stack } from "@mui/material";
+import { CircularProgress, Stack, Dialog } from "@mui/material";
 import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { NETWORK_TOKEN, TOKEN_VIA, TOKEN_WVOI1 } from "../../constants/tokens";
 import { getAlgorandClients } from "../../wallets";
@@ -24,6 +24,43 @@ import BigNumber from "bignumber.js";
 import { Asset } from "ulujs/types/swap";
 import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import ProgressBar from "../ProgressBar";
+
+/**
+ * Formats a number or string number into a human-readable format with commas and appropriate decimal places
+ * @param value - The number or string number to format
+ * @param maxDecimals - Maximum number of decimal places to show (default: 6)
+ * @returns Formatted string number
+ */
+export const formatNumber = (
+  value: string | number,
+  maxDecimals: number = 6
+): string => {
+  // Handle empty/invalid input
+  if (!value && value !== 0) return "-";
+
+  // Convert to string and remove existing commas
+  const stringValue = value.toString().replace(/,/g, "");
+
+  // Parse number
+  const number = parseFloat(stringValue);
+
+  // Handle invalid numbers
+  if (isNaN(number)) return "-";
+
+  // Split into integer and decimal parts
+  const [integerPart, decimalPart] = stringValue.split(".");
+
+  // Format integer part with commas
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  // Handle decimal part if it exists
+  if (decimalPart) {
+    const trimmedDecimal = decimalPart.slice(0, maxDecimals);
+    return `${formattedInteger}.${trimmedDecimal}`;
+  }
+
+  return formattedInteger;
+};
 
 const spec = {
   name: "pool",
@@ -598,6 +635,56 @@ const InfoCircleIcon = () => {
   );
 };
 
+const ConfirmationModal = styled.div<{ isDark: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  border-radius: 24px;
+  background: ${(props) => (props.isDark ? "#070709" : "#fff")};
+  color: ${(props) => (props.isDark ? "#fff" : "#0c0c10")};
+
+  @media screen and (max-width: 600px) {
+    padding: 16px;
+    max-width: 90%;
+    gap: 16px;
+  }
+`;
+
+const ModalTitle = styled.div<{ isDark: boolean }>`
+  font-family: "Plus Jakarta Sans";
+  font-size: 24px;
+  font-weight: 700;
+  color: ${(props) => (props.isDark ? "#fff" : "#0c0c10")};
+  margin-bottom: 8px;
+
+  @media screen and (max-width: 600px) {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+`;
+
+const ModalContent = styled.div<{ isDark: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid
+    ${(props) => (props.isDark ? "rgba(255, 255, 255, 0.1)" : "#D8D8E1")};
+  border-bottom: 1px solid
+    ${(props) => (props.isDark ? "rgba(255, 255, 255, 0.1)" : "#D8D8E1")};
+`;
+
+const ModalActions = styled.div<{ isDark: boolean }>`
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 8px;
+`;
+
 const Swap = () => {
   const navigate = useNavigate();
   /* Theme */
@@ -879,6 +966,7 @@ const Swap = () => {
   console.log("expectedOutcome", expectedOutcome);
 
   const [newShare, setNewShare] = useState<string>();
+  const [newPoolShare, setNewPoolShare] = useState<string>();
 
   // EFFECT
   useEffect(() => {
@@ -894,8 +982,6 @@ const Swap = () => {
   }, [expectedOutcome, poolBalance, info]);
 
   console.log("newShare", newShare);
-
-  const [newPoolShare, setNewPoolShare] = useState<string>();
 
   const rate = useMemo(() => {
     if (!info || !token || !token2 || paramNewPool === "true") return;
@@ -1285,6 +1371,12 @@ const Swap = () => {
     }
   }, [isValid, fromAmount, toAmount, balance, balance2, token, token2]);
 
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [depositedAmounts, setDepositedAmounts] = useState<{
+    from: string;
+    to: string;
+  }>({ from: "", to: "" });
+
   const handleProviderDeposit = async () => {
     if (!isValid || !token || !token2 || !pool || !tokens2 || !tokens) return;
     if (!activeAccount) {
@@ -1345,83 +1437,23 @@ const Swap = () => {
       setProgress(50);
       setmessage("Signing transaction");
 
-      // await toast.promise(
-      //   signTransactions(
-      //     swapR.txns.map(
-      //       (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-      //     )
-      //   ).then(sendTransactions),
-      //   {
-      //     pending: `Add liquidity ${fromAmount} ${tokenSymbol(
-      //       token
-      //     )} -> ${toAmount} ${tokenSymbol(token2)}`,
-      //     success: `Add liquidity successful!`,
-      //   },
-      //   {
-      //     type: "default",
-      //     position: "top-center",
-      //     theme: "dark",
-      //   }
-      // );
       const stxns = await //await toast.promise(
       signTransactions(
         swapR.txns.map((t: string) => new Uint8Array(Buffer.from(t, "base64")))
       );
-      //);
-      //   .then((sxns) => {
-      //     const { algodClient } = getAlgorandClients();
-      //     return Promise.all(
-      //       sxns.map((txn) =>
-      //         algodClient.sendRawTransaction(txn as Uint8Array).do(0)
-      //       )
-      //     );
-      //   }),
-      //   {
-      //     pending: `Add liquidity ${fromAmount} ${tokenSymbol(
-      //       token
-      //     )} -> ${toAmount} ${tokenSymbol(token2)}`,
-      //     success:
-      //       paramNewPool !== "true" ? `Add liquidity successful!` : undefined,
-      //   },
-      //   {
-      //     type: "default",
-      //     position: "top-right",
-      //     theme: "dark",
-      //   }
-      // );
 
       console.log({ stxns });
 
-      await algodClient.sendRawTransaction(stxns as Uint8Array[]).do();
+      const res = await algodClient
+        .sendRawTransaction(stxns as Uint8Array[])
+        .do();
+      console.log({ res });
 
       setProgress(75);
       setmessage("Confirming transactions");
 
       // const res = await sendTransactions(stxns);
 
-      // -----------------------------------------
-      // QUEST HERE hmbl_pool_add
-      // -----------------------------------------
-      do {
-        const address = activeAccount.address;
-        const actions: string[] = [QUEST_ACTION.ADD_LIQUIDITY];
-        (async () => {
-          const {
-            data: { results },
-          } = await getActions(address);
-          for (const action of actions) {
-            const address = activeAccount.address;
-            const key = `${action}:${address}`;
-            const completedAction = results.find((el: any) => el.key === key);
-            if (!completedAction) {
-              await submitAction(action, address, {
-                poolId: pool.poolId,
-              });
-            }
-            // TODO notify quest completion here
-          }
-        })();
-      } while (0);
       if (paramNewPool === "true") {
         do {
           const { data } = await axios.get(
@@ -1434,9 +1466,13 @@ const Swap = () => {
       if (paramNewPool === "true") {
         navigate(`/pool?filter=${token.symbol}`);
       } else {
-        setFromAmount("0");
+        setDepositedAmounts({
+          from: fromAmount,
+          to: toAmount,
+        });
+        setShowConfirmation(true);
       }
-      // -----------------------------------------
+      toast.success("Add liquidity successful!");
     } catch (e: any) {
       toast.error(e.message);
       console.error(e);
@@ -1485,109 +1521,176 @@ const Swap = () => {
   }, [token2, tokens2]);
 
   return !isLoading ? (
-    <SwapRoot className={isDarkTheme ? "dark" : "light"}>
-      <SwapHeadingContainer>
-        <SwapHeading className={isDarkTheme ? "dark" : "light"}>
-          Add Liquidity
-        </SwapHeading>
-      </SwapHeadingContainer>
-      <SwapContainer gap={on ? 1.43 : 0}>
-        <TokenInput
-          label="First token"
-          amount={fromAmount}
-          setAmount={setFromAmount}
-          token={token}
-          setToken={setToken}
-          balance={balance}
-          onFocus={() => setFocus("from")}
-          options={tokenOptions}
-          tokInfo={tokAInfo}
-        />
-        <AddIcon theme={isDarkTheme ? "dark" : "light"} />
-        <TokenInput
-          label="Second token"
-          amount={toAmount}
-          setAmount={setToAmount}
-          token={token2}
-          setToken={setToken2}
-          options={tokenOptions2}
-          balance={balance2}
-          onFocus={() => setFocus("to")}
-          tokInfo={tokBInfo}
-        />
-      </SwapContainer>
-      <SummaryContainer>
-        <BreakdownContainer>
-          <BreakdownStack>
-            <BreakdownRow>
-              <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
-                <span>Share of the pool you already have</span>
-              </BreakdownLabel>
-              <BreakdownValueContiner>
-                <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
-                  {poolShare ? `${poolShare}%` : "-"}
-                </BreakdownValue>
-              </BreakdownValueContiner>
-            </BreakdownRow>
-          </BreakdownStack>
-        </BreakdownContainer>
-        <RateContainer className="has-divider">
-          <RateLabel className={isDarkTheme ? "dark" : "light"}>
-            Total share of pool after transaction{" "}
-          </RateLabel>
-          <RateValue>
-            <RateMain className={isDarkTheme ? "dark" : "light"}>
-              {newShare ? `${newShare}%` : "-"}
-            </RateMain>
-            <RateSub>&nbsp;</RateSub>
-          </RateValue>
-        </RateContainer>
-        <RateContainer>
-          <RateLabel className={isDarkTheme ? "dark" : "light"}>Rate</RateLabel>
-          <RateValue>
-            <RateMain className={isDarkTheme ? "dark" : "light"}>
-              1 {tokenSymbol(token)} = {rate?.toFixed(token2?.decimals)}{" "}
-              {tokenSymbol(token2)}
-            </RateMain>
-            <RateSub>
-              1 {tokenSymbol(token2)} = {invRate?.toFixed(token?.decimals)}{" "}
-              {tokenSymbol(token)}
-            </RateSub>
-          </RateValue>
-        </RateContainer>
-      </SummaryContainer>
-      <Button
-        className={isValid ? "active" : undefined}
-        onClick={() => {
-          if (!on) {
-            handleProviderDeposit();
+    <>
+      <SwapRoot className={isDarkTheme ? "dark" : "light"}>
+        <SwapHeadingContainer>
+          <SwapHeading className={isDarkTheme ? "dark" : "light"}>
+            Add Liquidity
+          </SwapHeading>
+        </SwapHeadingContainer>
+        <SwapContainer gap={on ? 1.43 : 0}>
+          <TokenInput
+            label="First token"
+            amount={fromAmount}
+            setAmount={setFromAmount}
+            token={token}
+            setToken={setToken}
+            balance={balance}
+            onFocus={() => setFocus("from")}
+            options={tokenOptions}
+            tokInfo={tokAInfo}
+          />
+          <AddIcon theme={isDarkTheme ? "dark" : "light"} />
+          <TokenInput
+            label="Second token"
+            amount={toAmount}
+            setAmount={setToAmount}
+            token={token2}
+            setToken={setToken2}
+            options={tokenOptions2}
+            balance={balance2}
+            onFocus={() => setFocus("to")}
+            tokInfo={tokBInfo}
+          />
+        </SwapContainer>
+        <SummaryContainer>
+          <BreakdownContainer>
+            <BreakdownStack>
+              <BreakdownRow>
+                <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                  <span>Share of the pool you already have</span>
+                </BreakdownLabel>
+                <BreakdownValueContiner>
+                  <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                    {poolShare ? `${poolShare}%` : "-"}
+                  </BreakdownValue>
+                </BreakdownValueContiner>
+              </BreakdownRow>
+            </BreakdownStack>
+          </BreakdownContainer>
+          <RateContainer className="has-divider">
+            <RateLabel className={isDarkTheme ? "dark" : "light"}>
+              Total share of pool after transaction{" "}
+            </RateLabel>
+            <RateValue>
+              <RateMain className={isDarkTheme ? "dark" : "light"}>
+                {newShare ? `${newShare}%` : "-"}
+              </RateMain>
+              <RateSub>&nbsp;</RateSub>
+            </RateValue>
+          </RateContainer>
+          <RateContainer>
+            <RateLabel className={isDarkTheme ? "dark" : "light"}>
+              Rate
+            </RateLabel>
+            <RateValue>
+              <RateMain className={isDarkTheme ? "dark" : "light"}>
+                1 {tokenSymbol(token)} = {rate?.toFixed(token2?.decimals)}{" "}
+                {tokenSymbol(token2)}
+              </RateMain>
+              <RateSub>
+                1 {tokenSymbol(token2)} = {invRate?.toFixed(token?.decimals)}{" "}
+                {tokenSymbol(token)}
+              </RateSub>
+            </RateValue>
+          </RateContainer>
+        </SummaryContainer>
+        <Button
+          className={isValid ? "active" : undefined}
+          onClick={() => {
+            if (!on) {
+              handleProviderDeposit();
+            }
+          }}
+        >
+          {
+            /*!on ? (*/
+            buttonLabel
+            /*) : (
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+              }}
+            >
+              <CircularProgress color="inherit" size={20} />
+              Add liquidity in progress
+            </div>
+            )*/
           }
+        </Button>
+        <ProgressBar
+          message={message}
+          isActive={![0, 100].includes(progress)}
+          currentStep={progress}
+          totalSteps={100}
+        />
+      </SwapRoot>
+
+      <Dialog
+        open={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setFromAmount("0");
+          setToAmount("0");
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: "transparent",
+            boxShadow: "none",
+            margin: "16px",
+          },
+        }}
+        BackdropProps={{
+          style: {
+            backgroundColor: "rgba(41, 88, 255, 0.2)",
+          },
         }}
       >
-        {
-          /*!on ? (*/
-          buttonLabel
-          /*) : (
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-            }}
-          >
-            <CircularProgress color="inherit" size={20} />
-            Add liquidity in progress
-          </div>
-          )*/
-        }
-      </Button>
-      <ProgressBar
-        message={message}
-        isActive={![0, 100].includes(progress)}
-        currentStep={progress}
-        totalSteps={100}
-      />
-    </SwapRoot>
+        <ConfirmationModal isDark={isDarkTheme}>
+          <ModalTitle isDark={isDarkTheme}>
+            Liquidity Added Successfully
+          </ModalTitle>
+          <ModalContent>
+            <BreakdownRow>
+              <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                Added {tokenSymbol(token)}
+              </BreakdownLabel>
+              <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                {formatNumber(depositedAmounts.from)}
+              </BreakdownValue>
+            </BreakdownRow>
+            <BreakdownRow>
+              <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                Added {tokenSymbol(token2)}
+              </BreakdownLabel>
+              <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                {formatNumber(depositedAmounts.to)}
+              </BreakdownValue>
+            </BreakdownRow>
+            <BreakdownRow>
+              <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
+                Pool Share
+              </BreakdownLabel>
+              <BreakdownValue className={isDarkTheme ? "dark" : "light"}>
+                {newShare}%
+              </BreakdownValue>
+            </BreakdownRow>
+          </ModalContent>
+          <ModalActions>
+            <Button
+              className="active"
+              onClick={() => setShowConfirmation(false)}
+            >
+              Close
+            </Button>
+          </ModalActions>
+        </ConfirmationModal>
+      </Dialog>
+    </>
   ) : null;
 };
 

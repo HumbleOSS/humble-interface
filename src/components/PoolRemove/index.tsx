@@ -3,7 +3,13 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { CircularProgress } from "@mui/material";
+import {
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
 import { useSearchParams } from "react-router-dom";
@@ -44,6 +50,7 @@ const SwapRoot = styled.div`
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+  width: 100%;
   &.light {
     border: 1px solid
       var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
@@ -58,7 +65,12 @@ const SwapRoot = styled.div`
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
   }
   @media screen and (min-width: 600px) {
-    width: 630px;
+    width: 480px;
+  }
+
+  @media screen and (max-width: 599px) {
+    padding: var(--Spacing-800, 24px);
+    border-radius: var(--Radius-600, 16px);
   }
 `;
 
@@ -80,6 +92,81 @@ const Button = styled(BaseButton)`
     border-radius: var(--Radius-700, 16px);
     background: var(--Color-Accent-CTA-Background-Default, #2958ff);
   }
+`;
+
+const PercentageButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 16px;
+
+  @media screen and (max-width: 599px) {
+    gap: 4px;
+  }
+`;
+
+const PercentageButton = styled.button`
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  white-space: nowrap;
+  font-size: 14px;
+
+  @media screen and (max-width: 599px) {
+    padding: 8px;
+  }
+
+  &:hover {
+    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+    border-color: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  }
+
+  &.active {
+    background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+    border-color: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  }
+`;
+
+const InputContainer = styled.div`
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+`;
+
+const CustomInput = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  padding-right: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &[type="number"] {
+    -moz-appearance: textfield;
+  }
+`;
+
+const InputAdornment = styled.span`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: inherit;
+  font-size: 14px;
+  pointer-events: none;
 `;
 
 const useDebouncedCallback = (
@@ -274,6 +361,19 @@ const spec = {
   events: [],
 };
 
+const AmountDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+`;
+
+const TokenIcon = styled.img`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+`;
+
 const PoolRemove = () => {
   /* Theme */
   const isDarkTheme = useSelector(
@@ -454,6 +554,20 @@ const PoolRemove = () => {
   }, [tokens, pools, token, token2]);
 
   const buttonLabel = "Remove liquidity";
+
+  // Add state for dialog
+  const [openDialog, setOpenDialog] = useState(false);
+  const [txnResult, setTxnResult] = useState<{
+    tokAAmount: number;
+    tokBAmount: number;
+    tokASymbol: string;
+    tokBSymbol: string;
+  }>();
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setFromAmount("0");
+  };
 
   const handleRemoveLiquidity = async () => {
     //if (!isValid || !token || !token2 || !pool) return;
@@ -753,32 +867,37 @@ const PoolRemove = () => {
         )
       );
 
-      // TODO toast here
-
-      // await toast.promise(
-      //   signTransactions(
-      //     customR.txns.map(
-      //       (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-      //     )
-      //   ),
-      //   // TODO send transactions
-      //   //.then(sendTransactions),
-      //   {
-      //     pending: `Remove liquidity ${Number(
-      //       Provider_withdraw[0]
-      //     )} ${tokenSymbol(token, true)} + ${Number(
-      //       Provider_withdraw[1]
-      //     )} ${tokenSymbol(token2, true)}`,
-      //     success: `Add liquidity successful!`,
-      //   },
-      //   {
-      //     type: "default",
-      //     position: "top-center",
-      //     theme: "dark",
-      //   }
-      // );
-
       await algodClient.sendRawTransaction(stxns as Uint8Array[]).do();
+
+      // After successful transaction, set result and open dialog
+      console.log({ tokens, info });
+      setTxnResult({
+        tokAAmount: new BigNumber(Provider_withdraw[0].toString())
+          .div(
+            new BigNumber(10).pow(
+              tokens.find((t: ARC200TokenI) => t.contractId === info?.tokA)
+                ?.decimals || 0
+            )
+          )
+          .toNumber(),
+        tokBAmount: new BigNumber(Provider_withdraw[1].toString())
+          .div(
+            new BigNumber(10).pow(
+              tokens.find((t: ARC200TokenI) => t.contractId === info?.tokB)
+                ?.decimals || 0
+            )
+          )
+          .toNumber(),
+        tokASymbol: tokenSymbol(
+          tokens.find((t: ARC200TokenI) => t.contractId === info?.tokA),
+          true
+        ),
+        tokBSymbol: tokenSymbol(
+          tokens.find((t: ARC200TokenI) => t.contractId === info?.tokB),
+          true
+        ),
+      });
+      setOpenDialog(true);
     } catch (e: any) {
       toast.error(e.message);
       console.error(e);
@@ -787,137 +906,199 @@ const PoolRemove = () => {
     }
   };
 
-  const debouncedSetFromAmount = useDebouncedCallback((value: string) => {
-    setFromAmount(value);
-  }, 300);
+  const percentagePresets = [25, 50, 75, 100];
 
-  const handleClick = () => {
-    const amount = parseFloat(fromAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.info("Please enter a valid amount greater than 0");
-      return;
-    }
-    // REM impossible until proven wrong
-    // if (amount > parseFloat(poolShare)) {
-    //   toast.info("Amount exceeds your current share");
-    //   return;
-    // }
-    if (!on) {
-      handleRemoveLiquidity();
+  const handlePercentageClick = (percentage: number) => {
+    setFromAmount(percentage.toString());
+  };
+
+  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const number = parseFloat(value);
+    if (value === "" || (number >= 0 && number <= 100)) {
+      setFromAmount(value);
     }
   };
 
   const isLoading = !pools || !tokens;
 
-  return !isLoading ? (
-    <SwapRoot className={isDarkTheme ? "dark" : "light"}>
-      <SwapHeadingContainer>
-        <SwapHeading className={isDarkTheme ? "dark" : "light"}>
-          Remove Liquidity
-        </SwapHeading>
-      </SwapHeadingContainer>
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "10px",
-          alignItems: "center",
-        }}
-      >
-        <label htmlFor="from">Remove amount</label>
-        {/*<input
-          name="from"
-          style={{
-            border: "1px solid #D8D8E1",
-            borderRadius: "8px",
-            color: "white",
-            textAlign: "right",
-            marginRight: "10px",
-            padding: "10px",
-            flexGrow: 1,
-          }}
-          type="number"
-          min={0}
-          max={100}
-          value={fromAmount}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (!isNaN(n) && n >= 0 && n <= 100) {
-              setFromAmount(e.target.value);
-            }
-          }}
-        />*/}
-      </div>
-      <DiscreteSlider
-        onChange={(v) => {
-          debouncedSetFromAmount(v.toString());
-        }}
-      />
-      <div
-        style={{
-          width: "100%",
-        }}
-      >
-        Current share: {poolShare}%
-      </div>
-      <div
-        style={{
-          width: "100%",
-        }}
-      >
-        New share: {newShare}%
-      </div>
-      <div
-        style={{
-          width: "100%",
-        }}
-      >
-        You will receive: <br />
-        <br />
-        {tokenSymbol(
-          tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA),
-          true
-        )}
-        :{" "}
-        {expectedOutcome
-          ? Number(expectedOutcome?.[0]) /
-            10 **
-              (tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA)
-                ?.decimals || 0)
-          : "-"}
-        <br />
-        <br />
-        {tokenSymbol(
-          tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB),
-          true
-        )}
-        :{" "}
-        {expectedOutcome
-          ? Number(expectedOutcome?.[1]) /
-            10 **
-              (tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB)
-                ?.decimals || 0)
-          : "-"}
-      </div>
-      <Button className="active" onClick={handleClick}>
-        {!on ? (
-          buttonLabel
-        ) : (
+  return (
+    <>
+      {!isLoading ? (
+        <SwapRoot className={isDarkTheme ? "dark" : "light"}>
+          <SwapHeadingContainer>
+            <SwapHeading className={isDarkTheme ? "dark" : "light"}>
+              Remove Liquidity
+            </SwapHeading>
+          </SwapHeadingContainer>
+
+          <div style={{ width: "100%" }}>
+            <PercentageButtonGroup>
+              {percentagePresets.map((percentage) => (
+                <PercentageButton
+                  key={percentage}
+                  className={
+                    fromAmount === percentage.toString() ? "active" : ""
+                  }
+                  onClick={() => handlePercentageClick(percentage)}
+                >
+                  {percentage}%
+                </PercentageButton>
+              ))}
+            </PercentageButtonGroup>
+
+            <InputContainer>
+              <CustomInput
+                type="number"
+                min="0"
+                max="100"
+                value={fromAmount}
+                onChange={handleCustomInputChange}
+                placeholder="Enter custom percentage (0-100)"
+              />
+              <InputAdornment>%</InputAdornment>
+            </InputContainer>
+          </div>
+
           <div
             style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
+              width: "100%",
             }}
           >
-            <CircularProgress color="inherit" size={20} />
-            Remove liquidity in progress
+            Current share: {poolShare}%
           </div>
-        )}
-      </Button>
-    </SwapRoot>
-  ) : null;
+          <div
+            style={{
+              width: "100%",
+            }}
+          >
+            New share: {newShare}%
+          </div>
+          <div
+            style={{
+              width: "100%",
+            }}
+          >
+            You will receive: <br />
+            <br />
+            <AmountDisplay>
+              <TokenIcon
+                src={((tokenId?: number) => {
+                  return `https://asset-verification.nautilus.sh/icons/${
+                    tokenId === 390001 ? "0" : tokenId
+                  }.png`;
+                })(
+                  tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA)
+                    ?.tokenId
+                )}
+                alt="Token A"
+              />
+              {expectedOutcome
+                ? `${(
+                    Number(expectedOutcome?.[0]) /
+                    10 **
+                      (tokens.find(
+                        (t: ARC200TokenI) => t.tokenId === info?.tokA
+                      )?.decimals || 0)
+                  ).toFixed(6)} ${tokenSymbol(
+                    tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA),
+                    true
+                  )}`
+                : "-"}
+            </AmountDisplay>
+            <AmountDisplay>
+              <TokenIcon
+                src={((tokenId?: number) => {
+                  return `https://asset-verification.nautilus.sh/icons/${
+                    tokenId === 390001 ? "0" : tokenId
+                  }.png`;
+                })(
+                  tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB)
+                    ?.tokenId
+                )}
+                alt="Token B"
+              />
+              {expectedOutcome
+                ? `${(
+                    Number(expectedOutcome?.[1]) /
+                    10 **
+                      (tokens.find(
+                        (t: ARC200TokenI) => t.tokenId === info?.tokB
+                      )?.decimals || 0)
+                  ).toFixed(6)} ${tokenSymbol(
+                    tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB),
+                    true
+                  )}`
+                : "-"}
+            </AmountDisplay>
+          </div>
+          <Button className="active" onClick={handleRemoveLiquidity}>
+            {!on ? (
+              buttonLabel
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                }}
+              >
+                <CircularProgress color="inherit" size={20} />
+                Remove liquidity in progress
+              </div>
+            )}
+          </Button>
+        </SwapRoot>
+      ) : null}
+
+      {/* Add Dialog component */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        PaperProps={{
+          style: {
+            backgroundColor: isDarkTheme ? "#070709" : "#fff",
+            color: isDarkTheme ? "#fff" : "#0c0c10",
+            border: isDarkTheme ? "1px solid #41137e" : "1px solid #7e7e9a",
+            borderRadius: "24px",
+            padding: "16px",
+          },
+        }}
+        BackdropProps={{
+          style: {
+            backgroundColor: "rgba(0, 0, 0, 0.2)",
+            backdropFilter: "blur(8px)",
+          },
+        }}
+      >
+        <DialogTitle>Liquidity Removed Successfully</DialogTitle>
+        <DialogContent>
+          <div style={{ marginBottom: "16px" }}>
+            You have received:
+            <div style={{ marginTop: "8px" }}>
+              {txnResult?.tokAAmount.toFixed(6)} {txnResult?.tokASymbol}
+            </div>
+            <div style={{ marginTop: "8px" }}>
+              {txnResult?.tokBAmount.toFixed(6)} {txnResult?.tokBSymbol}
+            </div>
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <PercentageButton
+            onClick={handleCloseDialog}
+            style={{
+              minWidth: "100px",
+              background: "var(--Color-Accent-CTA-Background-Default, #2958ff)",
+              color: "#fff",
+              border: "none",
+            }}
+          >
+            Close
+          </PercentageButton>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 };
 
 export default PoolRemove;

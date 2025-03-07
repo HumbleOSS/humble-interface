@@ -636,15 +636,15 @@ const SwapAmountContainer = styled.div`
 
 // Add new styled component for token icon container
 const TokenIconContainer = styled.div`
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   overflow: hidden;
   margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-
+  flex-shrink: 0;
   img {
     width: 100%;
     height: 100%;
@@ -1405,10 +1405,21 @@ const Swap = () => {
     return "";
   }, [info, token, token2, isValid]);
 
+  const [currentSlippage] = useState(() => {
+    const saved = localStorage.getItem("currentSlippage");
+    if (saved && !isNaN(Number(saved)) && Number(saved) >= 0) {
+      return saved;
+    }
+    return "0.5"; // Default to 0.5%
+  });
+
   const minRecieved = useMemo(() => {
     if (!actualOutcome) return "-";
-    return (Number(actualOutcome) * 0.995).toLocaleString();
-  }, [actualOutcome]);
+    return (
+      Number(actualOutcome) *
+      (1 - Number(currentSlippage) / 100)
+    ).toLocaleString();
+  }, [actualOutcome, currentSlippage]);
 
   const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 
@@ -1449,6 +1460,7 @@ const Swap = () => {
 
   // Add new function to handle actual swap after confirmation
   const handleConfirmedSwap = async () => {
+    if (!activeAccount) return;
     setOn(true);
     setProgress(0);
     try {
@@ -1505,9 +1517,13 @@ const Swap = () => {
         tokenId: mB.tokenId ?? undefined,
       };
 
-      const swapR = await ci.swap(acc.addr, pool2.poolId, A, B);
+      const swapR = await ci.swap(acc.addr, pool2.poolId, A, B, [], {
+        debug: true,
+        slippage: Number(currentSlippage) / 100,
+        degenMode: degenMode,
+      });
 
-      if (!swapR.success) {
+      if (!swapR?.success) {
         // Retrigger the amount calculations
         if (focus === "from") {
           const currentAmount = fromAmount;
@@ -1619,9 +1635,13 @@ const Swap = () => {
     setTokBInfo(tokB);
   }, [token2, tokens2]);
 
-  console.log({ token, token2, tokens, tokens2 });
-
   const [showSettings, setShowSettings] = useState(false);
+
+  // Add this near the top of the component with other state declarations
+  const [degenMode] = useState(() => {
+    const saved = localStorage.getItem("degenMode");
+    return saved === "true";
+  });
 
   return !isLoading ? (
     <>
@@ -1680,6 +1700,24 @@ const Swap = () => {
             }
             tokInfo={tokBInfo}
           />
+
+          {/* Add swap button */}
+          <Button
+            className={isValid ? "active" : ""}
+            onClick={handleSwap}
+            style={{ marginTop: "24px" }}
+          >
+            {on ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={16} sx={{ color: "#fff" }} />
+                <Typography variant="body2" sx={{ color: "#fff" }}>
+                  {message || "Transaction in progress..."}
+                </Typography>
+              </Stack>
+            ) : (
+              buttonLabel
+            )}
+          </Button>
         </SwapContainer>
 
         {/* Add confirmation modal */}
@@ -1875,7 +1913,7 @@ const Swap = () => {
                       <BreakdownValue
                         className={isDarkTheme ? "dark" : "light"}
                       >
-                        0.50%
+                        {Number(currentSlippage)}%
                       </BreakdownValue>
                     </BreakdownValueContiner>
                   </BreakdownRow>
@@ -1950,12 +1988,6 @@ const Swap = () => {
           isActive={![0, 100].includes(progress)}
           currentStep={progress}
           totalSteps={100}
-        />
-
-        <SwapOptionsModal
-          isDarkTheme={isDarkTheme}
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
         />
       </SwapRoot>
     </>

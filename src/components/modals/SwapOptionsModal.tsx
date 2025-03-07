@@ -1,7 +1,14 @@
-import { Dialog, DialogTitle, DialogContent } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Tooltip,
+  Switch,
+} from "@mui/material";
 import styled from "styled-components";
 import CloseIcon from "@mui/icons-material/Close";
 import { useState } from "react";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 interface SwapOptionsModalProps {
   isOpen: boolean;
@@ -15,18 +22,17 @@ const StyledDialog = styled(Dialog)<{ isDarkTheme: boolean }>`
   .MuiPaper-root {
     border-radius: 1rem;
     background-color: ${(props) => (props.isDarkTheme ? "#030712" : "white")};
-    ${(props) => props.isDarkTheme && `
+    ${(props) =>
+      props.isDarkTheme &&
+      `
       border: 1px solid #1F2937;
     `}
   }
-  
+
   .MuiBackdrop-root {
     backdrop-filter: blur(4px);
-    background-color: ${(props) => 
-      props.isDarkTheme 
-        ? 'rgba(0, 0, 0, 0.7)' 
-        : 'rgba(255, 255, 255, 0.7)'
-    };
+    background-color: ${(props) =>
+      props.isDarkTheme ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.7)"};
   }
 `;
 
@@ -148,6 +154,35 @@ const CloseButton = styled.button`
   }
 `;
 
+const InfoIcon = styled(InfoOutlinedIcon)<{ isDarkTheme: boolean }>`
+  margin-left: 0.25rem;
+  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+  cursor: help;
+`;
+
+const SwitchContainer = styled.div<{ isDarkTheme: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background-color: ${(props) => (props.isDarkTheme ? "#111827" : "#F3F4F6")};
+  border: ${(props) => (props.isDarkTheme ? "1px solid #1F2937" : "none")};
+`;
+
+const SwitchLabel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const WarningText = styled.span<{ isDarkTheme: boolean }>`
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 0.5rem;
+  display: block;
+`;
+
 export function SwapOptionsModal({
   isOpen,
   onClose,
@@ -163,13 +198,23 @@ export function SwapOptionsModal({
     return storedSlippage || "";
   });
 
+  const [degenMode, setDegenMode] = useState<boolean>(() => {
+    const stored = localStorage.getItem("degenMode");
+    return stored ? JSON.parse(stored) : false;
+  });
+
+  const handleDegenModeChange = (checked: boolean) => {
+    setDegenMode(checked);
+    localStorage.setItem("degenMode", checked.toString());
+  };
+
   const handleCustomSlippageChange = (value: string) => {
-    if (!/^\d*\.?\d*$/.test(value)) return;
+    if (!/^\d*\.?\d*$/.test(value) && value !== "0") return;
     setCustomSlippage(value);
     localStorage.setItem("customSlippage", value);
 
     const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue > 0) {
+    if (!isNaN(numValue) && numValue >= 0) {
       setCurrentSlippage(numValue);
       localStorage.setItem("currentSlippage", numValue.toString());
     }
@@ -203,7 +248,15 @@ export function SwapOptionsModal({
         <StyledDialogContent>
           <div>
             <SlippageHeader>
-              <Label isDarkTheme={isDarkTheme}>Max Slippage</Label>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Label isDarkTheme={isDarkTheme}>Max Slippage</Label>
+                <Tooltip
+                  title="Maximum acceptable difference between expected and actual trade price due to market fluctuations"
+                  arrow
+                >
+                  <InfoIcon fontSize="small" isDarkTheme={isDarkTheme} />
+                </Tooltip>
+              </div>
               <CurrentValue isDarkTheme={isDarkTheme}>
                 Current:{" "}
                 <span style={{ color: "#3B82F6" }}>{currentSlippage}%</span>
@@ -240,6 +293,31 @@ export function SwapOptionsModal({
               />
               <InputSuffix isDarkTheme={isDarkTheme}>%</InputSuffix>
             </InputContainer>
+          </div>
+
+          <div>
+            <SwitchContainer isDarkTheme={isDarkTheme}>
+              <SwitchLabel>
+                <Label isDarkTheme={isDarkTheme}>Degen Mode</Label>
+                <Tooltip
+                  title="Removes spending limit. Only enable if you know what you're doing!"
+                  arrow
+                >
+                  <InfoIcon fontSize="small" isDarkTheme={isDarkTheme} />
+                </Tooltip>
+              </SwitchLabel>
+              <Switch
+                checked={degenMode}
+                onChange={(e) => handleDegenModeChange(e.target.checked)}
+                color="primary"
+              />
+            </SwitchContainer>
+            {degenMode && (
+              <WarningText isDarkTheme={isDarkTheme}>
+                ⚠️ Warning: Degen Mode removes spending limit. Use at your own
+                own risk!
+              </WarningText>
+            )}
           </div>
         </StyledDialogContent>
       </DialogContainer>

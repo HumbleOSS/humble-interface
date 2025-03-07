@@ -412,9 +412,6 @@ const Col5 = styled(Box)`
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  @media screen and (min-width: 600px) {
-    height: 65px;
-  }
 
   @media screen and (min-width: 600px) {
     display: flex;
@@ -770,7 +767,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   </APRLabel>
                 </APRLabelContainer>
               </Col4>
-              <Col5 sx={{ display: { xs: "none", md: "flex" } }}>
+              <Col5>
                 <StyledLink
                   to={`/pool/add?poolId=${pool.contractId}`}
                   style={{
