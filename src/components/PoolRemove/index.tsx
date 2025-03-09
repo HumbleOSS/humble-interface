@@ -374,6 +374,14 @@ const TokenIcon = styled.img`
   border-radius: 50%;
 `;
 
+const convertToARC200Token = (token: any): ARC200TokenI | undefined => {
+  if (!token) return undefined;
+  return {
+    ...token,
+    tokenId: Number(token.tokenId) // Convert string tokenId to number
+  };
+};
+
 const PoolRemove = () => {
   /* Theme */
   const isDarkTheme = useSelector(
@@ -875,25 +883,23 @@ const PoolRemove = () => {
         tokAAmount: new BigNumber(Provider_withdraw[0].toString())
           .div(
             new BigNumber(10).pow(
-              tokens.find((t: ARC200TokenI) => t.contractId === info?.tokA)
-                ?.decimals || 0
+              tokens.find((t) => t.contractId === info?.tokA)?.decimals || 0
             )
           )
           .toNumber(),
         tokBAmount: new BigNumber(Provider_withdraw[1].toString())
           .div(
             new BigNumber(10).pow(
-              tokens.find((t: ARC200TokenI) => t.contractId === info?.tokB)
-                ?.decimals || 0
+              tokens.find((t) => t.contractId === info?.tokB)?.decimals || 0
             )
           )
           .toNumber(),
         tokASymbol: tokenSymbol(
-          tokens.find((t: ARC200TokenI) => t.contractId === info?.tokA),
+          convertToARC200Token(tokens.find((t) => t.contractId === info?.tokA)),
           true
         ),
         tokBSymbol: tokenSymbol(
-          tokens.find((t: ARC200TokenI) => t.contractId === info?.tokB),
+          convertToARC200Token(tokens.find((t) => t.contractId === info?.tokB)),
           true
         ),
       });
@@ -987,21 +993,16 @@ const PoolRemove = () => {
                   return `https://asset-verification.nautilus.sh/icons/${
                     tokenId === 390001 ? "0" : tokenId
                   }.png`;
-                })(
-                  tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA)
-                    ?.tokenId
-                )}
+                })(Number(tokens.find((t) => t.contractId === info?.tokA)?.tokenId))}
                 alt="Token A"
               />
               {expectedOutcome
                 ? `${(
                     Number(expectedOutcome?.[0]) /
                     10 **
-                      (tokens.find(
-                        (t: ARC200TokenI) => t.tokenId === info?.tokA
-                      )?.decimals || 0)
+                      (tokens.find((t) => t.contractId === info?.tokA)?.decimals || 0)
                   ).toFixed(6)} ${tokenSymbol(
-                    tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokA),
+                    convertToARC200Token(tokens.find((t) => t.contractId === info?.tokA)),
                     true
                   )}`
                 : "-"}
@@ -1012,21 +1013,16 @@ const PoolRemove = () => {
                   return `https://asset-verification.nautilus.sh/icons/${
                     tokenId === 390001 ? "0" : tokenId
                   }.png`;
-                })(
-                  tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB)
-                    ?.tokenId
-                )}
+                })(Number(tokens.find((t) => t.contractId === info?.tokB)?.tokenId))}
                 alt="Token B"
               />
               {expectedOutcome
                 ? `${(
                     Number(expectedOutcome?.[1]) /
                     10 **
-                      (tokens.find(
-                        (t: ARC200TokenI) => t.tokenId === info?.tokB
-                      )?.decimals || 0)
+                      (tokens.find((t) => t.contractId === info?.tokB)?.decimals || 0)
                   ).toFixed(6)} ${tokenSymbol(
-                    tokens.find((t: ARC200TokenI) => t.tokenId === info?.tokB),
+                    convertToARC200Token(tokens.find((t) => t.contractId === info?.tokB)),
                     true
                   )}`
                 : "-"}

@@ -789,7 +789,7 @@ const ModalOverlay = styled.div`
 `;
 
 // Add new styled component for refresh button
-const RefreshButton = styled(BaseButton)`
+const RefreshButton = styled(BaseButton)<{ isDark: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -799,7 +799,7 @@ const RefreshButton = styled(BaseButton)`
 
   &:hover {
     background: ${(props) =>
-      props.theme.isDarkTheme ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
+      props.isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
   }
 `;
 
@@ -1495,14 +1495,14 @@ const Swap = () => {
       };
 
       const mA =
-        token.tokenId === 0
+        token?.tokenId === 0
           ? networkToken
-          : tokens2.find((t) => t.contractId === token.tokenId);
+          : tokens2?.find((t) => t.contractId === token?.tokenId);
 
       const mB =
-        token2.tokenId === 0
+        token2?.tokenId === 0
           ? networkToken
-          : tokens2.find((t) => t.contractId === token2.tokenId);
+          : tokens2?.find((t) => t.contractId === token2?.tokenId);
 
       const A = {
         ...mA,
@@ -1755,6 +1755,7 @@ const Swap = () => {
                 Confirm Swap
               </h2>
               <RefreshButton
+                isDark={isDarkTheme}
                 onClick={() => {
                   // Retrigger the amount calculations
                   if (focus === "from") {

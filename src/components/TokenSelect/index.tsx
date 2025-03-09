@@ -281,7 +281,6 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
               .map((option, i) => (
                 <StyledMenuItem
                   key={option}
-                  selected={option === tokenSymbol(token)}
                   onClick={() => {
                     onSelect(filteredTokens[i]);
                     handleClose();

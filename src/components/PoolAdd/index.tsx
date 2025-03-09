@@ -678,7 +678,7 @@ const ModalContent = styled.div<{ isDark: boolean }>`
     ${(props) => (props.isDark ? "rgba(255, 255, 255, 0.1)" : "#D8D8E1")};
 `;
 
-const ModalActions = styled.div<{ isDark: boolean }>`
+const ModalActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 16px;
@@ -1654,7 +1654,7 @@ const Swap = () => {
           <ModalTitle isDark={isDarkTheme}>
             Liquidity Added Successfully
           </ModalTitle>
-          <ModalContent>
+          <ModalContent isDark={isDarkTheme}>
             <BreakdownRow>
               <BreakdownLabel className={isDarkTheme ? "dark" : "light"}>
                 Added {tokenSymbol(token)}

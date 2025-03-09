@@ -61,11 +61,12 @@ const StyledDialogContent = styled(DialogContent)`
   }
 `;
 
-const SlippageHeader = styled.div<{ isDarkTheme: boolean }>`
+const SlippageHeader = styled.div<{ $isDarkTheme?: boolean }>`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  color: ${(props) => (props.$isDarkTheme ? "#9CA3AF" : "#6B7280")};
 `;
 
 const Label = styled.label<{ isDarkTheme: boolean }>`
@@ -134,23 +135,24 @@ const StyledInput = styled.input<{ isDarkTheme: boolean }>`
   }
 `;
 
-const InputSuffix = styled.span`
+const InputSuffix = styled.span<{ $isDarkTheme?: boolean }>`
   position: absolute;
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
   font-weight: 500;
-  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+  color: ${(props) => (props.$isDarkTheme ? "#9CA3AF" : "#6B7280")};
 `;
 
-const CloseButton = styled.button`
+const CloseButton = styled.button<{ $isDarkTheme?: boolean }>`
   padding: 0.5rem;
   border: none;
   border-radius: 0.5rem;
-  background-color: transparent;
-  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+  background-color: ${(props) => (props.$isDarkTheme ? "#374151" : "#F3F4F6")};
+  color: ${(props) => (props.$isDarkTheme ? "#9CA3AF" : "#6B7280")};
   &:hover {
-    background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
+    background-color: ${(props) =>
+      props.$isDarkTheme ? "#374151" : "#F3F4F6"};
   }
 `;
 
@@ -240,14 +242,14 @@ export function SwapOptionsModal({
           <StyledDialogTitle isDarkTheme={isDarkTheme}>
             Swap Settings
           </StyledDialogTitle>
-          <CloseButton onClick={onClose} isDarkTheme={isDarkTheme}>
+          <CloseButton onClick={onClose} $isDarkTheme={isDarkTheme}>
             <CloseIcon />
           </CloseButton>
         </HeaderContainer>
 
         <StyledDialogContent>
           <div>
-            <SlippageHeader>
+            <SlippageHeader $isDarkTheme={isDarkTheme}>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Label isDarkTheme={isDarkTheme}>Max Slippage</Label>
                 <Tooltip
@@ -291,7 +293,7 @@ export function SwapOptionsModal({
                 placeholder="Enter custom slippage"
                 isDarkTheme={isDarkTheme}
               />
-              <InputSuffix isDarkTheme={isDarkTheme}>%</InputSuffix>
+              <InputSuffix $isDarkTheme={isDarkTheme}>%</InputSuffix>
             </InputContainer>
           </div>
 
