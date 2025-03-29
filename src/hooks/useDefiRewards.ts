@@ -58,7 +58,7 @@ const useDefiRewards = () => {
             */
             {
               poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
-              aprBoost: 99,
+              aprBoost: 27,
               additionalAprBoost: 0,
             },
             {
