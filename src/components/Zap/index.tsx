@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Box,
   Button,
@@ -22,6 +22,8 @@ import BigNumber from "bignumber.js";
 import algosdk from "algosdk";
 import { styled } from "@mui/material/styles";
 import Confetti from "react-confetti";
+import InputAdornment from "@mui/material/InputAdornment";
+import analytics from "@/utils/analytics";
 
 const GradientCircularProgress = styled(CircularProgress)({
   color: "transparent",
@@ -38,6 +40,16 @@ const GlobalStyles = styled("div")({
     },
     "100%": {
       transform: "rotate(360deg)",
+    },
+  },
+  "@keyframes fadeInSlide": {
+    "0%": {
+      opacity: 0,
+      transform: "translateY(-10px)",
+    },
+    "100%": {
+      opacity: 1,
+      transform: "translateY(0)",
     },
   },
 });
@@ -102,6 +114,11 @@ const Zap: React.FC = () => {
   const [isSigningModalOpen, setIsSigningModalOpen] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [maxBalance, setMaxBalance] = useState<string>("0");
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [estimatedOutput, setEstimatedOutput] = useState<string | null>(null);
+  const [poolSearchQuery, setPoolSearchQuery] = useState("");
 
   const loadingMessages = [
     "Preparing your transaction...",
@@ -148,9 +165,26 @@ const Zap: React.FC = () => {
     fetchPools();
   }, [inputCurrency]);
 
+  const handleMaxClick = () => {
+    if (inputCurrency?.balance) {
+      setInputAmount(inputCurrency.balance);
+    }
+  };
+
   const handlePoolSelect = (poolId: string, contractId: string) => {
     setSelectedPoolId(poolId);
     setTargetPairAddress(contractId);
+  };
+
+  const handleOpenModal = async () => {
+    setIsLoadingTokens(true);
+    try {
+      // ... existing fetch code ...
+    } catch (error) {
+      console.error("Failed to fetch tokens:", error);
+    } finally {
+      setIsLoadingTokens(false);
+    }
   };
 
   const handleZapConfirm = () => {
@@ -167,10 +201,22 @@ const Zap: React.FC = () => {
     setIsLoading(true);
     setIsSigningModalOpen(true);
 
+    const pool = availablePools.find(
+      (p) => p.contractId === Number(targetPairAddress)
+    );
+
+    if (!pool) {
+      setErrorMessage("Pool not found");
+      setIsLoading(false);
+      setIsSigningModalOpen(false);
+      return;
+    }
+
     const acc = {
       addr: activeAccount.address,
       sk: new Uint8Array(0),
     };
+
     try {
       const { algodClient, indexerClient } = getAlgorandClients();
       // pick a pool with best rate
@@ -195,22 +241,19 @@ const Zap: React.FC = () => {
         symbol: "VOI",
       };
 
-      const pool = availablePools.find(
-        (p) => p.contractId === Number(targetPairAddress)
-      );
-
-      if (!pool) throw new Error("Pool not found");
-
       console.log({ pool });
 
       const swapAForB = pool.tokAId === `${inputCurrency?.contractId}`;
 
-      const mA = {
-        contractId: Number(pool.tokAId),
-        tokenId: null,
-        decimals: pool.tokADecimals,
-        symbol: pool.symbolA,
-      };
+      const mA =
+        pool.symbolA === "VOI"
+          ? networkToken
+          : {
+              contractId: Number(pool.tokAId),
+              tokenId: null,
+              decimals: pool.tokADecimals,
+              symbol: pool.symbolA,
+            };
 
       const mB =
         pool.symbolB === "VOI"
@@ -246,6 +289,8 @@ const Zap: React.FC = () => {
       });
 
       // figure out to amount
+
+      console.log({ swapAForB });
 
       const sA = swapAForB
         ? {
@@ -289,6 +334,16 @@ const Zap: React.FC = () => {
 
       const swapTxnObjs = swapR.objs;
 
+      // pay pool fee for balance box
+      for (let i = 0; i < swapTxnObjs.length; i++) {
+        if (swapTxnObjs[i].appIndex === pool.contractId) {
+          console.log("found pool fee", swapTxnObjs[i], pool.contractId);
+          swapTxnObjs[i].payment = 28500;
+          console.log("found pool fee", swapTxnObjs[i], pool.contractId);
+          break;
+        }
+      }
+
       const outAB = Buffer.from(
         swapR.response.txnGroups[0].txnResults
           .slice(logIndex)[0]
@@ -324,6 +379,10 @@ const Zap: React.FC = () => {
         decimals: `${mB.decimals}`,
         amount: swapAForB ? outN : fromAmount,
       };
+
+      console.log(acc.addr, Number(pool.contractId), dA, dB, swapTxnObjs, {
+        debug: true,
+      });
 
       const depositR: any = await ci.deposit(
         acc.addr,
@@ -371,8 +430,22 @@ const Zap: React.FC = () => {
 
       setIsSigningModalOpen(false);
       handleCloseModal();
-    } catch (e: any) {
-      console.log(e);
+
+      trackZapTransaction(true, {
+        inputToken: inputCurrency?.symbol,
+        inputAmount,
+        targetPool: `${pool.symbolA}/${pool.symbolB}`,
+        ...(swapR.response ? { swapResponse: swapR.response } : {}),
+      });
+    } catch (error) {
+      setErrorMessage(error.message);
+
+      trackZapTransaction(false, {
+        inputToken: inputCurrency?.symbol,
+        inputAmount,
+        targetPool: `${pool.symbolA}/${pool.symbolB}`,
+        error: error.message,
+      });
     } finally {
       setIsLoading(false);
       setIsSigningModalOpen(false);
@@ -383,6 +456,118 @@ const Zap: React.FC = () => {
   const selectedPool = availablePools.find(
     (pool) => pool.contractId === Number(targetPairAddress)
   );
+
+  // Memoize complex calculations or components
+  const memoizedPoolList = useMemo(
+    () =>
+      availablePools
+        .slice((page - 1) * poolsPerPage, page * poolsPerPage)
+        .map((pool) => (
+          <ListItem
+            key={pool.poolId}
+            onClick={() =>
+              handlePoolSelect(pool.poolId, pool.contractId.toString())
+            }
+            sx={{
+              border: "1px solid #eee",
+              borderRadius: 1,
+              mb: 1,
+              backgroundColor:
+                selectedPoolId === pool.poolId
+                  ? "rgba(111, 42, 226, 0.08)"
+                  : "transparent",
+              "&:hover": {
+                backgroundColor:
+                  selectedPoolId === pool.poolId
+                    ? "rgba(111, 42, 226, 0.12)"
+                    : "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  {pool.iconA && (
+                    <img
+                      src={pool.iconA}
+                      alt={pool.symbolA}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                      }}
+                    />
+                  )}
+                  {pool.iconB && (
+                    <img
+                      src={pool.iconB}
+                      alt={pool.symbolB}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        marginLeft: -8,
+                      }}
+                    />
+                  )}
+                </Box>
+                <Typography>{`${pool.symbolA}/${pool.symbolB}`}</Typography>
+              </Box>
+              <Box sx={{ textAlign: "right" }}>
+                <Typography>
+                  <svg
+                    className="h-[14px] inline-block mb-4 p-1 w-[14px]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 500 446.4"
+                    style={{
+                      verticalAlign: "middle",
+                      marginRight: "2px",
+                      width: "14px",
+                      height: "14px",
+                    }}
+                  >
+                    <path
+                      fill="#6f2ae2"
+                      d="M243.7,446.3c-34.1,0-65.5-18.1-82.6-47.6L12.9,143.6C-13.6,97.9,2,39.4,47.6,12.9 C93.3-13.6,151.7,2,178.2,47.6l65.5,112.8l65.5-112.8c26.5-45.6,85-61.2,130.6-34.7c45.6,26.5,61.2,85,34.7,130.6L326.4,398.8 C309.3,428.2,277.8,446.3,243.7,446.3z"
+                    />
+                  </svg>
+                  {pool.tvl.toLocaleString()}
+                </Typography>
+                <Typography>APR: {pool.apr}%</Typography>
+              </Box>
+            </Box>
+          </ListItem>
+        )),
+    [availablePools, page, poolsPerPage, selectedPoolId]
+  );
+
+  const filteredPools = useMemo(
+    () =>
+      availablePools.filter(
+        (pool) =>
+          pool.symbolA.toLowerCase().includes(poolSearchQuery.toLowerCase()) ||
+          pool.symbolB.toLowerCase().includes(poolSearchQuery.toLowerCase())
+      ),
+    [availablePools, poolSearchQuery]
+  );
+
+  const trackZapTransaction = (success: boolean, details: any) => {
+    // Integration with analytics platform
+    // analytics.track('Zap Transaction', {
+    //   success,
+    //   inputToken: inputCurrency?.symbol,
+    //   inputAmount,
+    //   targetPool: `${selectedPool?.symbolA}/${selectedPool?.symbolB}`,
+    //   ...details
+    // });
+  };
 
   return (
     <GlobalStyles>
@@ -398,15 +583,52 @@ const Zap: React.FC = () => {
           }}
         />
       )}
-      <Card sx={{ p: 3, maxWidth: 480, mx: "auto", mt: 4 }}>
+      <Card
+        sx={{
+          p: { xs: 2, sm: 3 },
+          maxWidth: 480,
+          mx: "auto",
+          mt: { xs: 2, sm: 4 },
+          width: { xs: "95%", sm: "auto" },
+        }}
+      >
         <Box sx={{ mb: 2 }}>
-          <CurrencyInputPanel
-            value={inputAmount}
-            onUserInput={handleInputAmountChange}
-            onCurrencySelect={handleInputSelect}
-            currency={inputCurrency}
-            id="zap-input-token"
-          />
+          <Box sx={{ position: "relative" }}>
+            <CurrencyInputPanel
+              value={inputAmount}
+              onUserInput={handleInputAmountChange}
+              onCurrencySelect={handleInputSelect}
+              currency={inputCurrency}
+              id="zap-input-token"
+            />
+          </Box>
+          {inputCurrency?.balance && inputCurrency.balance !== "0" && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                mt: 1,
+                animation: "fadeInSlide 0.3s ease-out",
+              }}
+            >
+              <Button
+                variant="text"
+                size="small"
+                aria-label="Select maximum token amount"
+                onClick={handleMaxClick}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    transform: "scale(1.05)",
+                  },
+                }}
+              >
+                Max
+              </Button>
+            </Box>
+          )}
         </Box>
 
         {availablePools.length > 0 && (
@@ -414,95 +636,7 @@ const Zap: React.FC = () => {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Available Pools
             </Typography>
-            <List>
-              {availablePools
-                .slice((page - 1) * poolsPerPage, page * poolsPerPage)
-                .map((pool) => (
-                  <ListItem
-                    key={pool.poolId}
-                    onClick={() =>
-                      handlePoolSelect(pool.poolId, pool.contractId.toString())
-                    }
-                    sx={{
-                      border: "1px solid #eee",
-                      borderRadius: 1,
-                      mb: 1,
-                      backgroundColor:
-                        selectedPoolId === pool.poolId
-                          ? "rgba(111, 42, 226, 0.08)"
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor:
-                          selectedPoolId === pool.poolId
-                            ? "rgba(111, 42, 226, 0.12)"
-                            : "rgba(0, 0, 0, 0.04)",
-                      },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          {pool.iconA && (
-                            <img
-                              src={pool.iconA}
-                              alt={pool.symbolA}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: "50%",
-                              }}
-                            />
-                          )}
-                          {pool.iconB && (
-                            <img
-                              src={pool.iconB}
-                              alt={pool.symbolB}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: "50%",
-                                marginLeft: -8,
-                              }}
-                            />
-                          )}
-                        </Box>
-                        <Typography>{`${pool.symbolA}/${pool.symbolB}`}</Typography>
-                      </Box>
-                      <Box sx={{ textAlign: "right" }}>
-                        <Typography>
-                          <svg
-                            className="h-[14px] inline-block mb-4 p-1 w-[14px]"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 500 446.4"
-                            style={{
-                              verticalAlign: "middle",
-                              marginRight: "2px",
-                              width: "14px",
-                              height: "14px",
-                            }}
-                          >
-                            <path
-                              fill="#6f2ae2"
-                              d="M243.7,446.3c-34.1,0-65.5-18.1-82.6-47.6L12.9,143.6C-13.6,97.9,2,39.4,47.6,12.9 C93.3-13.6,151.7,2,178.2,47.6l65.5,112.8l65.5-112.8c26.5-45.6,85-61.2,130.6-34.7c45.6,26.5,61.2,85,34.7,130.6L326.4,398.8 C309.3,428.2,277.8,446.3,243.7,446.3z"
-                            />
-                          </svg>
-                          {pool.tvl.toLocaleString()}
-                        </Typography>
-                        <Typography>APR: {pool.apr}%</Typography>
-                      </Box>
-                    </Box>
-                  </ListItem>
-                ))}
-            </List>
+            <List>{memoizedPoolList}</List>
 
             {availablePools.length > poolsPerPage && (
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
@@ -537,12 +671,22 @@ const Zap: React.FC = () => {
           </Button>
         )}
 
-        <Dialog open={isModalOpen} onClose={handleCloseModal}>
+        <Dialog
+          open={isModalOpen}
+          onClose={handleCloseModal}
+          aria-labelledby="zap-confirmation-title"
+          aria-describedby="zap-confirmation-description"
+        >
           <DialogTitle>Confirm Zap Transaction</DialogTitle>
           <DialogContent>
             <Typography>
-              Are you sure you want to zap {inputAmount} {inputCurrency?.symbol}{" "}
-              into {selectedPool?.symbolA}/{selectedPool?.symbolB}?
+              Input: {inputAmount} {inputCurrency?.symbol}
+            </Typography>
+            {estimatedOutput && (
+              <Typography>Estimated Output: {estimatedOutput}</Typography>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              Transaction may revert if price moves significantly
             </Typography>
           </DialogContent>
           <DialogActions>
