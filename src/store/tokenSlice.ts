@@ -78,18 +78,14 @@ export const getTokens = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >("tokens/getTokens", async (_, { getState, rejectWithValue }) => {
   try {
-    const tokenTable = db.table("tokens");
-    const storedTokens = await tokenTable.toArray();
-    const mintMintRound =
-      storedTokens.length === 0 ? 0 : storedTokens.slice(-1)[0].mintRound;
+    //const tokenTable = db.table("tokens");
+    //const storedTokens = await tokenTable.toArray();
+    //const mintMintRound =
+    //  storedTokens.length === 0 ? 0 : storedTokens.slice(-1)[0].mintRound;
     const { data } = await axios.get(
-      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens`,
-      {
-        params: {
-          ["mint-min-round"]: mintMintRound,
-        },
-      }
+      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens`
     );
+
     const appTokens = data.tokens.map((t: any) => ({
       name: t.name,
       symbol: t.symbol,
@@ -98,16 +94,14 @@ export const getTokens = createAsyncThunk<
       totalSupply: t.totalSupply,
       mintRound: t.mintRound,
     }));
+
     const filteredTokens = appTokens.filter(
-      (t: any) => !["ARC200LT", "LPT"].includes(t.symbol)
+      (t: any) => !["ARC200LT", "LPT", "TEST"].includes(t.symbol)
     );
-    db.table("tokens").bulkPut(filteredTokens);
-    const tokens = await tokenTable.toArray();
-    return [
-      ...tokens.filter((t: any) => {
-        return ![24590664].includes(t.tokenId);
-      }),
-    ];
+
+    //db.table("tokens").bulkPut(filteredTokens);
+    //const tokens = await tokenTable.toArray();
+    return filteredTokens;
   } catch (error: any) {
     return rejectWithValue(error.message);
   }

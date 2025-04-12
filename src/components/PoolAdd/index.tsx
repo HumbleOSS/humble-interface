@@ -5,7 +5,7 @@ import ActiveSwapIcon from "static/icon/icon-swap-active-light.svg";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { CircularProgress, Stack, Dialog } from "@mui/material";
+import { CircularProgress, Stack, Dialog, Skeleton } from "@mui/material";
 import { CONTRACT, abi, arc200, swap } from "ulujs";
 import { NETWORK_TOKEN, TOKEN_VIA, TOKEN_WVOI1 } from "../../constants/tokens";
 import { getAlgorandClients } from "../../wallets";
@@ -419,6 +419,8 @@ const SwapRoot = styled.div`
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+  opacity: ${(props) => (props.isLoading ? 0.5 : 1)};
+  pointer-events: ${(props) => (props.isLoading ? "none" : "auto")};
   &.light {
     border: 1px solid
       var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
@@ -451,16 +453,21 @@ const BaseButton = styled.div`
 const Button = styled(BaseButton)`
   display: flex;
   padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
   gap: 10px;
   align-self: stretch;
   border-radius: var(--Radius-750, 20px);
   background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
+  color: ${(props) => (props.isDark ? "#fff" : "#141010")};
   &.active {
     border-radius: var(--Radius-700, 16px);
     background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+  }
+  &.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
   }
 `;
 
@@ -699,12 +706,30 @@ const Swap = () => {
     dispatch(getTokens() as unknown as UnknownAction);
   }, [dispatch]);
 
+  console.log("tokens", tokens, tokenStatus);
+
   /* Pools */
   const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
   const poolsStatus = useSelector((state: RootState) => state.pools.status);
   useEffect(() => {
     dispatch(getPools() as unknown as UnknownAction);
   }, [dispatch]);
+
+  console.log("pools", pools, poolsStatus);
+
+  const [tokens2, setTokens] = React.useState<any[]>();
+  // EFFECT: set tokens2
+  useEffect(() => {
+    axios
+      .get(
+        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+      )
+      .then((res) => {
+        setTokens(res.data.tokens);
+      });
+  }, []);
+
+  console.log("tokens2", tokens2);
 
   /* Params */
   const [sp] = useSearchParams();
@@ -713,13 +738,7 @@ const Swap = () => {
   //const paramTokenId = sp.get("tokenId");
 
   /* Wallet */
-  const {
-    //providers,
-    activeAccount,
-    signTransactions,
-    //sendTransactions,
-    //getAccountInfo,
-  } = useWallet();
+  const { activeAccount, signTransactions } = useWallet();
 
   const [pool, setPool] = useState<PoolI>();
   const [ready, setReady] = useState<boolean>(false);
@@ -733,6 +752,11 @@ const Swap = () => {
   const [token, setToken] = useState<ARC200TokenI>();
   const [token2, setToken2] = useState<ARC200TokenI>();
 
+  console.log({
+    token,
+    token2,
+  });
+
   const [tokenOptions, setTokenOptions] = useState<ARC200TokenI[]>();
   const [tokenOptions2, setTokenOptions2] = useState<ARC200TokenI[]>();
   const [balance, setBalance] = React.useState<string>();
@@ -740,7 +764,7 @@ const Swap = () => {
 
   // EFFECT: set tokens from param pool id
   useEffect(() => {
-    if (!pools || !tokens || pool) return;
+    if (!pools || !tokens) return;
     if (paramPoolId) {
       const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
       if (pool) {
@@ -750,8 +774,12 @@ const Swap = () => {
         const token2 = [TOKEN_WVOI1].includes(pool.tokB)
           ? NETWORK_TOKEN.VOI
           : tokens.find((t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokB}`);
-        setToken(token);
-        setToken2(token2);
+
+        // Add null checks before setting tokens
+        if (token && token2) {
+          setToken(token);
+          setToken2(token2);
+        }
       } else {
         const { algodClient, indexerClient } = getAlgorandClients();
         new swap(Number(paramPoolId), algodClient, indexerClient)
@@ -775,9 +803,9 @@ const Swap = () => {
           });
       }
     }
-  }, [pools, tokens, pools, paramPoolId, paramNewPool]);
+  }, [pools, tokens, paramPoolId, paramNewPool]);
 
-  // EFFECT
+  // EFFECT: set token options
   useEffect(() => {
     if (
       !tokens ||
@@ -792,8 +820,17 @@ const Swap = () => {
     }
     const poolTokens = Array.from(newTokens);
     setTokenOptions([
-      NETWORK_TOKEN.VOI,
-      ...tokens.filter((t: ARC200TokenI) => poolTokens.includes(t.tokenId)),
+      {
+        tokenId: 0,
+        name: "Voi",
+        symbol: "VOI",
+        decimals: 6,
+        totalSupply: BigInt(10_000_000_000 * 1e6),
+      },
+      ...tokens.filter(
+        (t: ARC200TokenI) =>
+          poolTokens.includes(t.tokenId) && !["VOI", "wVOI"].includes(t.symbol)
+      ),
     ]);
   }, [tokens, pools]);
 
@@ -814,7 +851,7 @@ const Swap = () => {
 
   console.log("eligiblePools", eligiblePools);
 
-  // EFFECT
+  // EFFECT: set pool
   useEffect(() => {
     if (!paramPoolId || !pools || !eligiblePools) return;
     if (paramPoolId) {
@@ -822,7 +859,7 @@ const Swap = () => {
       if (pool) {
         setPool({ ...pool, poolId: Number(paramPoolId) });
         setReady(true);
-        if (eligiblePools.length > 0) {
+        if (eligiblePools.length > 1) {
           const { algodClient, indexerClient } = getAlgorandClients();
           new swap(0, algodClient, indexerClient)
             .selectPool(eligiblePools, null, null, "poolId")
@@ -852,6 +889,7 @@ const Swap = () => {
   }, [pools, paramPoolId, eligiblePools]);
 
   const [info, setInfo] = useState<any>();
+
   // EFFECT: set pool info
   useEffect(() => {
     if (!pool) return;
@@ -871,7 +909,8 @@ const Swap = () => {
   console.log("info", info);
 
   const [poolBalance, setPoolBalance] = useState<BigInt>();
-  // EFFECT
+
+  // EFFECT: set pool balance
   useEffect(() => {
     if (!activeAccount || !pool) return;
     const { algodClient, indexerClient } = getAlgorandClients();
@@ -888,7 +927,7 @@ const Swap = () => {
 
   const [poolShare, setPoolShare] = useState<string>("0");
 
-  // EFFECT
+  // EFFECT: set pool share
   useEffect(() => {
     if (!activeAccount || !pool || !info || !poolBalance) return;
     const newShare =
@@ -1091,64 +1130,9 @@ const Swap = () => {
     }
   }, [pool, token, token2, toAmount, focus, paramNewPool]);
 
-  // // EFFECT
-  // useEffect(() => {
-  //   if (
-  //     tokenStatus !== "succeeded" ||
-  //     !tokens ||
-  //     token ||
-  //     token2 ||
-  //     tokens.length === 0
-  //   )
-  //     return;
-  //   //setToken(tokens[0]);
-  //   const options = new Set<ARC200TokenI>();
-  //   for (const p of pools) {
-  //     if ([p.tokA, p.tokB].includes(tokens[0].tokenId)) {
-  //       if (tokens[0].tokenId === p.tokA) {
-  //         options.add(
-  //           tokens.find(
-  //             (t: ARC200TokenI) => `${t.tokenId}` === `${p.tokB}`
-  //           ) as ARC200TokenI
-  //         );
-  //       } else {
-  //         options.add(
-  //           tokens.find(
-  //             (t: ARC200TokenI) => `${t.tokenId}` === `${p.tokA}`
-  //           ) as ARC200TokenI
-  //         );
-  //       }
-  //     }
-  //   }
-  //   //setToken2(Array.from(options)[0]);
-  // }, [tokens, tokenStatus, pools, token, token2]);
-
-  // EFFECT
-  // useEffect(() => {
-  //   if (!tokens || !pool) return;
-  //   const tokenA = tokens.find(
-  //     (t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokA}`
-  //   );
-  //   const tokenB = tokens.find(
-  //     (t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokB}`
-  //   );
-  //   if (paramTokenId) {
-  //     if (`${paramTokenId}` === `${tokenA?.tokenId}`) {
-  //       setToken(tokenA);
-  //       setToken2(tokenB);
-  //     } else {
-  //       setToken(tokenB);
-  //       setToken2(tokenA);
-  //     }
-  //   } else {
-  //     setToken(tokenA);
-  //     setToken2(tokenB);
-  //   }
-  // }, [tokens, pool, paramTokenId]);
-
   // EFFECT: update tokenOptions2 on token change
   useEffect(() => {
-    if (!token || paramNewPool === "true") return;
+    if (!token || !token || paramNewPool === "true") return;
     const options = new Set<ARC200TokenI>();
     for (const p of pools) {
       if ([p.tokA, p.tokB].includes(tokenId(token))) {
@@ -1175,17 +1159,25 @@ const Swap = () => {
       totalSupply: BigInt(10_000_000_000 * 1e6),
     };
     const tokenOptions2 = Array.from(options);
+    console.log("tokenOptions2", tokenOptions2);
     // check if token options includes wVOI
     if (tokenOptions2.find((t: ARC200TokenI) => t?.tokenId === TOKEN_WVOI1)) {
-      setTokenOptions2([netToken, ...tokenOptions2]);
+      setTokenOptions2(
+        [netToken, ...tokenOptions2].filter(
+          (t: ARC200TokenI) => t?.tokenId !== TOKEN_WVOI1
+        )
+      );
     } else {
-      setTokenOptions2(tokenOptions2);
+      setTokenOptions2(
+        tokenOptions2.filter((t: ARC200TokenI) => t?.tokenId !== TOKEN_WVOI1)
+      );
     }
-    if (
-      !tokenOptions2
-        .map((t: ARC200TokenI) => t?.tokenId)
-        .includes(tokenId(token2))
-    ) {
+
+    const tokenOption2Includes = tokenOptions2
+      .map((t: ARC200TokenI) => t?.tokenId)
+      .includes(tokenId(token2));
+
+    if (!tokenOption2Includes) {
       if (tokenOptions2.map((t: ARC200TokenI) => t?.tokenId).includes(0)) {
         setToken2(netToken);
       } else {
@@ -1194,24 +1186,13 @@ const Swap = () => {
     }
     setToAmount("0");
     setFromAmount("0");
-  }, [token, pools]);
+  }, [tokens, token, pools]);
 
   // EFFECT: resets to amount
   useEffect(() => {
     if (!token2) return;
     setToAmount("");
   }, [token2]);
-
-  const [tokens2, setTokens] = React.useState<any[]>();
-  useEffect(() => {
-    axios
-      .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
-      )
-      .then((res) => {
-        setTokens(res.data.tokens);
-      });
-  }, []);
 
   // EFFECT: set balance
   useEffect(() => {
@@ -1460,7 +1441,7 @@ const Swap = () => {
             `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools?contractId=${pool.poolId}`
           );
           if (data.pools.length > 0) break;
-          await new Promise((res) => setTimeout(res, 4000));
+          await new Promise((res) => setTimeout(res, 5000));
         } while (1);
       }
       if (paramNewPool === "true") {
@@ -1482,8 +1463,6 @@ const Swap = () => {
       setmessage("");
     }
   };
-
-  const isLoading = !pools || !tokens;
 
   const [message, setmessage] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
@@ -1520,7 +1499,34 @@ const Swap = () => {
     setTokBInfo(tokB);
   }, [token2, tokens2]);
 
-  return !isLoading ? (
+  // Modify loading check to be more specific
+  const isLoading = false;
+  // useMemo(() => {
+  //   return (
+  //     !pools ||
+  //     !tokens ||
+  //     (!paramNewPool && (!token || !token2)) || // Only check tokens if not new pool
+  //     !tokenOptions // Only check first token options
+  //   );
+  // }, [pools, tokens, token, token2, tokenOptions, paramNewPool]);
+
+  return isLoading ? (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "60vh",
+      }}
+    >
+      <CircularProgress
+        size={100}
+        sx={{
+          color: isDarkTheme ? "#fff" : "#2958ff",
+        }}
+      />
+    </div>
+  ) : (
     <>
       <SwapRoot className={isDarkTheme ? "dark" : "light"}>
         <SwapHeadingContainer>
@@ -1596,29 +1602,22 @@ const Swap = () => {
           </RateContainer>
         </SummaryContainer>
         <Button
-          className={isValid ? "active" : undefined}
+          className={`${isValid ? "active" : ""} ${on ? "loading" : ""}`}
           onClick={() => {
             if (!on) {
               handleProviderDeposit();
             }
           }}
+          isDark={isDarkTheme}
         >
-          {
-            /*!on ? (*/
+          {on ? (
+            <>
+              <CircularProgress color="inherit" size={100} />
+              <span>Add liquidity in progress</span>
+            </>
+          ) : (
             buttonLabel
-            /*) : (
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                alignItems: "center",
-              }}
-            >
-              <CircularProgress color="inherit" size={20} />
-              Add liquidity in progress
-            </div>
-            )*/
-          }
+          )}
         </Button>
         <ProgressBar
           message={message}
@@ -1691,7 +1690,7 @@ const Swap = () => {
         </ConfirmationModal>
       </Dialog>
     </>
-  ) : null;
+  );
 };
 
 export default Swap;

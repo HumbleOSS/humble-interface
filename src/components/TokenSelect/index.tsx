@@ -295,7 +295,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                             height: "32px",
                           }}
                           src={`https://asset-verification.nautilus.sh/icons/${
-                            filteredTokens[i].tokenId || 0
+                            filteredTokens[i]?.tokenId || 0
                           }.png`}
                           alt="Icon 401384"
                         />
