@@ -119,6 +119,7 @@ const Zap: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [estimatedOutput, setEstimatedOutput] = useState<string | null>(null);
   const [poolSearchQuery, setPoolSearchQuery] = useState("");
+  const [availableTokens, setAvailableTokens] = useState<Currency[]>([]);
 
   const loadingMessages = [
     "Preparing your transaction...",
@@ -138,9 +139,49 @@ const Zap: React.FC = () => {
     }
   }, [isSigningModalOpen]);
 
+  useEffect(() => {
+    // Add VOI as a default option when loading tokens
+    const voiToken = {
+      contractId: TOKEN_WVOI1,
+      tokenId: "0",
+      decimals: 6,
+      symbol: "VOI",
+      name: "Voi",
+      balance: "0", // This will be updated when wallet is connected
+    };
+
+    if (activeAccount) {
+      // Update VOI balance
+      const fetchVoiBalance = async () => {
+        try {
+          const { algodClient } = getAlgorandClients();
+          const accountInfo = await algodClient
+            .accountInformation(activeAccount.address)
+            .do();
+          voiToken.balance = (accountInfo.amount / 1e6).toString();
+        } catch (error) {
+          console.error("Failed to fetch VOI balance:", error);
+        }
+      };
+      fetchVoiBalance();
+    }
+
+    // Make VOI available in token selection
+    setAvailableTokens((prevTokens) => {
+      if (!prevTokens.some((token) => token.symbol === "VOI")) {
+        return [voiToken, ...prevTokens];
+      }
+      return prevTokens;
+    });
+  }, [activeAccount]);
+
+  console.log({ availableTokens });
+
   const handleInputSelect = useCallback((inputCurrency: Currency) => {
     setInputCurrency(inputCurrency);
   }, []);
+
+  console.log({ inputCurrency });
 
   const handleInputAmountChange = useCallback((value: string) => {
     setInputAmount(value);
@@ -241,8 +282,6 @@ const Zap: React.FC = () => {
         symbol: "VOI",
       };
 
-      console.log({ pool });
-
       const swapAForB = pool.tokAId === `${inputCurrency?.contractId}`;
 
       const mA =
@@ -250,7 +289,7 @@ const Zap: React.FC = () => {
           ? networkToken
           : {
               contractId: Number(pool.tokAId),
-              tokenId: null,
+              tokenId: swapAForB ? inputCurrency?.tokenId : null,
               decimals: pool.tokADecimals,
               symbol: pool.symbolA,
             };
@@ -260,7 +299,7 @@ const Zap: React.FC = () => {
           ? networkToken
           : {
               contractId: Number(pool.tokBId),
-              tokenId: null,
+              tokenId: !swapAForB ? inputCurrency?.tokenId : null,
               decimals: pool.tokBDecimals,
               symbol: pool.symbolB,
             };
@@ -286,6 +325,8 @@ const Zap: React.FC = () => {
         tokBId: pool.tokBId,
         targetPairAddress,
         inputCurrency,
+        fromLessAmount,
+        fromAtomicUnit,
       });
 
       // figure out to amount
@@ -318,31 +359,50 @@ const Zap: React.FC = () => {
             tokenId: mA.tokenId ?? undefined,
           };
 
+      console.log({ sA, sB });
+
       // logIndex
       // if symbolA or symbolB is VOI, then logIndex is -2, otherwise it is -1
-      const logIndex =
-        pool.symbolA === "VOI" || pool.symbolB === "VOI" ? -2 : -1;
+
+      const skipWithdraw = pool.symbolA === "VOI" || pool.symbolB === "VOI";
+
+      const logIndex = skipWithdraw
+        ? -1
+        : ["VOI", "aUSDC"].includes(pool.symbolA)
+        ? -2
+        : -1;
 
       const swapR: any = await ci.swap(
         acc.addr,
         Number(pool.contractId),
         sA,
-        sB
+        sB,
+        [],
+        {
+          debug: true,
+          slippage: 0.1,
+          degenMode: true,
+          skipWithdraw: true,
+        }
       );
+
+      console.log({ swapR });
 
       if (!swapR.success) throw new Error("Swap simulation failed");
 
       const swapTxnObjs = swapR.objs;
 
-      // pay pool fee for balance box
-      for (let i = 0; i < swapTxnObjs.length; i++) {
-        if (swapTxnObjs[i].appIndex === pool.contractId) {
-          console.log("found pool fee", swapTxnObjs[i], pool.contractId);
-          swapTxnObjs[i].payment = 28500;
-          console.log("found pool fee", swapTxnObjs[i], pool.contractId);
-          break;
-        }
-      }
+      // pay pool fee for balance box (non wrapped tokens)
+      // if (!inputCurrency.tokenId) {
+      //   for (let i = 0; i < swapTxnObjs.length; i++) {
+      //     if (swapTxnObjs[i].appIndex === pool.contractId) {
+      //       console.log("found pool fee", swapTxnObjs[i], pool.contractId);
+      //       swapTxnObjs[i].payment = 28500;
+      //       console.log("found pool fee", swapTxnObjs[i], pool.contractId);
+      //       break;
+      //     }
+      //   }
+      // }
 
       const outAB = Buffer.from(
         swapR.response.txnGroups[0].txnResults
@@ -351,12 +411,18 @@ const Zap: React.FC = () => {
           .slice(4)
       );
 
+      console.log({ outAB });
+
       const outA = outAB.slice(0, 32);
       const outB = outAB.slice(32, 64);
 
       const out = swapAForB ? outB : outA;
 
+      console.log({ swapAForB, out });
+
       const outBn = new BigNumber("0x" + Buffer.from(out).toString("hex"));
+
+      console.log({ outBn });
 
       const outN = outBn
         .dividedBy(
@@ -368,20 +434,27 @@ const Zap: React.FC = () => {
 
       // deposit
 
+      // remove tokenId conditionally to prevent deposit of wrapped token
       const dA = {
         ...mA,
         decimals: `${mA.decimals}`,
         amount: swapAForB ? fromAmount : outN,
+        tokenId: swapAForB ? inputCurrency?.tokenId : null,
       };
 
+      // remove tokenId conditionally to prevent deposit of wrapped token
       const dB = {
         ...mB,
         decimals: `${mB.decimals}`,
         amount: swapAForB ? outN : fromAmount,
+        tokenId: swapAForB ? null : inputCurrency?.tokenId,
       };
 
       console.log(acc.addr, Number(pool.contractId), dA, dB, swapTxnObjs, {
         debug: true,
+        swapAForB,
+        outN,
+        fromAmount,
       });
 
       const depositR: any = await ci.deposit(
@@ -394,6 +467,8 @@ const Zap: React.FC = () => {
           debug: true,
         }
       );
+
+      console.log({ depositR });
 
       if (!depositR.success) throw new Error("Deposit failed");
 

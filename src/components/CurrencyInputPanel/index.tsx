@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import BigNumber from "bignumber.js";
 import { useWallet } from "@txnlab/use-wallet-react";
+import { getAlgorandClients } from "@/wallets";
+import { TOKEN_WVOI1 } from "@/constants/tokens";
 
 // Add interface for token data
 interface TokenBalance {
@@ -62,27 +64,77 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleOpenModal = async () => {
+    if (!activeAccount) {
+      console.error("No active account found");
+      return;
+    }
+
     try {
+      // Fetch ARC-200 tokens
       const response = await fetch(
         `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount?.address}`
       );
       const data = await response.json();
+
+      const { algodClient } = getAlgorandClients();
+      const accountInfo = await algodClient
+        .accountInformation(activeAccount?.address)
+        .do();
+
+      console.log({ accountInfo, data });
+
+      // Create Voi token entry
+      const voiToken: TokenBalance = {
+        accountId: activeAccount?.address || "",
+        contractId: TOKEN_WVOI1,
+        tokenId: "0",
+        decimals: 6,
+        symbol: "VOI",
+        balance: (accountInfo.amount / 1e6).toString(),
+        verified: 1,
+      };
+
+      // Combine Voi with other tokens
       setTokens(
-        data.balances
-          .filter(
-            (token: TokenBalance) =>
-              token.balance !== "0" && token.verified === 1 && !token.tokenId
-          )
-          .map((token: TokenBalance) => ({
-            ...token,
-            balance: new BigNumber(token.balance)
-              .dividedBy(10 ** (token.decimals || 0))
-              .toFixed(token.decimals || 0),
-          }))
-          .sort(
-            (a: TokenBalance, b: TokenBalance) => a.contractId - b.contractId
-          )
+        [
+          voiToken,
+          ...data.balances
+            .filter(
+              (token: TokenBalance) =>
+                accountInfo.assets.find(
+                  (asset: any) => asset["asset-id"] === Number(token.tokenId)
+                ) ||
+                (!["ARC200LT", "LPT"].includes(token.symbol) &&
+                  token.tokenId !== "0" &&
+                  accountInfo.assets.find(
+                    (asset: any) => asset["asset-id"] === Number(token.tokenId)
+                  ) &&
+                  // token.verified === 1 &&
+                  true)
+            )
+            .map((token: TokenBalance) => ({
+              ...token,
+              balance: new BigNumber(token.balance)
+                .plus(
+                  new BigNumber(
+                    accountInfo.assets.find(
+                      (asset: any) =>
+                        asset["asset-id"] === Number(token.tokenId)
+                    )?.amount || "0"
+                  )
+                )
+                .dividedBy(10 ** (token.decimals || 0))
+                .toFixed(token.decimals || 0),
+            })),
+        ].sort((a: TokenBalance, b: TokenBalance) => {
+          // Always put VOI first
+          if (a.symbol === "VOI") return -1;
+          if (b.symbol === "VOI") return 1;
+          // Then sort by contractId for the rest
+          return a.contractId - b.contractId;
+        })
       );
+
       setIsModalOpen(true);
     } catch (error) {
       console.error("Failed to fetch tokens:", error);
@@ -92,7 +144,7 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   const handleSelectToken = (token: TokenBalance) => {
     onCurrencySelect({
       contractId: token.contractId,
-      tokenId: null,
+      tokenId: token.tokenId,
       balance: token.balance,
       symbol: token.symbol,
       decimals: token.decimals,
@@ -102,6 +154,9 @@ const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
   };
 
   const getTokenIconUrl = (contractId: string) => {
+    if (contractId === TOKEN_WVOI1.toString()) {
+      return `https://asset-verification.nautilus.sh/icons/0.png`;
+    }
     return `https://asset-verification.nautilus.sh/icons/${contractId}.png`;
   };
 
