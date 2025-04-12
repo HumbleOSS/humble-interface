@@ -378,8 +378,26 @@ const convertToARC200Token = (token: any): ARC200TokenI | undefined => {
   if (!token) return undefined;
   return {
     ...token,
-    tokenId: Number(token.tokenId) // Convert string tokenId to number
+    tokenId: Number(token.tokenId), // Convert string tokenId to number
   };
+};
+
+const getTokenIconUrl = (tokenId?: number) => {
+  if (!tokenId) return "";
+
+  // Handle wVOI special case
+  if (tokenId === 390001) {
+    return "https://asset-verification.nautilus.sh/icons/0.png";
+  }
+
+  // Handle regular tokens
+  if (tokenId) {
+    return `https://asset-verification.nautilus.sh/icons/${tokenId}.png`;
+  }
+
+  // all tokens are verified so this should never happen
+  // Fallback icon if needed
+  return "/default-token-icon.png"; // Add a default icon to your public folder
 };
 
 const PoolRemove = () => {
@@ -928,6 +946,8 @@ const PoolRemove = () => {
 
   const isLoading = !pools || !tokens;
 
+  console.log({ tokens });
+
   return (
     <>
       {!isLoading ? (
@@ -989,42 +1009,51 @@ const PoolRemove = () => {
             <br />
             <AmountDisplay>
               <TokenIcon
-                src={((tokenId?: number) => {
-                  return `https://asset-verification.nautilus.sh/icons/${
-                    tokenId === 390001 ? "0" : tokenId
-                  }.png`;
-                })(Number(tokens.find((t) => t.contractId === info?.tokA)?.tokenId))}
-                alt="Token A"
+                src={getTokenIconUrl(
+                  tokens?.find((t) => t.tokenId === info?.tokA)?.tokenId || 0
+                )}
+                alt={
+                  tokens?.find((t) => t.tokenId || 0 === info?.tokA)?.symbol ||
+                  ""
+                }
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  (e.target as HTMLImageElement).src =
+                    "/default-token-icon.png";
+                }}
               />
               {expectedOutcome
                 ? `${(
                     Number(expectedOutcome?.[0]) /
                     10 **
-                      (tokens.find((t) => t.contractId === info?.tokA)?.decimals || 0)
-                  ).toFixed(6)} ${tokenSymbol(
-                    convertToARC200Token(tokens.find((t) => t.contractId === info?.tokA)),
-                    true
-                  )}`
+                      (tokens.find((t) => t.tokenId === info?.tokA)?.decimals ||
+                        0)
+                  ).toFixed(6)} ${
+                    tokens.find((t) => t.tokenId === info?.tokA)?.symbol || ""
+                  }`
                 : "-"}
             </AmountDisplay>
             <AmountDisplay>
               <TokenIcon
-                src={((tokenId?: number) => {
-                  return `https://asset-verification.nautilus.sh/icons/${
-                    tokenId === 390001 ? "0" : tokenId
-                  }.png`;
-                })(Number(tokens.find((t) => t.contractId === info?.tokB)?.tokenId))}
-                alt="Token B"
+                src={getTokenIconUrl(
+                  tokens?.find((t) => t.tokenId === info?.tokB)?.tokenId || 0
+                )}
+                alt={tokens.find((t) => t.tokenId === info?.tokB)?.symbol || ""}
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  (e.target as HTMLImageElement).src =
+                    "/default-token-icon.png";
+                }}
               />
               {expectedOutcome
                 ? `${(
                     Number(expectedOutcome?.[1]) /
                     10 **
-                      (tokens.find((t) => t.contractId === info?.tokB)?.decimals || 0)
-                  ).toFixed(6)} ${tokenSymbol(
-                    convertToARC200Token(tokens.find((t) => t.contractId === info?.tokB)),
-                    true
-                  )}`
+                      (tokens.find((t) => t.tokenId === info?.tokB)?.decimals ||
+                        0)
+                  ).toFixed(6)} ${
+                    tokens.find((t) => t.tokenId === info?.tokB)?.symbol || ""
+                  }`
                 : "-"}
             </AmountDisplay>
           </div>
