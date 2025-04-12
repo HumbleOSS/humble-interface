@@ -1521,6 +1521,7 @@ const Swap = () => {
         debug: true,
         slippage: Number(currentSlippage) / 100,
         degenMode: degenMode,
+        skipWithdraw: false
       });
 
       if (!swapR?.success) {

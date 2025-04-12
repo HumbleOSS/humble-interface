@@ -22,8 +22,6 @@ import BigNumber from "bignumber.js";
 import algosdk from "algosdk";
 import { styled } from "@mui/material/styles";
 import Confetti from "react-confetti";
-import InputAdornment from "@mui/material/InputAdornment";
-import analytics from "@/utils/analytics";
 
 const GradientCircularProgress = styled(CircularProgress)({
   color: "transparent",
@@ -506,21 +504,20 @@ const Zap: React.FC = () => {
       setIsSigningModalOpen(false);
       handleCloseModal();
 
-      trackZapTransaction(true, {
-        inputToken: inputCurrency?.symbol,
-        inputAmount,
-        targetPool: `${pool.symbolA}/${pool.symbolB}`,
-        ...(swapR.response ? { swapResponse: swapR.response } : {}),
-      });
-    } catch (error) {
-      setErrorMessage(error.message);
-
-      trackZapTransaction(false, {
-        inputToken: inputCurrency?.symbol,
-        inputAmount,
-        targetPool: `${pool.symbolA}/${pool.symbolB}`,
-        error: error.message,
-      });
+      // trackZapTransaction(true, {
+      //   inputToken: inputCurrency?.symbol,
+      //   inputAmount,
+      //   targetPool: `${pool.symbolA}/${pool.symbolB}`,
+      //   ...(swapR.response ? { swapResponse: swapR.response } : {}),
+      // });
+    } catch (error: any) {
+      //setErrorMessage(error.message);
+      // trackZapTransaction(false, {
+      //   inputToken: inputCurrency?.symbol,
+      //   inputAmount,
+      //   targetPool: `${pool.symbolA}/${pool.symbolB}`,
+      //   error: error.message,
+      // });
     } finally {
       setIsLoading(false);
       setIsSigningModalOpen(false);

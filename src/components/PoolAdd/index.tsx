@@ -412,7 +412,7 @@ const SwapHeading = styled.div`
   }
 `;
 
-const SwapRoot = styled.div`
+const SwapRoot = styled.div<{ isLoading?: boolean }>`
   display: flex;
   padding: var(--Spacing-1000, 40px);
   flex-direction: column;
@@ -450,7 +450,7 @@ const BaseButton = styled.div`
   cursor: pointer;
 `;
 
-const Button = styled(BaseButton)`
+const Button = styled(BaseButton)<{ isDark?: boolean }>`
   display: flex;
   padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
   flex-direction: row;
@@ -1608,7 +1608,7 @@ const Swap = () => {
               handleProviderDeposit();
             }
           }}
-          isDark={isDarkTheme}
+          //isDark={isDarkTheme}
         >
           {on ? (
             <>
