@@ -46,4 +46,8 @@ export const routes = [
     path: "/analytics",
     Component: Page.Analytics,
   },
+  {
+    path: "/analytics/token/:id",
+    Component: Page.AnalyticsToken,
+  },
 ];

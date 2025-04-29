@@ -9,3 +9,4 @@ export { FarmCreate } from "./FarmCreate";
 export { Token } from "./Token";
 export { Zap } from "./Zap";
 export { Analytics } from "./Analytics";
+export { AnalyticsToken } from "./AnalyticsToken";

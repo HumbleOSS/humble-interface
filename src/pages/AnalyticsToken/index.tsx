@@ -2,7 +2,7 @@ import Layout from "@/layouts/Default";
 import { RootState } from "@/store/store";
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -71,6 +71,7 @@ interface DataGridProps {
   tickers?: Ticker[];
   timeRange: TimeRanges;
   voiPrice: string;
+  id: string;
 }
 
 const TokenIcon = styled.img`
@@ -86,10 +87,23 @@ const StyledLink = styled(Link)`
   padding: 0.5rem 1rem;
 `;
 
+const AssetLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
 export const DataGrid: React.FC<DataGridProps> = ({
   tickers,
   timeRange,
   voiPrice,
+  id,
 }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -143,8 +157,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
             }),
           };
         });
-        trades.sort((a, b) => b.trade_timestamp - a.trade_timestamp); // Sort newest first
-        setTrades(trades);
+        setTrades(
+          trades
+            .filter(trade => trade.ticker && [trade.ticker.base_currency, trade.ticker.target_currency].some(c => c.match(id)))
+            .sort((a, b) => b.trade_timestamp - a.trade_timestamp) // Sort newest first
+        );
         setLoading(false);
       } catch (error) {
         console.error("Error fetching trades:", error);
@@ -153,10 +170,22 @@ export const DataGrid: React.FC<DataGridProps> = ({
     };
 
     fetchTrades();
-  }, [tickers, timeRange]);
+  }, [tickers, timeRange, id]);
 
   if (loading) {
     return <div>Loading trades...</div>;
+  }
+
+  if (trades.length === 0) {
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '2rem', 
+        color: isDarkTheme ? '#9CA3AF' : '#6B7280' 
+      }}>
+        No trades found for this time period
+      </div>
+    );
   }
 
   const totalPages = Math.ceil(trades.length / itemsPerPage);
@@ -185,11 +214,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             if (!ticker) return null;
 
             return (
-              <tr 
-                key={trade.trade_id}
-                onClick={() => window.open(`https://voiager.xyz/transaction/${trade.trade_id}`, '_blank')}
-                style={{ cursor: 'pointer' }}
-              >
+              <tr key={trade.trade_id}>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Time">
                   <StyledLink
                     to={`https://voiager.xyz/transaction/${trade.trade_id}`}
@@ -415,11 +440,34 @@ const Container = styled.div`
   padding: 1.5rem;
 `;
 
-const Title = styled.h1<{ isDarkTheme: boolean }>`
+const BreadcrumbContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const BreadcrumbLink = styled(Link)<{ isDarkTheme: boolean }>`
+  color: ${props => props.isDarkTheme ? '#9CA3AF' : '#6B7280'};
+  text-decoration: none;
   font-size: 1.875rem;
   font-weight: bold;
-  margin-bottom: 1rem;
-  color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "inherit")};
+
+  &:hover {
+    color: ${props => props.isDarkTheme ? '#D1D5DB' : '#4B5563'};
+  }
+`;
+
+const BreadcrumbSeparator = styled.span<{ isDarkTheme: boolean }>`
+  color: ${props => props.isDarkTheme ? '#4B5563' : '#9CA3AF'};
+  font-size: 1.875rem;
+  font-weight: bold;
+`;
+
+const BreadcrumbCurrent = styled.span<{ isDarkTheme: boolean }>`
+  color: ${props => props.isDarkTheme ? '#F3F4F6' : 'inherit'};
+  font-size: 1.875rem;
+  font-weight: bold;
 `;
 
 const TimeRangeContainer = styled.div`
@@ -601,11 +649,6 @@ const TableBody = styled.tbody<{ isDarkTheme: boolean }>`
   & > tr {
     border-bottom: 1px solid
       ${(props) => (props.isDarkTheme ? "#374151" : "#E5E7EB")};
-    cursor: pointer;
-    
-    &:hover {
-      background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
-    }
   }
 `;
 
@@ -699,11 +742,21 @@ const AmountCell = styled.div`
   }
 `;
 
+const TableRow = styled.tr<{ isDarkTheme: boolean }>`
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: ${props => props.isDarkTheme ? '#374151' : '#F3F4F6'};
+  }
+`;
+
 export const AssetsTable: React.FC<{
   tickers: Ticker[];
   timeRange: TimeRanges;
   voiPrice: string;
-}> = ({ tickers, timeRange, voiPrice }) => {
+  id: string;
+}> = ({ tickers, timeRange, voiPrice, id }) => {
   const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -765,9 +818,12 @@ export const AssetsTable: React.FC<{
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedAssets.map((asset: any) => (
-              <tr 
-                key={asset.symbol}
-                onClick={() => navigate(`/analytics/token/${asset.symbol}`)}
+              <TableRow 
+                key={asset.symbol} 
+                isDarkTheme={isDarkTheme}
+                onClick={() => {
+                  navigate(`/analytics/token/${asset.symbol}`, { replace: true })
+                }}
               >
                 <TableCell isDarkTheme={isDarkTheme} data-label="Asset">
                   <CurrencyPairCell>
@@ -789,7 +845,7 @@ export const AssetsTable: React.FC<{
                 <TableCell isDarkTheme={isDarkTheme} data-label="Liquidity">
                   ${asset.liquidity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </TableCell>
-              </tr>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
@@ -998,7 +1054,8 @@ interface DexPricesResponse {
   prices: DexPrice[];
 }
 
-export const Analytics: React.FC = () => {
+export const AnalyticsToken: React.FC = () => {
+  const { id } = useParams();
   const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
@@ -1009,6 +1066,17 @@ export const Analytics: React.FC = () => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+
+  // Add this effect to reset states when id changes
+  useEffect(() => {
+    setTimeRange(TimeRanges["24h"]);
+    setTotalLiquidity("0");
+    setTotalVolume("0");
+    setVoiPrice("0");
+    setTickers([]);
+    setTickersData([]);
+    setDexPricesData([]);
+  }, [id]); // Reset when id changes
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -1032,7 +1100,7 @@ export const Analytics: React.FC = () => {
     };
 
     fetchMarketData();
-  }, [timeRange]);
+  }, [timeRange, id]);
 
   useEffect(() => {
     // Find VOI price from DEX prices (aUSDC/VOI pair)
@@ -1055,8 +1123,9 @@ export const Analytics: React.FC = () => {
 
     // Filter and sort tickers as before
     const filteredTickers = tickersData.filter(
-      (ticker) => ticker.liquidity_in_usd !== "0"
+      (ticker) => ticker.liquidity_in_usd !== "0" && [ticker.base_currency,ticker.target_currency].some(c => c.match(id))
     );
+    console.log(filteredTickers);
     filteredTickers.sort((a, b) => {
       const aVolume = parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
                      parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
@@ -1106,16 +1175,22 @@ export const Analytics: React.FC = () => {
         maximumFractionDigits: 0,
       })
     );
-  }, [tickersData, dexPricesData, timeRange]);
+  }, [tickersData, dexPricesData, timeRange, id]);
 
-  if (voiPrice === "0" || totalLiquidity === "0" || totalVolume === "0") {
+  if (voiPrice === "0" || totalLiquidity === "0" || totalVolume === "0" || !id) {
     return <div>Loading...</div>;
   }
 
   return (
     <Container>
       <div>
-        <Title isDarkTheme={isDarkTheme}>Analytics</Title>
+        <BreadcrumbContainer>
+          <BreadcrumbLink to="/analytics" isDarkTheme={isDarkTheme}>
+            Analytics
+          </BreadcrumbLink>
+          <BreadcrumbSeparator isDarkTheme={isDarkTheme}>/</BreadcrumbSeparator>
+          <BreadcrumbCurrent isDarkTheme={isDarkTheme}>{id}</BreadcrumbCurrent>
+        </BreadcrumbContainer>
 
         <TimeRangeContainer>
           {["24h", "7d", "30d", "all"].map((range) => (
@@ -1164,6 +1239,7 @@ export const Analytics: React.FC = () => {
 <ChartCard isDarkTheme={isDarkTheme}>
           <ChartTitle isDarkTheme={isDarkTheme}>Assets</ChartTitle>
           <AssetsTable
+            id={id}
             tickers={tickers}
             timeRange={timeRange}
             voiPrice={voiPrice.slice(1)} // HACK: Remove $ sign
@@ -1182,6 +1258,7 @@ export const Analytics: React.FC = () => {
         <ChartCard isDarkTheme={isDarkTheme}>
           <ChartTitle isDarkTheme={isDarkTheme}>Recent Transactions</ChartTitle>
           <DataGrid
+            id={id}
             tickers={tickers}
             timeRange={timeRange}
             voiPrice={voiPrice.slice(1)} // HACK: Remove $ sign
@@ -1192,4 +1269,4 @@ export const Analytics: React.FC = () => {
   );
 };
 
-export default Analytics;
+export default AnalyticsToken;
