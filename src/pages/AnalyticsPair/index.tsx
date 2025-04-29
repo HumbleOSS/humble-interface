@@ -462,6 +462,7 @@ const BreadcrumbSeparator = styled.span<{ isDarkTheme: boolean }>`
   color: ${props => props.isDarkTheme ? '#4B5563' : '#9CA3AF'};
   font-size: 1.875rem;
   font-weight: bold;
+  margin: 0 0.5rem;
 `;
 
 const BreadcrumbCurrent = styled.span<{ isDarkTheme: boolean }>`
@@ -882,7 +883,6 @@ export const PairsTable: React.FC<{
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
-  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(tickers.length / itemsPerPage);
@@ -914,15 +914,6 @@ export const PairsTable: React.FC<{
     };
   };
 
-  const getNormalizedPairUrl = (ticker: Ticker) => {
-    // Compare currency IDs to determine order
-    if (ticker.base_currency_id.localeCompare(ticker.target_currency_id) <= 0) {
-      return `${ticker.base_currency}_${ticker.target_currency}`;
-    } else {
-      return `${ticker.target_currency}_${ticker.base_currency}`;
-    }
-  };
-
   return (
     <>
       <TableWrapper>
@@ -939,13 +930,7 @@ export const PairsTable: React.FC<{
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedTickers.map((ticker) => (
-              <TableRow 
-                key={ticker.ticker_id} 
-                isDarkTheme={isDarkTheme}
-                onClick={() => {
-                  navigate(`/analytics/pair/${getNormalizedPairUrl(ticker)}`, { replace: true });
-                }}
-              >
+              <tr key={ticker.ticker_id}>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Trading Pair">
                   <CurrencyPairCell>
                     <CurrencyIcon
@@ -1001,7 +986,7 @@ export const PairsTable: React.FC<{
                     ).toLocaleString()}
                   </InverseRate>
                 </TableCell>
-              </TableRow>
+              </tr>
             ))}
           </TableBody>
         </Table>
@@ -1070,8 +1055,9 @@ interface DexPricesResponse {
   prices: DexPrice[];
 }
 
-export const AnalyticsToken: React.FC = () => {
-  const { id } = useParams();
+export const AnalyticsPair: React.FC = () => {
+  const { id } = useParams(); // id is now in format like "UNIT_VOI"
+  const [baseToken, quoteToken] = (id || '').split('_');
   const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
@@ -1083,25 +1069,11 @@ export const AnalyticsToken: React.FC = () => {
     (state: RootState) => state.theme.isDarkTheme
   );
 
-  // Add this effect to reset states when id changes
-  useEffect(() => {
-    setTimeRange(TimeRanges["24h"]);
-    setTotalLiquidity("0");
-    setTotalVolume("0");
-    setVoiPrice("0");
-    setTickers([]);
-    setTickersData([]);
-    setDexPricesData([]);
-  }, [id]); // Reset when id changes
-
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        // Fetch both tickers and DEX prices in parallel
         const [tickersResponse, dexPricesResponse] = await Promise.all([
-          fetch(
-            "https://mainnet-idx.nautilus.sh/integrations/coingecko/tickers"
-          ),
+          fetch("https://mainnet-idx.nautilus.sh/integrations/coingecko/tickers"),
           fetch("https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices"),
         ]);
 
@@ -1116,7 +1088,7 @@ export const AnalyticsToken: React.FC = () => {
     };
 
     fetchMarketData();
-  }, [timeRange, id]);
+  }, [timeRange, baseToken, quoteToken]);
 
   useEffect(() => {
     // Find VOI price from DEX prices (aUSDC/VOI pair)
@@ -1137,11 +1109,14 @@ export const AnalyticsToken: React.FC = () => {
       );
     }
 
-    // Filter and sort tickers as before
-    const filteredTickers = tickersData.filter(
-      (ticker) => ticker.liquidity_in_usd !== "0" && [ticker.base_currency,ticker.target_currency].some(c => c.match(id))
+    // Filter tickers for the specific pair
+    const filteredTickers = tickersData.filter(ticker => 
+      ticker.liquidity_in_usd !== "0" && 
+      ((ticker.base_currency === baseToken && ticker.target_currency === quoteToken) ||
+       (ticker.base_currency === quoteToken && ticker.target_currency === baseToken))
     );
-    console.log(filteredTickers);
+
+    // Sort by volume and liquidity
     filteredTickers.sort((a, b) => {
       const aVolume = parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
                      parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
@@ -1150,12 +1125,9 @@ export const AnalyticsToken: React.FC = () => {
       const aLiquidity = parseFloat(a.liquidity_in_usd);
       const bLiquidity = parseFloat(b.liquidity_in_usd);
 
-      // If one has volume and the other doesn't, prioritize the one with volume
       if ((aVolume > 0 && bVolume === 0) || (aVolume === 0 && bVolume > 0)) {
         return bVolume - aVolume;
       }
-
-      // If both have volume or both don't have volume, sort by liquidity
       return bLiquidity - aLiquidity;
     });
     setTickers(filteredTickers);
@@ -1175,14 +1147,9 @@ export const AnalyticsToken: React.FC = () => {
 
     // Calculate total volume
     const totalVol = filteredTickers.reduce((sum, ticker) => {
-      const targetVolumeInVoi =
-        parseFloat(getTargetVolume(ticker, timeRange)) *
-        parseFloat(ticker.target_price);
-      const baseVolumeInVoi =
-        parseFloat(getBaseVolume(ticker, timeRange)) *
-        parseFloat(ticker.base_price);
-      const totalVolumeInUSD = (targetVolumeInVoi + baseVolumeInVoi) * price;
-      return sum + totalVolumeInUSD;
+      const volume = parseFloat(getTargetVolume(ticker, timeRange)) * parseFloat(ticker.target_price) +
+                    parseFloat(getBaseVolume(ticker, timeRange)) * parseFloat(ticker.base_price);
+      return sum + (volume * price);
     }, 0);
     setTotalVolume(
       totalVol.toLocaleString("en-US", {
@@ -1191,7 +1158,7 @@ export const AnalyticsToken: React.FC = () => {
         maximumFractionDigits: 0,
       })
     );
-  }, [tickersData, dexPricesData, timeRange, id]);
+  }, [tickersData, dexPricesData, timeRange, baseToken, quoteToken]);
 
   if (voiPrice === "0" || totalLiquidity === "0" || totalVolume === "0" || !id) {
     return <div>Loading...</div>;
@@ -1205,7 +1172,9 @@ export const AnalyticsToken: React.FC = () => {
             Analytics
           </BreadcrumbLink>
           <BreadcrumbSeparator isDarkTheme={isDarkTheme}>/</BreadcrumbSeparator>
-          <BreadcrumbCurrent isDarkTheme={isDarkTheme}>{id}</BreadcrumbCurrent>
+          <BreadcrumbCurrent isDarkTheme={isDarkTheme}>
+            {baseToken}/{quoteToken}
+          </BreadcrumbCurrent>
         </BreadcrumbContainer>
 
         <TimeRangeContainer>
@@ -1252,7 +1221,7 @@ export const AnalyticsToken: React.FC = () => {
           </ChartCard>
         </ChartGrid>*/}
 
-<ChartCard isDarkTheme={isDarkTheme}>
+        <ChartCard isDarkTheme={isDarkTheme}>
           <ChartTitle isDarkTheme={isDarkTheme}>Assets</ChartTitle>
           <AssetsTable
             id={id}
@@ -1285,4 +1254,4 @@ export const AnalyticsToken: React.FC = () => {
   );
 };
 
-export default AnalyticsToken;
+export default AnalyticsPair;

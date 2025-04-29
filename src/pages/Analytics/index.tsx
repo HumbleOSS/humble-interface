@@ -826,6 +826,7 @@ export const PairsTable: React.FC<{
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(tickers.length / itemsPerPage);
@@ -857,6 +858,15 @@ export const PairsTable: React.FC<{
     };
   };
 
+  const getNormalizedPairUrl = (ticker: Ticker) => {
+    // Compare currency IDs to determine order
+    if (ticker.base_currency_id.localeCompare(ticker.target_currency_id) <= 0) {
+      return `${ticker.base_currency}_${ticker.target_currency}`;
+    } else {
+      return `${ticker.target_currency}_${ticker.base_currency}`;
+    }
+  };
+
   return (
     <>
       <TableWrapper>
@@ -873,7 +883,11 @@ export const PairsTable: React.FC<{
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedTickers.map((ticker) => (
-              <tr key={ticker.ticker_id}>
+              <tr 
+                key={ticker.ticker_id}
+                onClick={() => navigate(`/analytics/pair/${getNormalizedPairUrl(ticker)}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <TableCell isDarkTheme={isDarkTheme} data-label="Trading Pair">
                   <CurrencyPairCell>
                     <CurrencyIcon
