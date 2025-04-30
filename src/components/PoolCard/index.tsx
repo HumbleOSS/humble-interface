@@ -14,6 +14,8 @@ import { useCopyToClipboard } from "usehooks-ts";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { toast } from "react-toastify";
 
+const BLOCK_REWARD_ADJUSTMENT = 28.22 / 2; // block rewards for VOI pairs
+
 const StyledLink = styled(Link)`
   text-decoration: none;
   color: inherit;
@@ -554,7 +556,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     additionalAprBoost: 0,
   };
   if ([pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)) {
-    reward.blockReward = 18.78;
+    reward.blockReward = BLOCK_REWARD_ADJUSTMENT;
   }
   const tokA = tokens?.find((t) => `${t.contractId}` === `${pool.tokAId}`);
   const tokB = tokens?.find((t) => `${t.contractId}` === `${pool.tokBId}`);
