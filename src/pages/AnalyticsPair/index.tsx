@@ -111,7 +111,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   const [trades, setTrades] = useState<TradeWithTicker[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
 
   useEffect(() => {
     if (!tickers) return;
@@ -157,10 +157,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
             }),
           };
         });
+
         setTrades(
           trades
-            .filter(trade => trade.ticker && [trade.ticker.base_currency, trade.ticker.target_currency].some(c => c.match(id)))
-            .sort((a, b) => b.trade_timestamp - a.trade_timestamp) // Sort newest first
+            .filter((trade) => trade.ticker)
+            .sort((a, b) => b.trade_timestamp - a.trade_timestamp)
         );
         setLoading(false);
       } catch (error) {
@@ -178,11 +179,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   if (trades.length === 0) {
     return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '2rem', 
-        color: isDarkTheme ? '#9CA3AF' : '#6B7280' 
-      }}>
+      <div
+        style={{
+          textAlign: "center",
+          padding: "2rem",
+          color: isDarkTheme ? "#9CA3AF" : "#6B7280",
+        }}
+      >
         No trades found for this time period
       </div>
     );
@@ -195,148 +198,154 @@ export const DataGrid: React.FC<DataGridProps> = ({
   );
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHead isDarkTheme={isDarkTheme}>
-          <tr>
-            <TableHeader isDarkTheme={isDarkTheme}>Transaction</TableHeader>
-            {/*<TableHeader isDarkTheme={isDarkTheme}>Type</TableHeader>*/}
-            {/*<TableHeader isDarkTheme={isDarkTheme}>Price</TableHeader>*/}
-            <TableHeader isDarkTheme={isDarkTheme}>Value</TableHeader>
-            <TableHeader isDarkTheme={isDarkTheme}>Amount</TableHeader>
-            <TableHeader isDarkTheme={isDarkTheme}>Amount</TableHeader>
-            <TableHeader isDarkTheme={isDarkTheme}>{/*Time*/}</TableHeader>
-          </tr>
-        </TableHead>
-        <TableBody isDarkTheme={isDarkTheme}>
-          {paginatedTrades.map((trade) => {
-            const ticker = trade.ticker;
-            if (!ticker) return null;
+    <>
+      <div className="overflow-x-auto">
+        <PriceChart trades={trades} isDarkTheme={isDarkTheme} />
+        <Table>
+          <TableHead isDarkTheme={isDarkTheme}>
+            <tr>
+              <TableHeader isDarkTheme={isDarkTheme}>Transaction</TableHeader>
+              {/*<TableHeader isDarkTheme={isDarkTheme}>Type</TableHeader>*/}
+              {/*<TableHeader isDarkTheme={isDarkTheme}>Price</TableHeader>*/}
+              <TableHeader isDarkTheme={isDarkTheme}>Value</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>Amount</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>Amount</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>{/*Time*/}</TableHeader>
+            </tr>
+          </TableHead>
+          <TableBody isDarkTheme={isDarkTheme}>
+            {paginatedTrades.map((trade) => {
+              const ticker = trade.ticker;
+              if (!ticker) return null;
 
-            return (
-              <tr key={trade.trade_id}>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Time">
-                  <StyledLink
-                    to={`https://voiager.xyz/transaction/${trade.trade_id}`}
-                    target="_blank"
-                  >
-                    Swap{" "}
-                    {trade.type === "buy"
-                      ? trade.ticker.target_currency
-                      : trade.ticker.base_currency}{" "}
-                    for{" "}
-                    {trade.type === "buy"
-                      ? trade.ticker.base_currency
-                      : trade.ticker.target_currency}
-                  </StyledLink>
-                </TableCell>
+              return (
+                <tr key={trade.trade_id}>
+                  <TableCell isDarkTheme={isDarkTheme} data-label="Time">
+                    <StyledLink
+                      to={`https://voiager.xyz/transaction/${trade.trade_id}`}
+                      target="_blank"
+                    >
+                      Swap{" "}
+                      {trade.type === "buy"
+                        ? trade.ticker.target_currency
+                        : trade.ticker.base_currency}{" "}
+                      for{" "}
+                      {trade.type === "buy"
+                        ? trade.ticker.base_currency
+                        : trade.ticker.target_currency}
+                    </StyledLink>
+                  </TableCell>
 
-                {/*<TableCell isDarkTheme={isDarkTheme} data-label="Type">
-                  <span className="capitalize">{trade.type}</span>
-                </TableCell>*/}
-                {/*<TableCell isDarkTheme={isDarkTheme} data-label="Price">
-                  {Number(trade.price).toFixed(6)}
-                </TableCell>*/}
-                <TableCell isDarkTheme={isDarkTheme} data-label="Value">
-                  {trade.value}
-                </TableCell>
+                  {/*<TableCell isDarkTheme={isDarkTheme} data-label="Type">
+                    <span className="capitalize">{trade.type}</span>
+                  </TableCell>*/}
+                  {/*<TableCell isDarkTheme={isDarkTheme} data-label="Price">
+                    {Number(trade.price).toFixed(6)}
+                  </TableCell>*/}
+                  <TableCell isDarkTheme={isDarkTheme} data-label="Value">
+                    {trade.value}
+                  </TableCell>
 
-                <TableCell isDarkTheme={isDarkTheme} data-label="Amount">
-                  <AmountCell>
-                    <TokenIcon
-                      src={`https://asset-verification.nautilus.sh/icons/${
-                        trade.type === "buy"
-                          ? trade.ticker.target_currency_id
-                          : trade.ticker.base_currency_id
-                      }.png`}
-                      alt={
-                        trade.type === "buy"
-                          ? trade.ticker.target_currency
-                          : trade.ticker.base_currency
+                  <TableCell isDarkTheme={isDarkTheme} data-label="Amount">
+                    <AmountCell>
+                      <TokenIcon
+                        src={`https://asset-verification.nautilus.sh/icons/${
+                          trade.type === "buy"
+                            ? trade.ticker.target_currency_id
+                            : trade.ticker.base_currency_id
+                        }.png`}
+                        alt={
+                          trade.type === "buy"
+                            ? trade.ticker.target_currency
+                            : trade.ticker.base_currency
+                        }
+                      />
+                      <span>
+                        <span>
+                          {Number(
+                            (trade.type === "buy"
+                              ? trade.target_volume
+                              : trade.base_volume
+                            ).toFixed(6)
+                          ).toString()}
+                        </span>
+                        <span>
+                          {trade.type === "buy"
+                            ? trade.ticker.target_currency
+                            : trade.ticker.base_currency}
+                        </span>
+                      </span>
+                    </AmountCell>
+                  </TableCell>
+                  <TableCell isDarkTheme={isDarkTheme} data-label="Amount">
+                    <AmountCell>
+                      <TokenIcon
+                        src={`https://asset-verification.nautilus.sh/icons/${
+                          trade.type === "buy"
+                            ? trade.ticker.base_currency_id
+                            : trade.ticker.target_currency_id
+                        }.png`}
+                        alt={
+                          trade.type === "buy"
+                            ? trade.ticker.base_currency
+                            : trade.ticker.target_currency
+                        }
+                      />
+                      <span>
+                        <span>
+                          {Number(
+                            (trade.type === "buy"
+                              ? trade.base_volume
+                              : trade.target_volume
+                            ).toFixed(6)
+                          ).toString()}
+                        </span>
+                        <span>
+                          {trade.type === "buy"
+                            ? trade.ticker.base_currency
+                            : trade.ticker.target_currency}
+                        </span>
+                      </span>
+                    </AmountCell>
+                  </TableCell>
+                  <TableCell isDarkTheme={isDarkTheme} data-label="Time">
+                    {formatDistanceToNow(
+                      new Date(trade.trade_timestamp * 1000),
+                      {
+                        addSuffix: true,
+                        includeSeconds: false,
                       }
-                    />
-                    <span>
-                      <span>
-                        {Number(
-                          (trade.type === "buy"
-                            ? trade.target_volume
-                            : trade.base_volume
-                          ).toFixed(6)
-                        ).toString()}
-                      </span>
-                      <span>
-                        {trade.type === "buy"
-                          ? trade.ticker.target_currency
-                          : trade.ticker.base_currency}
-                      </span>
-                    </span>
-                  </AmountCell>
-                </TableCell>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Amount">
-                  <AmountCell>
-                    <TokenIcon
-                      src={`https://asset-verification.nautilus.sh/icons/${
-                        trade.type === "buy"
-                          ? trade.ticker.base_currency_id
-                          : trade.ticker.target_currency_id
-                      }.png`}
-                      alt={
-                        trade.type === "buy"
-                          ? trade.ticker.base_currency
-                          : trade.ticker.target_currency
-                      }
-                    />
-                    <span>
-                      <span>
-                        {Number(
-                          (trade.type === "buy"
-                            ? trade.base_volume
-                            : trade.target_volume
-                          ).toFixed(6)
-                        ).toString()}
-                      </span>
-                      <span>
-                        {trade.type === "buy"
-                          ? trade.ticker.base_currency
-                          : trade.ticker.target_currency}
-                      </span>
-                    </span>
-                  </AmountCell>
-                </TableCell>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Time">
-                  {formatDistanceToNow(new Date(trade.trade_timestamp * 1000), {
-                    addSuffix: true,
-                    includeSeconds: false,
-                  }).replace(/about |less than |almost |over /, "")}
-                </TableCell>
-              </tr>
-            );
-          })}
-        </TableBody>
-      </Table>
+                    ).replace(/about |less than |almost |over /, "")}
+                  </TableCell>
+                </tr>
+              );
+            })}
+          </TableBody>
+        </Table>
 
-      <PaginationWrapper>
-        <PaginationButton
-          isDarkTheme={isDarkTheme}
-          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </PaginationButton>
-        <PageInfo isDarkTheme={isDarkTheme}>
-          Page {currentPage} of {totalPages}
-        </PageInfo>
-        <PaginationButton
-          isDarkTheme={isDarkTheme}
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-          }
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </PaginationButton>
-      </PaginationWrapper>
-    </div>
+        <PaginationWrapper>
+          <PaginationButton
+            isDarkTheme={isDarkTheme}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </PaginationButton>
+          <PageInfo isDarkTheme={isDarkTheme}>
+            Page {currentPage} of {totalPages}
+          </PageInfo>
+          <PaginationButton
+            isDarkTheme={isDarkTheme}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </PaginationButton>
+        </PaginationWrapper>
+      </div>
+    </>
   );
 };
 
@@ -365,6 +374,176 @@ export const LineChart: React.FC = () => {
         <Line type="monotone" dataKey="value" stroke="#8884d8" />
       </RechartsLineChart>
     </ResponsiveContainer>
+  );
+};
+
+export const PriceChart: React.FC<{
+  trades: TradeWithTicker[];
+  isDarkTheme: boolean;
+}> = ({ trades, isDarkTheme }) => {
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [scaleType, setScaleType] = useState<"linear" | "log">("log");
+
+  useEffect(() => {
+    if (!trades || trades.length === 0) return;
+
+    // Group trades by hour and calculate average price
+    const groupedData = trades.reduce((acc: Record<string, any>, trade) => {
+      const date = new Date(trade.trade_timestamp * 1000);
+      const hour = date.toISOString().slice(0, 13); // Group by hour (YYYY-MM-DDTHH)
+
+      if (!acc[hour]) {
+        acc[hour] = {
+          prices: [],
+          volume: 0,
+          timestamp: date.getTime(),
+        };
+      }
+
+      acc[hour].prices.push(parseFloat(trade.price));
+      acc[hour].volume +=
+        trade.type === "buy" ? trade.target_volume : trade.base_volume;
+
+      return acc;
+    }, {});
+
+    // Convert to array and calculate average price for each hour
+    const data = Object.entries(groupedData)
+      .map(([hour, data]: [string, any]) => ({
+        date: data.timestamp,
+        price:
+          data.prices.reduce((a: number, b: number) => a + b, 0) /
+          data.prices.length,
+        volume: data.volume,
+      }))
+      .sort((a, b) => a.date - b.date);
+
+    setChartData(data);
+  }, [trades]);
+
+  if (!trades || trades.length === 0 || chartData.length === 0) {
+    return (
+      <div
+        style={{
+          height: 300,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: isDarkTheme ? "#9CA3AF" : "#6B7280",
+        }}
+      >
+        No trade data available
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "1rem",
+          gap: "0.5rem",
+        }}
+      >
+        <button
+          onClick={() => setScaleType("linear")}
+          style={{
+            padding: "0.25rem 0.5rem",
+            backgroundColor:
+              scaleType === "linear"
+                ? "#6366f1"
+                : isDarkTheme
+                ? "#374151"
+                : "#f3f4f6",
+            color:
+              scaleType === "linear"
+                ? "white"
+                : isDarkTheme
+                ? "#D1D5DB"
+                : "#374151",
+            borderRadius: "0.25rem",
+            fontSize: "0.875rem",
+          }}
+        >
+          Linear
+        </button>
+        <button
+          onClick={() => setScaleType("log")}
+          style={{
+            padding: "0.25rem 0.5rem",
+            backgroundColor:
+              scaleType === "log"
+                ? "#6366f1"
+                : isDarkTheme
+                ? "#374151"
+                : "#f3f4f6",
+            color:
+              scaleType === "log"
+                ? "white"
+                : isDarkTheme
+                ? "#D1D5DB"
+                : "#374151",
+            borderRadius: "0.25rem",
+            fontSize: "0.875rem",
+          }}
+        >
+          Log
+        </button>
+      </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <RechartsLineChart data={chartData}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={isDarkTheme ? "#374151" : "#E5E7EB"}
+          />
+          <XAxis
+            dataKey="date"
+            type="number"
+            domain={["auto", "auto"]}
+            scale="time"
+            tickFormatter={(timestamp) => {
+              const date = new Date(timestamp);
+              return `${date.getMonth() + 1}/${date.getDate()}`;
+            }}
+            stroke={isDarkTheme ? "#9CA3AF" : "#6B7280"}
+          />
+          <YAxis
+            scale={scaleType}
+            domain={scaleType === "log" ? ["auto", "auto"] : ["auto", "auto"]}
+            stroke={isDarkTheme ? "#9CA3AF" : "#6B7280"}
+            style={{ fontSize: "0.75rem" }}
+            tickFormatter={(value) => {
+              // Format numbers based on their magnitude
+              if (value >= 1) {
+                return value.toFixed(2);
+              } else if (value >= 0.01) {
+                return value.toFixed(4);
+              } else {
+                return value.toExponential(2);
+              }
+            }}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkTheme ? "#1F2937" : "white",
+              border: `1px solid ${isDarkTheme ? "#374151" : "#E5E7EB"}`,
+              borderRadius: "0.375rem",
+            }}
+            labelFormatter={(label) => new Date(label).toLocaleString()}
+            formatter={(value: number) => [value.toFixed(6), "Price"]}
+          />
+          <Line
+            type="monotone"
+            dataKey="price"
+            stroke="#6366f1"
+            dot={false}
+            strokeWidth={2}
+          />
+        </RechartsLineChart>
+      </ResponsiveContainer>
+    </>
   );
 };
 
@@ -448,25 +627,25 @@ const BreadcrumbContainer = styled.div`
 `;
 
 const BreadcrumbLink = styled(Link)<{ isDarkTheme: boolean }>`
-  color: ${props => props.isDarkTheme ? '#9CA3AF' : '#6B7280'};
+  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
   text-decoration: none;
   font-size: 1.875rem;
   font-weight: bold;
 
   &:hover {
-    color: ${props => props.isDarkTheme ? '#D1D5DB' : '#4B5563'};
+    color: ${(props) => (props.isDarkTheme ? "#D1D5DB" : "#4B5563")};
   }
 `;
 
 const BreadcrumbSeparator = styled.span<{ isDarkTheme: boolean }>`
-  color: ${props => props.isDarkTheme ? '#4B5563' : '#9CA3AF'};
+  color: ${(props) => (props.isDarkTheme ? "#4B5563" : "#9CA3AF")};
   font-size: 1.875rem;
   font-weight: bold;
   margin: 0 0.5rem;
 `;
 
 const BreadcrumbCurrent = styled.span<{ isDarkTheme: boolean }>`
-  color: ${props => props.isDarkTheme ? '#F3F4F6' : 'inherit'};
+  color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "inherit")};
   font-size: 1.875rem;
   font-weight: bold;
 `;
@@ -748,7 +927,7 @@ const TableRow = styled.tr<{ isDarkTheme: boolean }>`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${props => props.isDarkTheme ? '#374151' : '#F3F4F6'};
+    background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
   }
 `;
 
@@ -758,7 +937,9 @@ export const AssetsTable: React.FC<{
   voiPrice: string;
   id: string;
 }> = ({ tickers, timeRange, voiPrice, id }) => {
-  const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
+  const isDarkTheme = useSelector(
+    (state: RootState) => state.theme.isDarkTheme
+  );
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -772,10 +953,10 @@ export const AssetsTable: React.FC<{
         currencyId: ticker.base_currency_id,
         volume: 0,
         liquidity: 0,
-        price: parseFloat(ticker.base_price) * parseFloat(voiPrice)
+        price: parseFloat(ticker.base_price) * parseFloat(voiPrice),
       };
     }
-    
+
     // Process target currency
     if (!acc[ticker.target_currency]) {
       acc[ticker.target_currency] = {
@@ -783,13 +964,19 @@ export const AssetsTable: React.FC<{
         currencyId: ticker.target_currency_id,
         volume: 0,
         liquidity: 0,
-        price: parseFloat(ticker.target_price) * parseFloat(voiPrice)
+        price: parseFloat(ticker.target_price) * parseFloat(voiPrice),
       };
     }
 
     // Add volumes
-    const baseVolume = parseFloat(getBaseVolume(ticker, timeRange)) * parseFloat(ticker.base_price) * parseFloat(voiPrice);
-    const targetVolume = parseFloat(getTargetVolume(ticker, timeRange)) * parseFloat(ticker.target_price) * parseFloat(voiPrice);
+    const baseVolume =
+      parseFloat(getBaseVolume(ticker, timeRange)) *
+      parseFloat(ticker.base_price) *
+      parseFloat(voiPrice);
+    const targetVolume =
+      parseFloat(getTargetVolume(ticker, timeRange)) *
+      parseFloat(ticker.target_price) *
+      parseFloat(voiPrice);
     acc[ticker.base_currency].volume += baseVolume;
     acc[ticker.target_currency].volume += targetVolume;
 
@@ -801,9 +988,14 @@ export const AssetsTable: React.FC<{
     return acc;
   }, {});
 
-  const assetsList = Object.values(assets).sort((a: any, b: any) => b.volume - a.volume);
+  const assetsList = Object.values(assets).sort(
+    (a: any, b: any) => b.volume - a.volume
+  );
   const totalPages = Math.ceil(assetsList.length / itemsPerPage);
-  const paginatedAssets = assetsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedAssets = assetsList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <>
@@ -813,17 +1005,21 @@ export const AssetsTable: React.FC<{
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Price</TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>Volume ({timeRange})</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>
+                Volume ({timeRange})
+              </TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedAssets.map((asset: any) => (
-              <TableRow 
-                key={asset.symbol} 
+              <TableRow
+                key={asset.symbol}
                 isDarkTheme={isDarkTheme}
                 onClick={() => {
-                  navigate(`/analytics/token/${asset.symbol}`, { replace: true })
+                  navigate(`/analytics/token/${asset.symbol}`, {
+                    replace: true,
+                  });
                 }}
               >
                 <TableCell isDarkTheme={isDarkTheme} data-label="Asset">
@@ -841,10 +1037,16 @@ export const AssetsTable: React.FC<{
                   ${asset.price.toFixed(6)}
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Volume">
-                  ${asset.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  $
+                  {asset.volume.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Liquidity">
-                  ${asset.liquidity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  $
+                  {asset.liquidity.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
                 </TableCell>
               </TableRow>
             ))}
@@ -855,7 +1057,7 @@ export const AssetsTable: React.FC<{
       <PaginationWrapper>
         <PaginationButton
           isDarkTheme={isDarkTheme}
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
           disabled={currentPage === 1}
         >
           Previous
@@ -865,7 +1067,9 @@ export const AssetsTable: React.FC<{
         </PageInfo>
         <PaginationButton
           isDarkTheme={isDarkTheme}
-          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+          }
           disabled={currentPage === totalPages}
         >
           Next
@@ -1055,10 +1259,40 @@ interface DexPricesResponse {
   prices: DexPrice[];
 }
 
+const ActionButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-right: 1rem;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const SwapButton = styled(ActionButton)`
+  background-color: #6366f1;
+  color: white;
+`;
+
+const AddLiquidityButton = styled(ActionButton)`
+  background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
+  color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "#374151")};
+`;
+
+const ActionButtonsContainer = styled.div`
+  margin: 1rem 0 2rem;
+`;
+
 export const AnalyticsPair: React.FC = () => {
   const { id } = useParams(); // id is now in format like "UNIT_VOI"
-  const [baseToken, quoteToken] = (id || '').split('_');
-  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
+  const [baseToken, quoteToken] = (id || "").split("_");
+  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["30d"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
   const [voiPrice, setVoiPrice] = useState("0");
@@ -1073,7 +1307,9 @@ export const AnalyticsPair: React.FC = () => {
     const fetchMarketData = async () => {
       try {
         const [tickersResponse, dexPricesResponse] = await Promise.all([
-          fetch("https://mainnet-idx.nautilus.sh/integrations/coingecko/tickers"),
+          fetch(
+            "https://mainnet-idx.nautilus.sh/integrations/coingecko/tickers"
+          ),
           fetch("https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices"),
         ]);
 
@@ -1110,18 +1346,23 @@ export const AnalyticsPair: React.FC = () => {
     }
 
     // Filter tickers for the specific pair
-    const filteredTickers = tickersData.filter(ticker => 
-      ticker.liquidity_in_usd !== "0" && 
-      ((ticker.base_currency === baseToken && ticker.target_currency === quoteToken) ||
-       (ticker.base_currency === quoteToken && ticker.target_currency === baseToken))
+    const filteredTickers = tickersData.filter(
+      (ticker) =>
+        ticker.liquidity_in_usd !== "0" &&
+        ((ticker.base_currency === baseToken &&
+          ticker.target_currency === quoteToken) ||
+          (ticker.base_currency === quoteToken &&
+            ticker.target_currency === baseToken))
     );
 
     // Sort by volume and liquidity
     filteredTickers.sort((a, b) => {
-      const aVolume = parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
-                     parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
-      const bVolume = parseFloat(getTargetVolume(b, timeRange)) * parseFloat(b.target_price) +
-                     parseFloat(getBaseVolume(b, timeRange)) * parseFloat(b.base_price);
+      const aVolume =
+        parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
+        parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
+      const bVolume =
+        parseFloat(getTargetVolume(b, timeRange)) * parseFloat(b.target_price) +
+        parseFloat(getBaseVolume(b, timeRange)) * parseFloat(b.base_price);
       const aLiquidity = parseFloat(a.liquidity_in_usd);
       const bLiquidity = parseFloat(b.liquidity_in_usd);
 
@@ -1147,9 +1388,12 @@ export const AnalyticsPair: React.FC = () => {
 
     // Calculate total volume
     const totalVol = filteredTickers.reduce((sum, ticker) => {
-      const volume = parseFloat(getTargetVolume(ticker, timeRange)) * parseFloat(ticker.target_price) +
-                    parseFloat(getBaseVolume(ticker, timeRange)) * parseFloat(ticker.base_price);
-      return sum + (volume * price);
+      const volume =
+        parseFloat(getTargetVolume(ticker, timeRange)) *
+          parseFloat(ticker.target_price) +
+        parseFloat(getBaseVolume(ticker, timeRange)) *
+          parseFloat(ticker.base_price);
+      return sum + volume * price;
     }, 0);
     setTotalVolume(
       totalVol.toLocaleString("en-US", {
@@ -1160,7 +1404,12 @@ export const AnalyticsPair: React.FC = () => {
     );
   }, [tickersData, dexPricesData, timeRange, baseToken, quoteToken]);
 
-  if (voiPrice === "0" || totalLiquidity === "0" || totalVolume === "0" || !id) {
+  if (
+    voiPrice === "0" ||
+    totalLiquidity === "0" ||
+    totalVolume === "0" ||
+    !id
+  ) {
     return <div>Loading...</div>;
   }
 
@@ -1176,6 +1425,18 @@ export const AnalyticsPair: React.FC = () => {
             {baseToken}/{quoteToken}
           </BreadcrumbCurrent>
         </BreadcrumbContainer>
+
+        <ActionButtonsContainer>
+          <SwapButton href={`/#/swap?poolId=${tickers[0].pool_id}`}>
+            Swap
+          </SwapButton>
+          <AddLiquidityButton
+            href={`/#/pool/add?poolId=${tickers[0].pool_id}`}
+            isDarkTheme={isDarkTheme}
+          >
+            Add Liquidity
+          </AddLiquidityButton>
+        </ActionButtonsContainer>
 
         <TimeRangeContainer>
           {["24h", "7d", "30d", "all"].map((range) => (
@@ -1207,19 +1468,6 @@ export const AnalyticsPair: React.FC = () => {
             //change="+3.2%"
           />
         </StatsGrid>
-
-        {/*<ChartGrid>
-          <ChartCard isDarkTheme={isDarkTheme}>
-            <ChartTitle isDarkTheme={isDarkTheme}>Volume Over Time</ChartTitle>
-            <LineChart />
-          </ChartCard>
-          <ChartCard isDarkTheme={isDarkTheme}>
-            <ChartTitle isDarkTheme={isDarkTheme}>
-              Daily Transactions
-            </ChartTitle>
-            <BarChart />
-          </ChartCard>
-        </ChartGrid>*/}
 
         <ChartCard isDarkTheme={isDarkTheme}>
           <ChartTitle isDarkTheme={isDarkTheme}>Assets</ChartTitle>

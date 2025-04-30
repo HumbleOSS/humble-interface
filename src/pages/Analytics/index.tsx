@@ -1013,7 +1013,7 @@ interface DexPricesResponse {
 }
 
 export const Analytics: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
+  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["7d"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
   const [voiPrice, setVoiPrice] = useState("0");
