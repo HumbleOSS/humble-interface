@@ -167,7 +167,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table isDarkTheme={isDarkTheme}>
         <TableHead isDarkTheme={isDarkTheme}>
           <tr>
             <TableHeader isDarkTheme={isDarkTheme}>Transaction</TableHeader>
@@ -346,7 +346,7 @@ export const LineChart: React.FC = () => {
 interface StatsCardProps {
   title: string;
   value: string;
-  change: string;
+  // change: string;
 }
 
 const StatsCardWrapper = styled.div<{ isDarkTheme: boolean }>`
@@ -533,7 +533,7 @@ const TableWrapper = styled.div`
   }
 `;
 
-const Table = styled.table`
+const Table = styled.table<{ isDarkTheme: boolean }>`
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -754,7 +754,7 @@ export const AssetsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
@@ -870,7 +870,7 @@ export const PairsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Trading Pair</TableHeader>

@@ -201,7 +201,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     <>
       <div className="overflow-x-auto">
         <PriceChart trades={trades} isDarkTheme={isDarkTheme} />
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Transaction</TableHeader>
@@ -550,7 +550,7 @@ export const PriceChart: React.FC<{
 interface StatsCardProps {
   title: string;
   value: string;
-  change: string;
+  //change: string;
 }
 
 const StatsCardWrapper = styled.div<{ isDarkTheme: boolean }>`
@@ -761,7 +761,7 @@ const TableWrapper = styled.div`
   }
 `;
 
-const Table = styled.table`
+const Table = styled.table<{ isDarkTheme: boolean }>`
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -1000,7 +1000,7 @@ export const AssetsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
@@ -1121,7 +1121,7 @@ export const PairsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Trading Pair</TableHeader>
@@ -1280,7 +1280,7 @@ const SwapButton = styled(ActionButton)`
   color: white;
 `;
 
-const AddLiquidityButton = styled(ActionButton)`
+const AddLiquidityButton = styled(ActionButton)<{ isDarkTheme: boolean }>`
   background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
   color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "#374151")};
 `;

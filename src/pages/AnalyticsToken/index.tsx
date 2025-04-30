@@ -229,7 +229,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table isDarkTheme={isDarkTheme}>
         <TableHead isDarkTheme={isDarkTheme}>
           <tr>
             <TableHeader isDarkTheme={isDarkTheme}>Transaction</TableHeader>
@@ -404,7 +404,7 @@ export const LineChart: React.FC = () => {
 interface StatsCardProps {
   title: string;
   value: string;
-  change: string;
+  //change: string;
 }
 
 const StatsCardWrapper = styled.div<{ isDarkTheme: boolean }>`
@@ -614,7 +614,7 @@ const TableWrapper = styled.div`
   }
 `;
 
-const Table = styled.table`
+const Table = styled.table<{ isDarkTheme: boolean }>`
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -853,7 +853,7 @@ export const AssetsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
@@ -984,7 +984,7 @@ export const PairsTable: React.FC<{
   return (
     <>
       <TableWrapper>
-        <Table>
+        <Table isDarkTheme={isDarkTheme}>
           <TableHead isDarkTheme={isDarkTheme}>
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Trading Pair</TableHeader>
@@ -1204,7 +1204,9 @@ export const AnalyticsToken: React.FC = () => {
     const filteredTickers = tickersData.filter(
       (ticker) =>
         ticker.liquidity_in_usd !== "0" &&
-        [ticker.base_currency, ticker.target_currency].some((c) => c.match(id))
+        [ticker.base_currency, ticker.target_currency].some((c: string) =>
+          c.match(id||"")
+        )
     );
     console.log(filteredTickers);
     filteredTickers.sort((a, b) => {
@@ -1262,13 +1264,14 @@ export const AnalyticsToken: React.FC = () => {
 
   useEffect(() => {
     // Find currency ID from tickers
-    const ticker = tickersData.find(t => 
-      t.base_currency === id || t.target_currency === id
+    const ticker = tickersData.find(
+      (t) => t.base_currency === id || t.target_currency === id
     );
     if (ticker) {
-      const newCurrencyId = ticker.base_currency === id ? 
-        ticker.base_currency_id : 
-        ticker.target_currency_id;
+      const newCurrencyId =
+        ticker.base_currency === id
+          ? ticker.base_currency_id
+          : ticker.target_currency_id;
       setCurrencyId(newCurrencyId);
     }
   }, [tickersData, id]);
