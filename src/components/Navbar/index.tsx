@@ -9,8 +9,9 @@ import { useSelector } from "react-redux";
 import { Box } from "@mui/material";
 import ConnectWallet from "../ConnectWallet";
 import MenuIcon from "@mui/icons-material/Menu";
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import HomeIcon from "@mui/icons-material/Home";
+import BarChartIcon from "@mui/icons-material/BarChart";
 
 const Logo = styled.img`
   width: auto;
@@ -143,7 +144,7 @@ const MobileMenuDrawer = styled.div<{ $isDarkTheme?: boolean }>`
 `;
 
 const MobileMenuContent = styled.div<{ $isDarkTheme?: boolean }>`
-  background: ${props => props.$isDarkTheme ? '#20093E' : '#FFFFFF'};
+  background: ${(props) => (props.$isDarkTheme ? "#20093E" : "#FFFFFF")};
   padding: 16px;
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
@@ -157,31 +158,32 @@ const MenuItem = styled.div<{ $active?: boolean; $isDarkTheme?: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
-  
-  background: ${props => props.$active 
-    ? props.$isDarkTheme 
-      ? 'rgba(255, 255, 255, 0.1)'
-      : 'rgba(0, 0, 0, 0.05)'
-    : 'transparent'
-  };
+
+  background: ${(props) =>
+    props.$active
+      ? props.$isDarkTheme
+        ? "rgba(255, 255, 255, 0.1)"
+        : "rgba(0, 0, 0, 0.05)"
+      : "transparent"};
 
   &:hover {
-    background: ${props => props.$isDarkTheme 
-      ? 'rgba(255, 255, 255, 0.1)'
-      : 'rgba(0, 0, 0, 0.05)'
-    };
+    background: ${(props) =>
+      props.$isDarkTheme ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"};
   }
 `;
 
-const MenuItemLabel = styled.span<{ $active?: boolean; $isDarkTheme?: boolean }>`
-  color: ${props => {
+const MenuItemLabel = styled.span<{
+  $active?: boolean;
+  $isDarkTheme?: boolean;
+}>`
+  color: ${(props) => {
     if (props.$active) {
-      return props.$isDarkTheme ? '#FFBE1D' : '#9933FF';
+      return props.$isDarkTheme ? "#FFBE1D" : "#9933FF";
     }
-    return props.$isDarkTheme ? '#FFFFFF' : '#161717';
+    return props.$isDarkTheme ? "#FFFFFF" : "#161717";
   }};
   font-size: 16px;
-  font-weight: ${props => props.$active ? '600' : '500'};
+  font-weight: ${(props) => (props.$active ? "600" : "500")};
   line-height: 24px;
 `;
 
@@ -205,7 +207,8 @@ const Navbar = () => {
     { path: "/", label: "Home", Icon: HomeIcon },
     { path: "/swap", label: "Swap", Icon: SwapLogo },
     { path: "/pool", label: "Pool", Icon: PoolLogo },
-    { path: "/token", label: "Token", Icon: TokenLogo },
+    //{ path: "/token", label: "Token", Icon: TokenLogo },
+    { path: "/analytics", label: "Analytics", Icon: BarChartIcon },
   ];
 
   const handleMenuClick = (path: string) => {
@@ -234,13 +237,13 @@ const Navbar = () => {
                   height: "24px",
                 }}
               />
-              <KeyboardArrowDownIcon 
+              <KeyboardArrowDownIcon
                 sx={{
                   fontSize: 16,
                   display: "block",
                   height: "24px",
-                  transition: 'transform 0.3s ease',
-                  transform: isMobileMenuOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: "transform 0.3s ease",
+                  transform: isMobileMenuOpen ? "rotate(180deg)" : "rotate(0)",
                 }}
               />
             </MobileMenuButton>
@@ -257,10 +260,15 @@ const Navbar = () => {
                 href: "/pool",
                 icon: PoolLogo,
               },
+              //{
+              //  label: "Token",
+              //  href: "/token",
+              //  icon: TokenLogo,
+              //},
               {
-                label: "Token",
-                href: "/token",
-                icon: TokenLogo,
+                label: "Analytics",
+                href: "/analytics",
+                icon: BarChartIcon,
               },
             ].map((item) => {
               const Item = item.icon;
@@ -302,10 +310,15 @@ const Navbar = () => {
                 <MenuIconWrapper
                   sx={{
                     svg: {
-                      color: location.pathname === path
-                        ? (isDarkTheme ? '#FFBE1D' : '#9933FF')
-                        : (isDarkTheme ? '#FFFFFF' : '#161717')
-                    }
+                      color:
+                        location.pathname === path
+                          ? isDarkTheme
+                            ? "#FFBE1D"
+                            : "#9933FF"
+                          : isDarkTheme
+                          ? "#FFFFFF"
+                          : "#161717",
+                    },
                   }}
                 >
                   <Icon />

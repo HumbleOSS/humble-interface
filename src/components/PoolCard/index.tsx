@@ -554,7 +554,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     additionalAprBoost: 0,
   };
   if ([pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)) {
-    reward.blockReward = 18.78;
+    reward.blockReward = 28.22 / 2;
   }
   const tokA = tokens?.find((t) => `${t.contractId}` === `${pool.tokAId}`);
   const tokB = tokens?.find((t) => `${t.contractId}` === `${pool.tokBId}`);
