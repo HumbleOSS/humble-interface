@@ -1128,7 +1128,9 @@ export const PairsTable: React.FC<{
               <TableHeader isDarkTheme={isDarkTheme} hideOnMobile>
                 Rate
               </TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>Volume (24h)</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>
+                {`Volume (${timeRange})`}
+              </TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
@@ -1161,22 +1163,22 @@ export const PairsTable: React.FC<{
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Volume (24h)">
                   <VolumeCell>
-                    {calculateTotalVolume(ticker).usd}
+                    {ticker.target_currency}:{" "}
+                    {parseFloat(
+                      getTargetVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <br />
-                    <InverseRate isDarkTheme={isDarkTheme}>
-                      <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
-                      {calculateTotalVolume(ticker).voi}
-                    </InverseRate>
+                    {ticker.base_currency}:{" "}
+                    {parseFloat(
+                      getBaseVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <VolumeTooltip isDarkTheme={isDarkTheme}>
-                      {ticker.target_currency}:{" "}
-                      {parseFloat(
-                        getTargetVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      {calculateTotalVolume(ticker).usd}
                       <br />
-                      {ticker.base_currency}:{" "}
-                      {parseFloat(
-                        getBaseVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      <InverseRate isDarkTheme={isDarkTheme}>
+                        <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
+                        {calculateTotalVolume(ticker).voi}
+                      </InverseRate>
                     </VolumeTooltip>
                   </VolumeCell>
                 </TableCell>
@@ -1292,7 +1294,7 @@ const ActionButtonsContainer = styled.div`
 export const AnalyticsPair: React.FC = () => {
   const { id } = useParams(); // id is now in format like "UNIT_VOI"
   const [baseToken, quoteToken] = (id || "").split("_");
-  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["30d"]);
+  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
   const [voiPrice, setVoiPrice] = useState("0");

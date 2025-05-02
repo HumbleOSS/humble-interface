@@ -185,10 +185,15 @@ export const DataGrid: React.FC<DataGridProps> = ({
             if (!ticker) return null;
 
             return (
-              <tr 
+              <tr
                 key={trade.trade_id}
-                onClick={() => window.open(`https://voiager.xyz/transaction/${trade.trade_id}`, '_blank')}
-                style={{ cursor: 'pointer' }}
+                onClick={() =>
+                  window.open(
+                    `https://voiager.xyz/transaction/${trade.trade_id}`,
+                    "_blank"
+                  )
+                }
+                style={{ cursor: "pointer" }}
               >
                 <TableCell isDarkTheme={isDarkTheme} data-label="Time">
                   <StyledLink
@@ -602,9 +607,10 @@ const TableBody = styled.tbody<{ isDarkTheme: boolean }>`
     border-bottom: 1px solid
       ${(props) => (props.isDarkTheme ? "#374151" : "#E5E7EB")};
     cursor: pointer;
-    
+
     &:hover {
-      background-color: ${(props) => (props.isDarkTheme ? "#374151" : "#F3F4F6")};
+      background-color: ${(props) =>
+        props.isDarkTheme ? "#374151" : "#F3F4F6"};
     }
   }
 `;
@@ -704,7 +710,9 @@ export const AssetsTable: React.FC<{
   timeRange: TimeRanges;
   voiPrice: string;
 }> = ({ tickers, timeRange, voiPrice }) => {
-  const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
+  const isDarkTheme = useSelector(
+    (state: RootState) => state.theme.isDarkTheme
+  );
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -718,10 +726,10 @@ export const AssetsTable: React.FC<{
         currencyId: ticker.base_currency_id,
         volume: 0,
         liquidity: 0,
-        price: parseFloat(ticker.base_price) * parseFloat(voiPrice)
+        price: parseFloat(ticker.base_price) * parseFloat(voiPrice),
       };
     }
-    
+
     // Process target currency
     if (!acc[ticker.target_currency]) {
       acc[ticker.target_currency] = {
@@ -729,13 +737,19 @@ export const AssetsTable: React.FC<{
         currencyId: ticker.target_currency_id,
         volume: 0,
         liquidity: 0,
-        price: parseFloat(ticker.target_price) * parseFloat(voiPrice)
+        price: parseFloat(ticker.target_price) * parseFloat(voiPrice),
       };
     }
 
     // Add volumes
-    const baseVolume = parseFloat(getBaseVolume(ticker, timeRange)) * parseFloat(ticker.base_price) * parseFloat(voiPrice);
-    const targetVolume = parseFloat(getTargetVolume(ticker, timeRange)) * parseFloat(ticker.target_price) * parseFloat(voiPrice);
+    const baseVolume =
+      parseFloat(getBaseVolume(ticker, timeRange)) *
+      parseFloat(ticker.base_price) *
+      parseFloat(voiPrice);
+    const targetVolume =
+      parseFloat(getTargetVolume(ticker, timeRange)) *
+      parseFloat(ticker.target_price) *
+      parseFloat(voiPrice);
     acc[ticker.base_currency].volume += baseVolume;
     acc[ticker.target_currency].volume += targetVolume;
 
@@ -747,9 +761,14 @@ export const AssetsTable: React.FC<{
     return acc;
   }, {});
 
-  const assetsList = Object.values(assets).sort((a: any, b: any) => b.volume - a.volume);
+  const assetsList = Object.values(assets).sort(
+    (a: any, b: any) => b.volume - a.volume
+  );
   const totalPages = Math.ceil(assetsList.length / itemsPerPage);
-  const paginatedAssets = assetsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedAssets = assetsList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <>
@@ -759,13 +778,15 @@ export const AssetsTable: React.FC<{
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Price</TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>Volume ({timeRange})</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>
+                Volume ({timeRange})
+              </TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedAssets.map((asset: any) => (
-              <tr 
+              <tr
                 key={asset.symbol}
                 onClick={() => navigate(`/analytics/token/${asset.symbol}`)}
               >
@@ -784,10 +805,16 @@ export const AssetsTable: React.FC<{
                   ${asset.price.toFixed(6)}
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Volume">
-                  ${asset.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  $
+                  {asset.volume.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Liquidity">
-                  ${asset.liquidity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  $
+                  {asset.liquidity.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
                 </TableCell>
               </tr>
             ))}
@@ -798,7 +825,7 @@ export const AssetsTable: React.FC<{
       <PaginationWrapper>
         <PaginationButton
           isDarkTheme={isDarkTheme}
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
           disabled={currentPage === 1}
         >
           Previous
@@ -808,7 +835,9 @@ export const AssetsTable: React.FC<{
         </PageInfo>
         <PaginationButton
           isDarkTheme={isDarkTheme}
-          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+          }
           disabled={currentPage === totalPages}
         >
           Next
@@ -877,16 +906,20 @@ export const PairsTable: React.FC<{
               <TableHeader isDarkTheme={isDarkTheme} hideOnMobile>
                 Rate
               </TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>Volume (24h)</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>
+                {`Volume (${timeRange})`}
+              </TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
             {paginatedTickers.map((ticker) => (
-              <tr 
+              <tr
                 key={ticker.ticker_id}
-                onClick={() => navigate(`/analytics/pair/${getNormalizedPairUrl(ticker)}`)}
-                style={{ cursor: 'pointer' }}
+                onClick={() =>
+                  navigate(`/analytics/pair/${getNormalizedPairUrl(ticker)}`)
+                }
+                style={{ cursor: "pointer" }}
               >
                 <TableCell isDarkTheme={isDarkTheme} data-label="Trading Pair">
                   <CurrencyPairCell>
@@ -912,24 +945,27 @@ export const PairsTable: React.FC<{
                     </InverseRate>
                   </PriceCell>
                 </TableCell>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Volume (24h)">
+                <TableCell
+                  isDarkTheme={isDarkTheme}
+                  data-label={`Volume (${timeRange})`}
+                >
                   <VolumeCell>
-                    {calculateTotalVolume(ticker).usd}
+                    {ticker.target_currency}:{" "}
+                    {parseFloat(
+                      getTargetVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <br />
-                    <InverseRate isDarkTheme={isDarkTheme}>
-                      <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
-                      {calculateTotalVolume(ticker).voi}
-                    </InverseRate>
+                    {ticker.base_currency}:{" "}
+                    {parseFloat(
+                      getBaseVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <VolumeTooltip isDarkTheme={isDarkTheme}>
-                      {ticker.target_currency}:{" "}
-                      {parseFloat(
-                        getTargetVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      {calculateTotalVolume(ticker).usd}
                       <br />
-                      {ticker.base_currency}:{" "}
-                      {parseFloat(
-                        getBaseVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      <InverseRate isDarkTheme={isDarkTheme}>
+                        <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
+                        {calculateTotalVolume(ticker).voi}
+                      </InverseRate>
                     </VolumeTooltip>
                   </VolumeCell>
                 </TableCell>
@@ -1013,7 +1049,7 @@ interface DexPricesResponse {
 }
 
 export const Analytics: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["7d"]);
+  const [timeRange, setTimeRange] = useState<TimeRanges>(TimeRanges["24h"]);
   const [totalLiquidity, setTotalLiquidity] = useState("0");
   const [totalVolume, setTotalVolume] = useState("0");
   const [voiPrice, setVoiPrice] = useState("0");
@@ -1072,10 +1108,12 @@ export const Analytics: React.FC = () => {
       (ticker) => ticker.liquidity_in_usd !== "0"
     );
     filteredTickers.sort((a, b) => {
-      const aVolume = parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
-                     parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
-      const bVolume = parseFloat(getTargetVolume(b, timeRange)) * parseFloat(b.target_price) +
-                     parseFloat(getBaseVolume(b, timeRange)) * parseFloat(b.base_price);
+      const aVolume =
+        parseFloat(getTargetVolume(a, timeRange)) * parseFloat(a.target_price) +
+        parseFloat(getBaseVolume(a, timeRange)) * parseFloat(a.base_price);
+      const bVolume =
+        parseFloat(getTargetVolume(b, timeRange)) * parseFloat(b.target_price) +
+        parseFloat(getBaseVolume(b, timeRange)) * parseFloat(b.base_price);
       const aLiquidity = parseFloat(a.liquidity_in_usd);
       const bLiquidity = parseFloat(b.liquidity_in_usd);
 
@@ -1175,7 +1213,7 @@ export const Analytics: React.FC = () => {
           </ChartCard>
         </ChartGrid>*/}
 
-<ChartCard isDarkTheme={isDarkTheme}>
+        <ChartCard isDarkTheme={isDarkTheme}>
           <ChartTitle isDarkTheme={isDarkTheme}>Assets</ChartTitle>
           <AssetsTable
             tickers={tickers}
