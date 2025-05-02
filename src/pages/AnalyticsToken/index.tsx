@@ -991,7 +991,9 @@ export const PairsTable: React.FC<{
               <TableHeader isDarkTheme={isDarkTheme} hideOnMobile>
                 Rate
               </TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>Volume (24h)</TableHeader>
+              <TableHeader isDarkTheme={isDarkTheme}>
+                {`Volume (${timeRange})`}
+              </TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
@@ -1030,24 +1032,27 @@ export const PairsTable: React.FC<{
                     </InverseRate>
                   </PriceCell>
                 </TableCell>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Volume (24h)">
+                <TableCell
+                  isDarkTheme={isDarkTheme}
+                  data-label={`Volume (${timeRange})`}
+                >
                   <VolumeCell>
-                    {calculateTotalVolume(ticker).usd}
+                    {ticker.target_currency}:{" "}
+                    {parseFloat(
+                      getTargetVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <br />
-                    <InverseRate isDarkTheme={isDarkTheme}>
-                      <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
-                      {calculateTotalVolume(ticker).voi}
-                    </InverseRate>
+                    {ticker.base_currency}:{" "}
+                    {parseFloat(
+                      getBaseVolume(ticker, timeRange)
+                    ).toLocaleString()}
                     <VolumeTooltip isDarkTheme={isDarkTheme}>
-                      {ticker.target_currency}:{" "}
-                      {parseFloat(
-                        getTargetVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      {calculateTotalVolume(ticker).usd}
                       <br />
-                      {ticker.base_currency}:{" "}
-                      {parseFloat(
-                        getBaseVolume(ticker, timeRange)
-                      ).toLocaleString()}
+                      <InverseRate isDarkTheme={isDarkTheme}>
+                        <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
+                        {calculateTotalVolume(ticker).voi}
+                      </InverseRate>
                     </VolumeTooltip>
                   </VolumeCell>
                 </TableCell>
@@ -1205,7 +1210,7 @@ export const AnalyticsToken: React.FC = () => {
       (ticker) =>
         ticker.liquidity_in_usd !== "0" &&
         [ticker.base_currency, ticker.target_currency].some((c: string) =>
-          c.match(id||"")
+          c.match(id || "")
         )
     );
     console.log(filteredTickers);
