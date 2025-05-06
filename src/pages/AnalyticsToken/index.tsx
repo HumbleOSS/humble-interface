@@ -858,9 +858,9 @@ export const AssetsTable: React.FC<{
             <tr>
               <TableHeader isDarkTheme={isDarkTheme}>Asset</TableHeader>
               <TableHeader isDarkTheme={isDarkTheme}>Price</TableHeader>
-              <TableHeader isDarkTheme={isDarkTheme}>
+              {/*<TableHeader isDarkTheme={isDarkTheme}>
                 Volume ({timeRange})
-              </TableHeader>
+              </TableHeader>*/}
               <TableHeader isDarkTheme={isDarkTheme}>Liquidity</TableHeader>
             </tr>
           </TableHead>
@@ -889,12 +889,12 @@ export const AssetsTable: React.FC<{
                 <TableCell isDarkTheme={isDarkTheme} data-label="Price">
                   ${asset.price.toFixed(6)}
                 </TableCell>
-                <TableCell isDarkTheme={isDarkTheme} data-label="Volume">
+                {/*<TableCell isDarkTheme={isDarkTheme} data-label="Volume">
                   $
                   {asset.volume.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}
-                </TableCell>
+                </TableCell>*/}
                 <TableCell isDarkTheme={isDarkTheme} data-label="Liquidity">
                   $
                   {asset.liquidity.toLocaleString(undefined, {
@@ -955,13 +955,9 @@ export const PairsTable: React.FC<{
   };
 
   const calculateTotalVolume = (ticker: Ticker) => {
-    const targetVolumeInBase =
-      parseFloat(getTargetVolume(ticker, timeRange)) /
-      parseFloat(ticker.last_price);
     const baseVolume = parseFloat(getBaseVolume(ticker, timeRange));
     // total volume in VOI
-    const totalVolumeVoi =
-      (targetVolumeInBase + baseVolume) * parseFloat(ticker.base_price);
+    const totalVolumeVoi = baseVolume * parseFloat(ticker.base_price);
     const totalVolumeUsd = totalVolumeVoi * parseFloat(voiPrice);
 
     if (totalVolumeVoi === 0) return { usd: "-", voi: "-" };
@@ -1037,23 +1033,12 @@ export const PairsTable: React.FC<{
                   data-label={`Volume (${timeRange})`}
                 >
                   <VolumeCell>
-                    {ticker.target_currency}:{" "}
-                    {parseFloat(
-                      getTargetVolume(ticker, timeRange)
-                    ).toLocaleString()}
+                    {calculateTotalVolume(ticker).usd}
                     <br />
-                    {ticker.base_currency}:{" "}
-                    {parseFloat(
-                      getBaseVolume(ticker, timeRange)
-                    ).toLocaleString()}
-                    <VolumeTooltip isDarkTheme={isDarkTheme}>
-                      {calculateTotalVolume(ticker).usd}
-                      <br />
-                      <InverseRate isDarkTheme={isDarkTheme}>
-                        <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
-                        {calculateTotalVolume(ticker).voi}
-                      </InverseRate>
-                    </VolumeTooltip>
+                    <InverseRate isDarkTheme={isDarkTheme}>
+                      <span style={{ fontSize: "1.4em" }}>&#120167;</span>{" "}
+                      {calculateTotalVolume(ticker).voi}
+                    </InverseRate>
                   </VolumeCell>
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Liquidity">
@@ -1249,13 +1234,10 @@ export const AnalyticsToken: React.FC = () => {
 
     // Calculate total volume
     const totalVol = filteredTickers.reduce((sum, ticker) => {
-      const targetVolumeInVoi =
+      const totalVolumeInUSD =
         parseFloat(getTargetVolume(ticker, timeRange)) *
-        parseFloat(ticker.target_price);
-      const baseVolumeInVoi =
-        parseFloat(getBaseVolume(ticker, timeRange)) *
-        parseFloat(ticker.base_price);
-      const totalVolumeInUSD = (targetVolumeInVoi + baseVolumeInVoi) * price;
+        parseFloat(ticker.target_price) *
+        price;
       return sum + totalVolumeInUSD;
     }, 0);
     setTotalVolume(
