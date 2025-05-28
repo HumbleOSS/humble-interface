@@ -779,6 +779,21 @@ const PoolRemove = () => {
           mintRound: 0,
           globalState: {},
         },
+        {
+          contractId: 859317,
+          name: "DeFi-nite",
+          symbol: "Finite",
+          decimals: 8,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
+          deleted: 0,
+          price: "8.91790955467233058325",
+          tokenId: "797369",
+          verified: 1,
+          mintRound: 3380910,
+          globalState: {},
+        },
       ];
 
       //
