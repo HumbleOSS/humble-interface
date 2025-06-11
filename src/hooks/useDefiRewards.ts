@@ -23,6 +23,11 @@ const useDefiRewards = () => {
               aprBoost: 28.75, // TVL lte 250k USD
               additionalAprBoost: 0,
             },
+            {
+              poolId: 413161,
+              aprBoost: 28.75/2, // TVL lte 250k ALGO
+              additionalAprBoost: 0,
+            },
             /*
             {
               poolId: 429999, // UNIT/VOI UNIT
