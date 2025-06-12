@@ -129,6 +129,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           date: "October 26th, 2024",
         },
         */
+        {
+          id: 2,
+          title: "Power Token $POW Goes Live on June 23rd, 2025!",
+          link: "https://medium.com/@pact.fi/all-you-need-to-know-power-token-pow-the-governance-token-of-pact-dab8aa0503de",
+          date: "June 23rd, 2025",
+        },
       ]);
     }, 2000);
 
