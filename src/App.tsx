@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import styled from "styled-components";
 import Layout from "./layouts/Default";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import {
   NetworkId,
   WalletId,
@@ -110,28 +111,25 @@ const App: React.FC = () => {
         },
       },
     ],
-    algod: {
-      baseServer: ALGO_SERVER,
-      port: "",
-      token: "",
-    },
     network: NetworkId.VOIMAIN,
   });
 
   return (
     <WalletProvider manager={walletManager}>
       <Provider store={store}>
-        <AppContainer>
-          <Router>
-            <Layout>
-              <Routes>
-                {routes.map((el) => (
-                  <Route path={el.path} Component={el.Component} />
-                ))}
-              </Routes>
-            </Layout>
-          </Router>
-        </AppContainer>
+        <NotificationProvider>
+          <AppContainer>
+            <Router>
+              <Layout>
+                <Routes>
+                  {routes.map((el) => (
+                    <Route path={el.path} Component={el.Component} />
+                  ))}
+                </Routes>
+              </Layout>
+            </Router>
+          </AppContainer>
+        </NotificationProvider>
       </Provider>
       <ToastContainer />
     </WalletProvider>

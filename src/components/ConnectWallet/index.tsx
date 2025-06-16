@@ -4,23 +4,26 @@ import { useWallet, WalletAccount } from "@txnlab/use-wallet-react";
 import ArrowDownwardIcon from "static/icon/icon-arrow-downward.svg";
 import OnIcon from "static/icon/icon-on.svg";
 import { compactAddress } from "../../utils/mp";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store/store";
-import WalletModal from "../modals/WalletModal";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
-import Avatar from "@mui/material/Avatar";
-import { toast } from "react-toastify";
-import SettingsIcon from "@mui/icons-material/Settings";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import { useDispatch } from "react-redux";
 import { toggleTheme } from "../../store/themeSlice";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import Modal from "@mui/material/Modal";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { useMediaQuery, useTheme, Box, Modal, Avatar } from "@mui/material";
+import {
+  ContentCopy as ContentCopyIcon,
+  PowerSettingsNew as PowerSettingsNewIcon,
+  Settings as SettingsIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+  AccountBalanceWallet as AccountBalanceWalletIcon,
+  SwapHoriz as SwapHorizIcon,
+  Close as CloseIcon,
+  Notifications as NotificationsIcon,
+} from "@mui/icons-material";
+import { toast } from "react-toastify";
+import WalletModal from "../modals/WalletModal";
 import { SwapOptionsModal } from "../modals/SwapOptionsModal";
-import CloseIcon from "@mui/icons-material/Close";
+import NotificationModal from "../NotificationModal";
 
 const AccountDropdown = styled.div`
   /* Layout */
@@ -364,11 +367,15 @@ const DisconnectButtonLarge = styled.button<{ $isDarkTheme?: boolean }>`
 `;
 
 function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void }) {
-  const { activeAccount, wallets, activeWallet, activeWalletAccounts } = useWallet();
+  const { activeAccount, activeWallet, wallets, activeWalletAccounts } = useWallet();
   const [isWalletModalOpen, setIsWalletModalOpen] = React.useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = React.useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
   const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
   const dispatch = useDispatch();
+  const { notificationCount, notifications } = useNotifications();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -386,6 +393,16 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
 
   const handleClose = () => {
     setIsWalletModalOpen(false);
+    setIsSwapModalOpen(false);
+    setIsNotificationModalOpen(false);
+  };
+
+  const handleNotificationClick = () => {
+    setIsNotificationModalOpen(true);
+  };
+
+  const handleNotificationModalClose = () => {
+    setIsNotificationModalOpen(false);
   };
 
   return (
@@ -506,6 +523,52 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
                     />
                   </SettingsItem>
                 </SettingsSection>
+
+                {/* Show notifications section for larger screens */}
+                {!isMobile && (
+                  <SettingsSection $isDarkTheme={isDarkTheme}>
+                    <SettingsTitle $isDarkTheme={isDarkTheme}>Notifications</SettingsTitle>
+                    
+                    <SettingsItem 
+                      $isDarkTheme={isDarkTheme} 
+                      onClick={handleNotificationClick}
+                    >
+                      <SettingsLabel $isDarkTheme={isDarkTheme}>
+                        {notificationCount > 0 
+                          ? `${notificationCount} notification${notificationCount !== 1 ? 's' : ''} available`
+                          : "View notifications"
+                        }
+                      </SettingsLabel>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {notificationCount > 0 && (
+                          <Box
+                            sx={{
+                              backgroundColor: isDarkTheme ? "#FFBE1D" : "#FFBE1D",
+                              color: isDarkTheme ? "#20093E" : "#20093E",
+                              borderRadius: "8px",
+                              minWidth: "16px",
+                              height: "16px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              padding: "0 4px",
+                            }}
+                          >
+                            {notificationCount > 99 ? "99+" : notificationCount}
+                          </Box>
+                        )}
+                        <NotificationsIcon
+                          sx={{
+                            fontSize: 20,
+                            color: isDarkTheme ? "#FFBE1D" : "#9933FF",
+                          }}
+                        />
+                      </Box>
+                    </SettingsItem>
+                  </SettingsSection>
+                )}
               </>
             )}
 
@@ -591,6 +654,12 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
           onClose={() => setIsSwapModalOpen(false)}
         />
       )}
+
+      {/* Notification Modal */}
+      <NotificationModal
+        open={isNotificationModalOpen}
+        onClose={handleNotificationModalClose}
+      />
     </div>
   );
 }

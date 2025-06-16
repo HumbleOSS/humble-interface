@@ -6,12 +6,15 @@ import PoolLogo from "../../components/SVG/Pool";
 import TokenLogo from "../../components/SVG/Token";
 import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
-import { Box } from "@mui/material";
+import { Box, Badge, IconButton, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import ConnectWallet from "../ConnectWallet";
 import MenuIcon from "@mui/icons-material/Menu";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import HomeIcon from "@mui/icons-material/Home";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import { useNotifications } from "../../contexts/NotificationContext";
+import NotificationModal from "../NotificationModal";
 
 const Logo = styled.img`
   width: auto;
@@ -195,6 +198,29 @@ const MenuIconWrapper = styled(Box)`
   height: 24px;
 `;
 
+const NotificationIconButton = styled(IconButton)<{ $isDarkTheme: boolean }>`
+  color: ${(props) => (props.$isDarkTheme ? "#FFFFFF" : "#FFFFFF")};
+  margin-right: 8px;
+  
+  &:hover {
+    background-color: ${(props) => 
+      props.$isDarkTheme ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.1)"};
+  }
+`;
+
+const NotificationBadge = styled(Badge)<{ $isDarkTheme: boolean }>`
+  .MuiBadge-badge {
+    background-color: ${(props) => (props.$isDarkTheme ? "#FFBE1D" : "#FFBE1D")};
+    color: ${(props) => (props.$isDarkTheme ? "#20093E" : "#20093E")};
+    font-family: "Plus Jakarta Sans";
+    font-weight: 600;
+    font-size: 10px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+  }
+`;
+
 const Navbar = () => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -202,6 +228,10 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
+  const { notificationCount, notifications } = useNotifications();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const menuItems = [
     { path: "/", label: "Home", Icon: HomeIcon },
@@ -214,6 +244,14 @@ const Navbar = () => {
   const handleMenuClick = (path: string) => {
     navigate(path);
     setIsMobileMenuOpen(false);
+  };
+
+  const handleNotificationClick = () => {
+    setIsNotificationModalOpen(true);
+  };
+
+  const handleNotificationModalClose = () => {
+    setIsNotificationModalOpen(false);
   };
 
   return (
@@ -285,6 +323,28 @@ const Navbar = () => {
             })}
           </NavButtonGroup>
           <AccountButtonGroup>
+            {/* 
+              Notification visibility logic:
+              - Show in navbar on all screen sizes when there are unread notifications
+            */}
+            {notificationCount > 0 && (
+              <Tooltip title={`${notificationCount} notification${notificationCount !== 1 ? 's' : ''} available`}>
+                <NotificationIconButton
+                  $isDarkTheme={isDarkTheme}
+                  onClick={handleNotificationClick}
+                  size="small"
+                >
+                  <NotificationBadge
+                    $isDarkTheme={isDarkTheme}
+                    badgeContent={notificationCount}
+                    max={99}
+                    invisible={notificationCount === 0}
+                  >
+                    <NotificationsIcon />
+                  </NotificationBadge>
+                </NotificationIconButton>
+              </Tooltip>
+            )}
             <ConnectWallet onMobileSidebarClose={() => setIsMobileMenuOpen(false)} />
           </AccountButtonGroup>
         </NavContainer>
@@ -331,9 +391,73 @@ const Navbar = () => {
                 </MenuItemLabel>
               </MenuItem>
             ))}
+            {/* 
+              Mobile menu notification logic:
+              - When no unread notifications: Show "Notifications" in navigation
+              - When has unread notifications: Show "Notifications (X)" with badge in navigation
+            */}
+            {/* Show notifications in mobile navigation when there are no unread notifications */}
+            {isMobile && notificationCount === 0 && (
+              <MenuItem
+                $isDarkTheme={isDarkTheme}
+                onClick={() => {
+                  handleNotificationClick();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <MenuIconWrapper
+                  sx={{
+                    svg: {
+                      color: isDarkTheme ? "#FFFFFF" : "#161717",
+                    },
+                  }}
+                >
+                  <NotificationsIcon />
+                </MenuIconWrapper>
+                <MenuItemLabel $isDarkTheme={isDarkTheme}>
+                  Notifications
+                </MenuItemLabel>
+              </MenuItem>
+            )}
+            {/* Show notifications with badge when there are unread notifications on mobile */}
+            {isMobile && notificationCount > 0 && (
+              <MenuItem
+                $isDarkTheme={isDarkTheme}
+                onClick={() => {
+                  handleNotificationClick();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <MenuIconWrapper
+                  sx={{
+                    svg: {
+                      color: isDarkTheme ? "#FFFFFF" : "#161717",
+                    },
+                  }}
+                >
+                  <NotificationBadge
+                    $isDarkTheme={isDarkTheme}
+                    badgeContent={notificationCount}
+                    max={99}
+                    invisible={notificationCount === 0}
+                  >
+                    <NotificationsIcon />
+                  </NotificationBadge>
+                </MenuIconWrapper>
+                <MenuItemLabel $isDarkTheme={isDarkTheme}>
+                  Notifications {notificationCount > 0 && `(${notificationCount})`}
+                </MenuItemLabel>
+              </MenuItem>
+            )}
           </MobileMenuContent>
         </MobileMenuDrawer>
       )}
+
+      {/* Notification Modal */}
+      <NotificationModal
+        open={isNotificationModalOpen}
+        onClose={handleNotificationModalClose}
+      />
     </>
   );
 };

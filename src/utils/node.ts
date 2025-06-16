@@ -1,4 +1,4 @@
-const DEFAULT_NODE = "voi-testnet";
+const DEFAULT_NODE = "voi";
 
 export const getGenesisHash = (node: string) => {
   switch (node) {
@@ -25,10 +25,13 @@ export const getCurrentNodeEnv = () => {
   let ALGO_INDEXER_SERVER;
   switch (node) {
     default:
+      ALGO_SERVER = "https://mainnet-api.voi.nodely.dev";
+      ALGO_INDEXER_SERVER = "https://mainnet-idx.voi.nodely.dev";
+      break;
     case "voi":
     case "voi-testnet":
-      ALGO_SERVER = "https://testnet-api.voi.nodly.io";
-      ALGO_INDEXER_SERVER = "https://testnet-idx.voi.nodly.io";
+      ALGO_SERVER = "https://testnet-api.voi.nodly.dev";
+      ALGO_INDEXER_SERVER = "https://testnet-idx.voi.nodly.dev";
       break;
     case "algorand-testnet":
       ALGO_SERVER = "https://testnet-api.algonode.cloud";
