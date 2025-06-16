@@ -9,6 +9,7 @@ import styled from "styled-components";
 import Layout from "./layouts/Default";
 import { WalletProvider } from "@txnlab/use-wallet-react";
 import { NetworkId, WalletId, WalletManager } from "@txnlab/use-wallet";
+import { getCurrentNodeEnv } from "./utils/node";
 
 const BackgroundLayer = styled.div`
   width: 100%;
@@ -66,6 +67,7 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  const { ALGO_SERVER } = getCurrentNodeEnv();
   let walletConnectProjectId;
   if (!walletConnectProjectId) {
     walletConnectProjectId = "e7b04c22de006e0fc7cef5a00cb7fac9";
@@ -104,6 +106,11 @@ const App: React.FC = () => {
         },
       },
     ],
+    algod: {
+      baseServer: ALGO_SERVER,
+      port: "",
+      token: "",
+    },
     network: NetworkId.VOIMAIN,
   });
 

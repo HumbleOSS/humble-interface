@@ -44,7 +44,7 @@ const ToggleButton = styled(IconButton)<{ isCollapsed: boolean }>`
 `;
 
 const Footer: FC = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   
   /* Theme */
   const isDarkTheme = useSelector(
