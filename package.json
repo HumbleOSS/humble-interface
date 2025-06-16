@@ -1,12 +1,13 @@
 {
   "name": "humble-interface",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "",
   "main": "index.tsx",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite --host",
+    "prebuild": "node scripts/update-version.js",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import {
   Container,
   Box,
@@ -198,6 +199,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{
           mt: 5,
           mb: 5,
+          pb: 8,
           display: "flex",
           justifyContent: "center",
           border: "none",
@@ -205,6 +207,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Container>
+      <Footer />
     </>
   );
 };
