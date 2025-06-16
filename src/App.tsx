@@ -7,8 +7,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import styled from "styled-components";
 import Layout from "./layouts/Default";
-import { WalletProvider } from "@txnlab/use-wallet-react";
-import { NetworkId, WalletId, WalletManager } from "@txnlab/use-wallet";
+import {
+  NetworkId,
+  WalletId,
+  WalletManager,
+  WalletProvider,
+} from "@txnlab/use-wallet-react";
 import { getCurrentNodeEnv } from "./utils/node";
 
 const BackgroundLayer = styled.div`
