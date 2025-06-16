@@ -31,7 +31,7 @@
     "@reduxjs/toolkit": "^2.2.1",
     "@sentry/react": "^8.9.2",
     "@txnlab/use-wallet": "^3.6.0",
-    "@txnlab/use-wallet-react": "^3.6.0",
+    "@txnlab/use-wallet-react": "^3.7.2",
     "@walletconnect/modal": "^2.6.2",
     "@walletconnect/sign-client": "^2.16.2",
     "algosdk": "^2.7.0",
