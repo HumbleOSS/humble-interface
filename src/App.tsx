@@ -104,7 +104,7 @@ const App: React.FC = () => {
         },
       },
     ],
-    network: NetworkId.MAINNET,
+    network: NetworkId.VOIMAIN,
     algod: {
       baseServer: "https://mainnet-api.voi.nodely.dev",
       port: "",
