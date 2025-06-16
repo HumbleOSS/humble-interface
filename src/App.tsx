@@ -68,7 +68,7 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 const App: React.FC = () => {
   let walletConnectProjectId; // = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID;
   if (!walletConnectProjectId) {
-    walletConnectProjectId = "cd7fe0125d88d239da79fa286e6de2a8";
+    walletConnectProjectId = "e7b04c22de006e0fc7cef5a00cb7fac9";
   }
   const walletManager = new WalletManager({
     wallets: [

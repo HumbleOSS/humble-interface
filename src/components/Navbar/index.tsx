@@ -285,7 +285,7 @@ const Navbar = () => {
             })}
           </NavButtonGroup>
           <AccountButtonGroup>
-            <ConnectWallet />
+            <ConnectWallet onMobileSidebarClose={() => setIsMobileMenuOpen(false)} />
           </AccountButtonGroup>
         </NavContainer>
       </NavRoot>
