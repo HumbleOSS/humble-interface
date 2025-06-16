@@ -4,6 +4,7 @@ import {
   DialogContent,
   Tooltip,
   Switch,
+  IconButton,
 } from "@mui/material";
 import styled from "styled-components";
 import CloseIcon from "@mui/icons-material/Close";
@@ -19,39 +20,56 @@ interface SwapOptionsModalProps {
 const PRESET_SLIPPAGE_VALUES = [0.1, 0.5, 1.0];
 
 const StyledDialog = styled(Dialog)<{ isDarkTheme: boolean }>`
-  .MuiPaper-root {
-    border-radius: 1rem;
-    background-color: ${(props) => (props.isDarkTheme ? "#030712" : "white")};
-    ${(props) =>
-      props.isDarkTheme &&
-      `
-      border: 1px solid #1F2937;
-    `}
+  .MuiDialog-paper {
+    background: ${(props) =>
+      props.isDarkTheme
+        ? "linear-gradient(135deg, rgba(32, 9, 62, 0.98) 0%, rgba(82, 61, 136, 0.95) 100%)"
+        : "rgba(255, 255, 255, 0.98)"};
+    backdrop-filter: blur(25px);
+    border-radius: 24px;
+    border: 1px solid
+      ${(props) =>
+        props.isDarkTheme
+          ? "rgba(255, 190, 29, 0.2)"
+          : "rgba(0, 0, 0, 0.1)"};
+    max-width: 480px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: ${(props) =>
+      props.isDarkTheme
+        ? "0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 190, 29, 0.1)"
+        : "0 20px 40px rgba(0, 0, 0, 0.1)"};
   }
-
   .MuiBackdrop-root {
+    background: ${(props) =>
+      props.isDarkTheme ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)"};
     backdrop-filter: blur(4px);
-    background-color: ${(props) =>
-      props.isDarkTheme ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.7)"};
   }
 `;
 
 const DialogContainer = styled.div`
-  padding: 1.5rem;
+  padding: 24px 24px 0 24px;
 `;
 
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 190, 29, 0.2);
+  margin-bottom: 0;
 `;
 
 const StyledDialogTitle = styled(DialogTitle)<{ isDarkTheme: boolean }>`
   padding: 0;
-  font-size: 1.25rem;
+  font-size: 20px;
+  font-family: "Plus Jakarta Sans";
   font-weight: 600;
-  color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "#111827")};
+  color: ${(props) => (props.isDarkTheme ? "#FFBE1D" : "#0C0C10")};
+  line-height: 120%;
+  text-shadow: ${(props) =>
+    props.isDarkTheme ? "0 0 20px rgba(255, 190, 29, 0.3)" : "none"};
 `;
 
 const StyledDialogContent = styled(DialogContent)`
@@ -144,15 +162,16 @@ const InputSuffix = styled.span<{ $isDarkTheme?: boolean }>`
   color: ${(props) => (props.$isDarkTheme ? "#9CA3AF" : "#6B7280")};
 `;
 
-const CloseButton = styled.button<{ $isDarkTheme?: boolean }>`
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: ${(props) => (props.$isDarkTheme ? "#374151" : "#F3F4F6")};
-  color: ${(props) => (props.$isDarkTheme ? "#9CA3AF" : "#6B7280")};
+const CloseButton = styled(IconButton)<{ $isDarkTheme?: boolean }>`
+  color: ${(props) =>
+    props.$isDarkTheme ? "rgba(255, 190, 29, 0.8)" : "rgba(0, 0, 0, 0.6)"};
   &:hover {
     background-color: ${(props) =>
-      props.$isDarkTheme ? "#374151" : "#F3F4F6"};
+      props.$isDarkTheme
+        ? "rgba(255, 190, 29, 0.15)"
+        : "rgba(0, 0, 0, 0.05)"};
+    color: ${(props) =>
+      props.$isDarkTheme ? "#FFBE1D" : "rgba(0, 0, 0, 0.8)"};
   }
 `;
 
@@ -242,7 +261,7 @@ export function SwapOptionsModal({
           <StyledDialogTitle isDarkTheme={isDarkTheme}>
             Swap Settings
           </StyledDialogTitle>
-          <CloseButton onClick={onClose} $isDarkTheme={isDarkTheme}>
+          <CloseButton onClick={onClose} $isDarkTheme={isDarkTheme} size="small">
             <CloseIcon />
           </CloseButton>
         </HeaderContainer>
