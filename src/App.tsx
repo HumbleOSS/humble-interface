@@ -66,7 +66,7 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
-  let walletConnectProjectId; // = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID;
+  let walletConnectProjectId;
   if (!walletConnectProjectId) {
     walletConnectProjectId = "e7b04c22de006e0fc7cef5a00cb7fac9";
   }
@@ -75,7 +75,7 @@ const App: React.FC = () => {
       WalletId.KIBISIS,
       {
         id: WalletId.LUTE,
-        options: { siteName: "HumbPact" },
+        options: { siteName: "HumbleSwap" },
       },
       {
         id: WalletId.BIATEC,
@@ -105,11 +105,6 @@ const App: React.FC = () => {
       },
     ],
     network: NetworkId.VOIMAIN,
-    algod: {
-      baseServer: "https://mainnet-api.voi.nodely.dev",
-      port: "",
-      token: "",
-    },
   });
 
   return (
