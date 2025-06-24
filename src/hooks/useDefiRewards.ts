@@ -25,7 +25,17 @@ const useDefiRewards = () => {
             },
             {
               poolId: 413161,
-              aprBoost: 28.75/2, // TVL lte 250k ALGO
+              aprBoost: 28.75 / 2, // TVL lte 250k ALGO
+              additionalAprBoost: 0,
+            },
+            {
+              poolId: 40171092,
+              aprBoost: 28.75 / 2, // TVL lte 250k ETH
+              additionalAprBoost: 0,
+            },
+            {
+              poolId: 40171091,
+              aprBoost: 28.75 / 2, // TVL lte 250k cbBTC
               additionalAprBoost: 0,
             },
             /*
