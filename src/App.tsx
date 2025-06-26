@@ -111,6 +111,11 @@ const App: React.FC = () => {
         },
       },
     ],
+    algod: {
+      baseServer: ALGO_SERVER,
+      port: "",
+      token: "",
+    },
     network: NetworkId.VOIMAIN,
   });
 
