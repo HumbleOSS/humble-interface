@@ -72,7 +72,6 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
-  const { ALGO_SERVER } = getCurrentNodeEnv();
   let walletConnectProjectId;
   if (!walletConnectProjectId) {
     walletConnectProjectId = "e7b04c22de006e0fc7cef5a00cb7fac9";
@@ -111,11 +110,6 @@ const App: React.FC = () => {
         },
       },
     ],
-    algod: {
-      baseServer: ALGO_SERVER,
-      port: "",
-      token: "",
-    },
     network: NetworkId.VOIMAIN,
   });
 
