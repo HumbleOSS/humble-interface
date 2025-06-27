@@ -794,6 +794,141 @@ const PoolRemove = () => {
           mintRound: 3380910,
           globalState: {},
         },
+        {
+          contractId: 40153155,
+          name: "Power",
+          symbol: "POW",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
+          deleted: 0,
+          mintRound: 8570683,
+          globalState: {},
+          change_1h: {
+            latest_price: "6.47894220925777557923",
+            earliest_price: "6.47894220924911715601",
+            percent_change: 1.3363235780799226e-10,
+          },
+          change_24h: {
+            latest_price: "7.58602202906612514776",
+            earliest_price: "4.7172058597064829288",
+            percent_change: 60.816005378619366,
+          },
+          change_7d: {
+            latest_price: "7.58602202906612514776",
+            earliest_price: "0.22222222219732779767",
+            percent_change: 3313.709913462177,
+          },
+        },
+        {
+          contractId: 40153248,
+          name: "Armaid ETH",
+          symbol: "aETH",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
+          deleted: 0,
+          mintRound: 8571019,
+          globalState: {},
+          change_1h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_24h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_7d: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+        },
+        {
+          contractId: 40153308,
+          name: "Aramid ETH",
+          symbol: "aETH",
+          decimals: 6,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
+          deleted: 0,
+          mintRound: 8571213,
+          globalState: {},
+          change_1h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_24h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_7d: {
+            latest_price: "2830034.25426463551693057518",
+            earliest_price: "2327327.32732732732732732733",
+            percent_change: 21.600181505822402,
+          },
+        },
+        {
+          contractId: 40153368,
+          name: "Aramid BTC",
+          symbol: "aBTC",
+          decimals: 8,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
+          deleted: 0,
+          mintRound: 8571409,
+          globalState: {},
+          change_1h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_24h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_7d: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+        },
+        {
+          contractId: 40153415,
+          name: "Aramid cbBTC",
+          symbol: "acbBTC",
+          decimals: 8,
+          totalSupply:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
+          deleted: 0,
+          mintRound: 8571573,
+          globalState: {},
+          change_1h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_24h: {
+            latest_price: null,
+            earliest_price: null,
+            percent_change: null,
+          },
+          change_7d: {
+            latest_price: "99397558.3864118895966029724",
+            earliest_price: "104692409.76645435244161358811",
+            percent_change: -5.0575312879454275,
+          },
+        },
       ];
 
       //
