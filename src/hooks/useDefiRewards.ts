@@ -21,7 +21,7 @@ const useDefiRewards = () => {
             {
               poolId: 395553,
               aprBoost: 28.75, // TVL lte 250k USD
-              additionalAprBoost: 0,
+              additionalAprBoost: 16.76, // POW Incentives
             },
             {
               poolId: 413161,
@@ -94,6 +94,11 @@ const useDefiRewards = () => {
             {
               poolId: 8357620, // pix/VOI
               aprBoost: 15,
+              additionalAprBoost: 0,
+            },
+            {
+              poolId: 40120385, // POW/VOI
+              aprBoost: 17.37,
               additionalAprBoost: 0,
             },
           ],
