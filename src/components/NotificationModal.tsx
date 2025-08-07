@@ -21,6 +21,27 @@ import { useNotifications } from "../contexts/NotificationContext";
 import { RootState } from "../store/store";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 
+// Helper function to format ISO date strings for display
+const formatNotificationDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return dateString; // Return original string if parsing fails
+    }
+    
+    // Format as "Month Day, Year" (e.g., "October 26, 2024")
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    
+    return date.toLocaleDateString('en-US', options);
+  } catch (error) {
+    return dateString; // Return original string if formatting fails
+  }
+};
+
 const StyledDialog = styled(Dialog)<{ $isDarkTheme: boolean }>`
   .MuiDialog-paper {
     background: ${(props) =>
@@ -615,7 +636,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                         {notification.title}
                       </NotificationTitle>
                       <NotificationDate $isDarkTheme={isDarkTheme}>
-                        {notification.date}
+                        {formatNotificationDate(notification.date)}
                       </NotificationDate>
                       <NotificationLink
                         $isDarkTheme={isDarkTheme}
@@ -671,7 +692,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                         {notification.title}
                       </NotificationTitle>
                       <NotificationDate $isDarkTheme={isDarkTheme}>
-                        {notification.date}
+                        {formatNotificationDate(notification.date)}
                       </NotificationDate>
                       <NotificationLink
                         $isDarkTheme={isDarkTheme}
