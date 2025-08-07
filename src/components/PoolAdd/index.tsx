@@ -1205,14 +1205,11 @@ const Swap = () => {
       algodClient
         .accountInformation(activeAccount.address)
         .do()
-        .then((accInfo: any) => {
-          const balance = accInfo.amount;
-          const minBalance = accInfo["min-balance"];
-          const availableBalance = Math.max(0, balance - (minBalance - 0.1));
-          const balanceStr = new BigNumber(availableBalance)
-            .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6);
-          setBalance(balanceStr);
+        .then((r: any) => {
+          const amount = r.amount;
+          const minBalance = r["min-balance"];
+          const available = amount - minBalance;
+          setBalance((available / 10 ** token.decimals).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
       algodClient
@@ -1223,19 +1220,28 @@ const Swap = () => {
             .lookupAssetByID(wrappedTokenId)
             .do()
             .then((assetInfo: any) => {
+              // set balance in case of arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
-              const balance = new BigNumber(
-                accAssetInfo["asset-holding"].amount
-              ).dividedBy(new BigNumber(10).pow(decimals));
-              setBalance(balance.toFixed(Math.min(6, decimals)));
+              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+              const ci = new arc200(token.tokenId, algodClient, indexerClient);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    (balance1Bi + balance2Bi).toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance(balance.toFixed(decimals));
+                }
+              });
             });
         });
     } else {
-      const ci = new arc200(token.tokenId, algodClient, indexerClient);
+      const ci = new arc200(Number(token.tokenId), algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+            const arc200_balanceOf = arc200_balanceOfR.returnValue;
+            const balanceBn = new BigNumber(arc200_balanceOf);
             const balanceStr = balanceBn
               .dividedBy(new BigNumber(10).pow(token.decimals))
               .toFixed(token.decimals);
@@ -1250,7 +1256,6 @@ const Swap = () => {
   useEffect(() => {
     if (!token2 || !activeAccount || !tokens2) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new arc200(token2.tokenId, algodClient, indexerClient);
     const wrappedTokenId = Number(
       tokens2.find((t) => t.contractId === token2.tokenId)?.tokenId
     );
@@ -1258,14 +1263,11 @@ const Swap = () => {
       algodClient
         .accountInformation(activeAccount.address)
         .do()
-        .then((accInfo: any) => {
-          const balance = accInfo.amount;
-          const minBalance = accInfo["min-balance"];
-          const availableBalance = Math.max(0, balance - (minBalance - 0.1));
-          const balanceStr = new BigNumber(availableBalance)
-            .dividedBy(new BigNumber(10).pow(6))
-            .toFixed(6);
-          setBalance2(balanceStr);
+        .then((r: any) => {
+          const amount = r.amount;
+          const minBalance = r["min-balance"];
+          const available = amount - minBalance;
+          setBalance2((available / 10 ** token2.decimals).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
       algodClient
@@ -1284,6 +1286,7 @@ const Swap = () => {
             });
         });
     } else {
+      const ci = new arc200(token2.tokenId, algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
@@ -1418,12 +1421,13 @@ const Swap = () => {
       setProgress(50);
       setmessage("Signing transaction");
 
-      const stxns = await //await toast.promise(
-      signTransactions(
+      const stxns = await signTransactions(
         swapR.txns.map((t: string) => new Uint8Array(Buffer.from(t, "base64")))
       );
 
-      console.log({ stxns });
+      const dstxns = stxns.map((t: any) => algosdk.decodeSignedTransaction(t));
+
+      console.log({ stxns, dstxns });
 
       const res = await algodClient
         .sendRawTransaction(stxns as Uint8Array[])

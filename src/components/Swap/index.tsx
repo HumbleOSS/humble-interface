@@ -1314,11 +1314,19 @@ const Swap = () => {
             .lookupAssetByID(wrappedTokenId)
             .do()
             .then((assetInfo: any) => {
+              // set balance in case off arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
-              const balance = new BigNumber(
-                accAssetInfo["asset-holding"].amount
-              ).dividedBy(new BigNumber(10).pow(decimals));
-              setBalance(balance.toFixed(Math.min(6, decimals)));
+              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+              const ci = new arc200(token.tokenId, algodClient, indexerClient);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    (balance1Bi + balance2Bi).toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance(balance.toFixed(decimals));
+                }
+              });
             });
         });
     } else {
@@ -1372,18 +1380,52 @@ const Swap = () => {
             });
         });
     } else {
-      const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-      ci.arc200_balanceOf(activeAccount.address).then(
-        (arc200_balanceOfR: any) => {
-          if (arc200_balanceOfR.success) {
-            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
-            const balanceStr = balanceBn
-              .dividedBy(new BigNumber(10).pow(token2.decimals))
-              .toFixed(token2.decimals);
-            setBalance2(balanceStr);
-          }
+      const ci = new CONTRACT(
+        token2.tokenId,
+        algodClient,
+        indexerClient,
+        {
+          name: "",
+          description: "",
+          methods: [
+            {
+              name: "arc200_exchange",
+              args: [],
+              readonly: false,
+              returns: {
+                type: "(uint64,address)",
+              },
+              desc: "ARC-200 exchange info (external)",
+            },
+          ],
+          events: [],
+        },
+        {
+          addr: activeAccount.address,
+          sk: new Uint8Array(0),
         }
       );
+      ci.arc200_exchange().then((r: any) => {
+        console.log("r", r);
+        if (r.success) {
+          const [fee, exchangeAddress] = r.returnValue;
+          console.log("fee", fee);
+          console.log("exchangeAddress", exchangeAddress);
+        } else {
+          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+          ci.arc200_balanceOf(activeAccount.address).then(
+            (arc200_balanceOfR: any) => {
+              if (arc200_balanceOfR.success) {
+                const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+                const balanceStr = balanceBn
+                  .dividedBy(new BigNumber(10).pow(token2.decimals))
+                  .toFixed(token2.decimals);
+                setBalance2(balanceStr);
+              }
+            }
+          );
+        }
+      });
     }
   }, [balance, token, token2, activeAccount]);
 
@@ -1521,7 +1563,7 @@ const Swap = () => {
         debug: true,
         slippage: Number(currentSlippage) / 100,
         degenMode: degenMode,
-        skipWithdraw: false
+        skipWithdraw: false,
       });
 
       if (!swapR?.success) {
@@ -1552,6 +1594,7 @@ const Swap = () => {
           )
         );
       } catch (e: any) {
+        console.log(e);
         // Handle user rejection or cancellation
         setOn(false);
         setMessage("");
