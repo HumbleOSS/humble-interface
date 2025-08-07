@@ -1234,6 +1234,23 @@ const Swap = () => {
                 }
               });
             });
+        })
+        .catch((e: any) => {
+          const ci = new arc200(token.tokenId, algodClient, indexerClient);
+          ci.arc200_decimals().then((r: any) => {
+            if (r.success) {
+              const decimals = Number(r.returnValue);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    balance2Bi.toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance(balance.toFixed(decimals));
+                }
+              });
+            }
+          });
         });
     } else {
       const ci = new arc200(Number(token.tokenId), algodClient, indexerClient);
@@ -1279,11 +1296,44 @@ const Swap = () => {
             .do()
             .then((assetInfo: any) => {
               const decimals = assetInfo.asset.params.decimals;
-              const balance = new BigNumber(
-                accAssetInfo["asset-holding"].amount
-              ).dividedBy(new BigNumber(10).pow(decimals));
-              setBalance2(balance.toFixed(Math.min(6, decimals)));
+              const balance1Bi = BigInt(
+                new BigNumber(accAssetInfo["asset-holding"].amount)
+                  .dividedBy(new BigNumber(10).pow(decimals))
+                  .toFixed(0)
+              );
+              const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+              ci.arc200_decimals().then((r: any) => {
+                if (r.success) {
+                  const decimals = Number(r.returnValue);
+                  ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                    if (r.success) {
+                      const balance2Bi = BigInt(r.returnValue);
+                      const balance = new BigNumber(
+                        (balance1Bi + balance2Bi).toString()
+                      ).dividedBy(new BigNumber(10).pow(decimals));
+                      setBalance2(balance.toFixed(decimals));
+                    }
+                  });
+                }
+              });
             });
+        })
+        .catch((e: any) => {
+          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+          ci.arc200_decimals().then((r: any) => {
+            if (r.success) {
+              const decimals = Number(r.returnValue);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    balance2Bi.toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance2(balance.toFixed(decimals));
+                }
+              });
+            }
+          });
         });
     } else {
       const ci = new arc200(token2.tokenId, algodClient, indexerClient);
