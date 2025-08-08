@@ -1418,12 +1418,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                     (button: { tokenId: number; icon: string; label: string }) => (
                       <QuickButton
                         key={button.tokenId}
-                        onClick={() =>
-                          onSelect(
-                            tokens.find((t) => t.tokenId === button.tokenId) ||
-                              tokens[0]
-                          )
-                        }
+                        onClick={() => {
+                          const selected =
+                            tokens.find((t) => t.tokenId === button.tokenId) || tokens[0];
+                          onSelect(selected);
+                          handleClose();
+                        }}
                       >
                         <QuickButtonIcon>{button.icon}</QuickButtonIcon>
                         {button.label}
