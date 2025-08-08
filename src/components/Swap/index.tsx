@@ -1753,7 +1753,8 @@ const Swap = () => {
             onFocus={() => setFocus("from")}
             options={tokenOptions}
             displayId={
-              tokens2?.find((t) => t.contractId === token?.tokenId)?.tokenId ||
+              tokens2?.find((t) => t.contractId === token?.tokenId)
+                ?.contractId ||
               token?.tokenId ||
               0
             }
@@ -1783,7 +1784,8 @@ const Swap = () => {
             balance={balance2}
             onFocus={() => setFocus("to")}
             displayId={
-              tokens2?.find((t) => t.contractId === token2?.tokenId)?.tokenId ||
+              tokens2?.find((t) => t.contractId === token2?.tokenId)
+                ?.contractId ||
               token2?.tokenId ||
               0
             }
