@@ -6,6 +6,9 @@ export const TOKEN_VIA = 6779767;
 // MAINNET
 export const TOKEN_WVOI1 = 390001;
 export const TOKEN_AUSDC = 395614;
+export const TOKEN_AUSDT = 395612;
+export const TOKEN_AWBTC = 395613;
+export const TOKEN_AETH = 395615;
 export const TOKEN_AALGO = 413153;
 
 export const NETWORK_TOKEN = {

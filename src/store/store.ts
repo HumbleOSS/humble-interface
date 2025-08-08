@@ -40,4 +40,6 @@ export type RootState = {
   dex: DexState;
 };
 
+export type AppDispatch = typeof store.dispatch;
+
 export default store;

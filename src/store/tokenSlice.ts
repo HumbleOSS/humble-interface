@@ -2,16 +2,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import db from "../db";
 import { RootState } from "./store";
-import { ARC200TokenI } from "../types";
+import { ARC200TokenI, TickerI } from "../types";
 import { arc200 } from "ulujs";
 import { getAlgorandClients } from "../wallets";
 import axios from "axios";
 import { prepareString } from "../utils/string";
+import { NETWORK_TOKEN } from "../constants/tokens";
 
 export interface TokensState {
   tokens: ARC200TokenI[];
+  tickers: TickerI[];
   status: "idle" | "loading" | "succeeded" | "failed";
+  tickerStatus: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  tickerError: string | null;
+  lastRefresh: number | null;
+  lastTickerRefresh: number | null;
 }
 
 export const fetchToken = async (tokenId: number) => {
@@ -83,10 +89,11 @@ export const getTokens = createAsyncThunk<
     //const mintMintRound =
     //  storedTokens.length === 0 ? 0 : storedTokens.slice(-1)[0].mintRound;
     const { data } = await axios.get(
-      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens`
+      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
     );
 
     const appTokens = data.tokens.map((t: any) => ({
+      ...t,
       name: t.name,
       symbol: t.symbol,
       decimals: t.decimals,
@@ -95,9 +102,15 @@ export const getTokens = createAsyncThunk<
       mintRound: t.mintRound,
     }));
 
-    const filteredTokens = appTokens.filter(
+    const filteredTokens: ARC200TokenI[] = appTokens.filter(
       (t: any) => !["ARC200LT", "LPT", "TEST"].includes(t.symbol)
     );
+
+    // Ensure VOI (network token, tokenId: 0) is present in the list
+    const hasVoi = filteredTokens.some((t) => t.tokenId === 0);
+    if (!hasVoi) {
+      filteredTokens.unshift({ ...NETWORK_TOKEN.VOI });
+    }
 
     //db.table("tokens").bulkPut(filteredTokens);
     //const tokens = await tokenTable.toArray();
@@ -107,10 +120,93 @@ export const getTokens = createAsyncThunk<
   }
 });
 
+export const getTickers = createAsyncThunk<
+  TickerI[],
+  void,
+  { rejectValue: string; state: RootState }
+>("tokens/getTickers", async (_, { getState, rejectWithValue }) => {
+  try {
+    const { data } = await axios.get(
+      "https://api.humble.sh/integrations/coingecko/tickers"
+    );
+    return data;
+  } catch (error: any) {
+    return rejectWithValue(error.message);
+  }
+});
+
+export const getTokensWithTickers = createAsyncThunk<
+  { tokens: ARC200TokenI[]; tickers: TickerI[] },
+  void,
+  { rejectValue: string; state: RootState }
+>("tokens/getTokensWithTickers", async (_, { getState, rejectWithValue, dispatch }) => {
+  try {
+    // Fetch both tokens and tickers in parallel
+    const [tokensResult, tickersResult] = await Promise.allSettled([
+      dispatch(getTokens()).unwrap(),
+      dispatch(getTickers()).unwrap()
+    ]);
+
+    const tokens = tokensResult.status === 'fulfilled' ? tokensResult.value : [];
+    const tickers = tickersResult.status === 'fulfilled' ? tickersResult.value : [];
+
+    // Match tickers to tokens
+    const tokensWithTickers = tokens.map(token => {
+      const tokenIdStr = token.tokenId.toString();
+      
+      // For VOI (tokenId: 0), aggregate liquidity from all trading pairs
+      if (token.tokenId === 0) {
+        const voiTickers = tickers.filter(t => 
+          t.target_currency_id === "0" || t.base_currency_id === "0"
+        );
+        
+        if (voiTickers.length > 0) {
+          // Sum up liquidity from all VOI pairs
+          const totalLiquidity = voiTickers.reduce((sum, ticker) => {
+            const liquidity = parseFloat(ticker.liquidity_in_usd || "0");
+            return sum + (isNaN(liquidity) ? 0 : liquidity);
+          }, 0);
+          
+          // Use the first ticker as base and update liquidity
+          const aggregatedTicker = {
+            ...voiTickers[0],
+            liquidity_in_usd: totalLiquidity.toString()
+          };
+          
+          return {
+            ...token,
+            ticker: aggregatedTicker
+          };
+        }
+      }
+      
+      // For other tokens, use original logic
+      const ticker = tickers.find(t => 
+        t.base_currency_id === tokenIdStr ||
+        t.target_currency_id === tokenIdStr
+      );
+      
+      return {
+        ...token,
+        ticker
+      };
+    });
+
+    return { tokens: tokensWithTickers, tickers };
+  } catch (error: any) {
+    return rejectWithValue(error.message);
+  }
+});
+
 const initialState: TokensState = {
   tokens: [],
+  tickers: [],
   status: "idle",
+  tickerStatus: "idle",
   error: null,
+  tickerError: null,
+  lastRefresh: null,
+  lastTickerRefresh: null,
 };
 
 const tokenSlice = createSlice({
@@ -126,6 +222,21 @@ const tokenSlice = createSlice({
         Object.assign(tokenToUpdate, newData);
       }
     },
+    setLastRefresh(state, action) {
+      state.lastRefresh = action.payload;
+    },
+    setLastTickerRefresh(state, action) {
+      state.lastTickerRefresh = action.payload;
+    },
+    updateTokenTicker(state, action) {
+      const { tokenId, ticker } = action.payload;
+      const tokenToUpdate = state.tokens.find(
+        (token) => token.tokenId === tokenId
+      );
+      if (tokenToUpdate) {
+        tokenToUpdate.ticker = ticker;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -135,13 +246,88 @@ const tokenSlice = createSlice({
       .addCase(getTokens.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.tokens = [...action.payload];
+        state.lastRefresh = Date.now();
       })
       .addCase(getTokens.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+      .addCase(getTickers.pending, (state) => {
+        state.tickerStatus = "loading";
+      })
+      .addCase(getTickers.fulfilled, (state, action) => {
+        state.tickerStatus = "succeeded";
+        state.tickers = action.payload;
+        state.lastTickerRefresh = Date.now();
+      })
+      .addCase(getTickers.rejected, (state, action) => {
+        state.tickerStatus = "failed";
+        state.tickerError = action.payload as string;
+      })
+      .addCase(getTokensWithTickers.pending, (state) => {
+        state.status = "loading";
+        state.tickerStatus = "loading";
+      })
+      .addCase(getTokensWithTickers.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.tickerStatus = "succeeded";
+        state.tokens = action.payload.tokens;
+        state.tickers = action.payload.tickers;
+        state.lastRefresh = Date.now();
+        state.lastTickerRefresh = Date.now();
+      })
+      .addCase(getTokensWithTickers.rejected, (state, action) => {
+        state.status = "failed";
+        state.tickerStatus = "failed";
+        state.error = action.payload as string;
+        state.tickerError = action.payload as string;
       });
   },
 });
 
-export const { updateToken } = tokenSlice.actions;
+export const { updateToken, setLastRefresh, setLastTickerRefresh, updateTokenTicker } = tokenSlice.actions;
+
+// Selectors
+export const selectTokens = (state: RootState) => state.tokens.tokens;
+export const selectTokensStatus = (state: RootState) => state.tokens.status;
+export const selectTickers = (state: RootState) => state.tokens.tickers;
+export const selectTickersStatus = (state: RootState) => state.tokens.tickerStatus;
+export const selectTickersError = (state: RootState) => state.tokens.tickerError;
+export const selectLastRefresh = (state: RootState) => state.tokens.lastRefresh;
+export const selectLastTickerRefresh = (state: RootState) => state.tokens.lastTickerRefresh;
+export const selectTimeSinceLastRefresh = (state: RootState) => {
+  const lastRefresh = state.tokens.lastRefresh;
+  return lastRefresh ? Date.now() - lastRefresh : null;
+};
+export const selectTimeSinceLastTickerRefresh = (state: RootState) => {
+  const lastTickerRefresh = state.tokens.lastTickerRefresh;
+  return lastTickerRefresh ? Date.now() - lastTickerRefresh : null;
+};
+
+// Get ticker for a specific token by tokenId
+export const selectTokenTicker = (tokenId: number) => (state: RootState) => {
+  const token = state.tokens.tokens.find(t => t.tokenId === tokenId);
+  return token?.ticker;
+};
+
+// Get all tokens with their ticker information
+export const selectTokensWithTickers = (state: RootState) => {
+  return state.tokens.tokens.filter(token => token.ticker);
+};
+
+// Get ticker by ticker_id
+export const selectTickerById = (tickerId: string) => (state: RootState) => {
+  return state.tokens.tickers.find(ticker => ticker.ticker_id === tickerId);
+};
+
+// Get tickers for a specific base currency
+export const selectTickersByBaseCurrency = (baseCurrency: string) => (state: RootState) => {
+  return state.tokens.tickers.filter(ticker => ticker.base_currency === baseCurrency);
+};
+
+// Get tickers for a specific target currency (e.g., VOI)
+export const selectTickersByTargetCurrency = (targetCurrency: string) => (state: RootState) => {
+  return state.tokens.tickers.filter(ticker => ticker.target_currency === targetCurrency);
+};
+
 export default tokenSlice.reducer;

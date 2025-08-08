@@ -14,7 +14,8 @@ import {
   WalletManager,
   WalletProvider,
 } from "@txnlab/use-wallet-react";
-import { getCurrentNodeEnv } from "./utils/node";
+import { useTokenRefresh } from "./hooks/useTokenRefresh";
+import TokenRefreshStatus from "./components/TokenRefreshStatus";
 
 const BackgroundLayer = styled.div`
   width: 100%;
@@ -45,6 +46,10 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+
+  // Initialize token refresh hook
+  useTokenRefresh();
+
   return (
     <div
       style={{
@@ -127,6 +132,7 @@ const App: React.FC = () => {
                 </Routes>
               </Layout>
             </Router>
+            <TokenRefreshStatus />
           </AppContainer>
         </NotificationProvider>
       </Provider>

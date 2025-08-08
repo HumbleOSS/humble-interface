@@ -50,9 +50,36 @@ export interface ARC200TokenI {
   decimals: number;
   totalSupply: BigInt | string;
   mintRound?: number;
+  price?: number;
+  change_24?: {
+    latest_price?: number;
+  };
+  ticker?: TickerI;
 }
 
 export interface ARC200LPTokenI extends ARC200TokenI {}
+
+/* Ticker */
+
+export interface TickerI {
+  ticker_id: string;
+  base_currency: string;
+  base_currency_id: string;
+  target_currency: string;
+  target_currency_id: string;
+  pool_id: string;
+  last_price: string;
+  base_volume: string;
+  target_volume: string;
+  liquidity_in_usd: string;
+  update_datetime: string;
+  high: string;
+  low: string;
+}
+
+export interface TickerResponse {
+  tickers: TickerI[];
+}
 
 /* Collection */
 
