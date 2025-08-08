@@ -303,6 +303,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           link: "https://powapp.xyz",
           date: "2025-06-16",
         },
+        {
+          id: 4,
+          title: "POW Rewards Update Aug 2025",
+          link: "https://x.com/NicholasShella2/status/1953880964469600693",
+          date: "2025-08-08",
+        },
       ];
 
       // Filter out already dismissed notifications, only show active notifications (within a week), and sort by ID descending (newer first)

@@ -19,9 +19,9 @@ const useDefiRewards = () => {
         const response = {
           data: [
             {
-              poolId: 395553,
+              poolId: 395553, // USDC/VOI
               aprBoost: 28.75, // TVL lte 250k USD
-              additionalAprBoost: 22.76, // POW Incentives
+              additionalAprBoost: 3.05, // POW Incentives
             },
             {
               poolId: 413161,
@@ -43,39 +43,11 @@ const useDefiRewards = () => {
               aprBoost: 28.75 / 2, // TVL lte 250k aBTC
               additionalAprBoost: 0,
             },
-            /*
-            {
-              poolId: 429999, // UNIT/VOI UNIT
-              aprBoost: 99,
-            },
-            */
             {
               poolId: 395554, // GM/VOI GM
               aprBoost: 27,
               additionalAprBoost: 0,
             },
-            /*
-            {
-              poolId: 440993, // F/UNIT UNIT
-              aprBoost: 25,
-            },
-            {
-              poolId: 443619, // F/ROCKET ROCKET TVL 5%
-              aprBoost: 10,
-            },
-            {
-              poolId: 443610, // F/COOL COOL TVL 5%
-              aprBoost: 10,
-            },
-            {
-              poolId: 443620, // F/CORN CORN TVL 5%
-              aprBoost: 10,
-            },
-            {
-              poolId: 440986, // F/GM GM TVL 5%
-              aprBoost: 10,
-            },
-            */
             {
               poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
               aprBoost: 27,
@@ -104,7 +76,12 @@ const useDefiRewards = () => {
             {
               poolId: 40120385, // POW/VOI
               aprBoost: 0,
-              additionalAprBoost: 15.25, // POW Incentives
+              additionalAprBoost: 9.167, // POW Incentives
+            },
+            {
+              poolId: 40171090, // POW/USD
+              aprBoost: 0,
+              additionalAprBoost: 27.5, // POW Incentives
             },
           ],
         };
