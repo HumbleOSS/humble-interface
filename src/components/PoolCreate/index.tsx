@@ -1106,7 +1106,9 @@ const Swap = () => {
         //}
 
         //const swapR: any = await ci.deposit(acc.addr, ctcInfo, A, B, extraTxns);
-        const swapR: any = await ci.deposit(acc.addr, ctcInfo, A, B, []);
+        const swapR: any = await ci.deposit(acc.addr, ctcInfo, A, B, [], {
+          debug: true,
+        });
 
         const unsignedTxns = [
           ...swapR.txns.map(
