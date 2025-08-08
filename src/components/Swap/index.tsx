@@ -1611,6 +1611,8 @@ const Swap = () => {
         skipWithdraw: false,
       });
 
+      console.log("swapR", swapR);
+
       if (!swapR?.success) {
         // Retrigger the amount calculations
         if (focus === "from") {

@@ -851,6 +851,51 @@ const QUICK_BUTTONS = [
   },
 ];
 
+const ToggleContainer = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  background: ${(props) => (props.theme.isDarkTheme ? "#1a1a1a" : "#f3f4f6")};
+  border-radius: 8px;
+  border: 1px solid ${(props) => (props.theme.isDarkTheme ? "#333" : "#e5e7eb")};
+`;
+
+const ToggleButton = styled.button<{ active: boolean }>`
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: ${(props) =>
+    props.active
+      ? props.theme.isDarkTheme
+        ? "#41137e"
+        : "#41137e"
+      : "transparent"};
+  color: ${(props) =>
+    props.active
+      ? "#fff"
+      : props.theme.isDarkTheme
+      ? "#888"
+      : "#6b7280"};
+  font-family: "Plus Jakarta Sans";
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${(props) =>
+      props.active
+        ? props.theme.isDarkTheme
+          ? "#5a1ba8"
+          : "#5a1ba8"
+        : props.theme.isDarkTheme
+        ? "#333"
+        : "#e5e7eb"};
+  }
+`;
+
 const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   console.log("token", token);
   console.log("options", options);
@@ -895,6 +940,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   const [tokenBalances, setTokenBalances] = React.useState<
     Record<number, string>
   >({});
+  const [displayCategory, setDisplayCategory] = React.useState<"yourTokens" | "byVolume">("yourTokens");
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState<string>("");
   React.useEffect(() => {
@@ -1129,7 +1175,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
     getTokenUsdPrice,
   ]);
 
-  const userTokensTop2 = React.useMemo(() => {
+  const userTokens = React.useMemo(() => {
     const source = options || tokens;
     const withBalance = source.filter((t) => {
       const bal = tokenBalances[t.tokenId];
@@ -1138,7 +1184,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
     });
 
     withBalance.sort((a, b) => getBalanceValue(b) - getBalanceValue(a));
-    return withBalance.slice(0, 2);
+    return withBalance;
   }, [options, tokens, tokenBalances, getBalanceValue]);
 
   const tokensByVolume = React.useMemo(() => {
@@ -1575,30 +1621,48 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                     )}
                   </div>
 
-                                  <AdContainer>
-                  {balanceLoading ? (
-                    <Skeleton variant="rectangular" width="100%" height="100%" />
-                  ) : (
-                    (() => {
-                      const ad = ADS[adIndex] || ADS[0];
-                      const image = (
-                        <AdImage src={ad.src} alt={ad.alt} />
-                      );
-                      return ad?.href ? (
-                        <AdLink href={ad.href} target="_blank" rel="noopener noreferrer">
-                          {image}
-                          <AdBadge>Sponsored</AdBadge>
-                        </AdLink>
-                      ) : (
-                        <>
-                          {image}
-                          <AdBadge>Sponsored</AdBadge>
-                        </>
-                      );
-                    })()
-                  )}
-                </AdContainer>
+                  <AdContainer>
+                    {balanceLoading ? (
+                      <Skeleton variant="rectangular" width="100%" height="100%" />
+                    ) : (
+                      (() => {
+                        const ad = ADS[adIndex] || ADS[0];
+                        const image = (
+                          <AdImage src={ad.src} alt={ad.alt} />
+                        );
+                        return ad?.href ? (
+                          <AdLink href={ad.href} target="_blank" rel="noopener noreferrer">
+                            {image}
+                            <AdBadge>Sponsored</AdBadge>
+                          </AdLink>
+                        ) : (
+                          <>
+                            {image}
+                            <AdBadge>Sponsored</AdBadge>
+                          </>
+                        );
+                      })()
+                    )}
+                  </AdContainer>
                 </div>
+              )}
+
+              {/* Display Category Toggle */}
+              {activeAccount && (
+                <ToggleContainer>
+                  <ToggleButton
+                    active={displayCategory === "yourTokens"}
+                    onClick={() => setDisplayCategory("yourTokens")}
+                  >
+                    Your Tokens ({userTokens.length})
+                  </ToggleButton>
+                  <ToggleButton
+                    active={displayCategory === "byVolume"}
+                    onClick={() => setDisplayCategory("byVolume")}
+                  >
+                    By Volume ({tokensByVolume.length})
+                  </ToggleButton>
+                </ToggleContainer>
               )}
             </Collapsible>
 
@@ -1783,14 +1847,14 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
               </TokenList>
             ) : (
               <>
-                {activeAccount && userTokensTop2.length > 0 && (
+                {activeAccount && displayCategory === "yourTokens" && userTokens.length > 0 && (
                   <>
                     <SectionHeader>
                       <SectionIcon>👤</SectionIcon>
-                      Your tokens
+                      Your tokens ({userTokens.length})
                     </SectionHeader>
                     <TokenList>
-                      {userTokensTop2.map((t, i) => (
+                      {userTokens.map((t, i) => (
                         <TokenItem
                           key={`${tokenSymbol(t)}-mine-${i}`}
                           onClick={() => {
@@ -1815,6 +1879,21 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                             <TokenDetails>
                               <TokenName>
                                 {tokenSymbol(t)}
+                                {getTokenUsdPrice(t) > 0 && (
+                                  <TooltipContainer data-tooltip="Has DEX price data">
+                                    <TickerIndicator>$</TickerIndicator>
+                                  </TooltipContainer>
+                                )}
+                                {t.ticker?.liquidity_in_usd &&
+                                  parseFloat(t.ticker.liquidity_in_usd) > 0 && (
+                                    <TooltipContainer
+                                      data-tooltip={`Liquidity: $${parseFloat(
+                                        t.ticker.liquidity_in_usd
+                                      ).toLocaleString()}`}
+                                    >
+                                      <LiquidityIndicator>L</LiquidityIndicator>
+                                    </TooltipContainer>
+                                  )}
                               </TokenName>
                               <TokenSymbol>
                                 {(() => {
@@ -1833,16 +1912,46 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                             <BalanceValue>
                               {(() => {
                                 const rawValue = getBalanceValue(t, false);
+                                const adjustedValue = getBalanceValue(t, true);
                                 if (rawValue === 0) return "";
-                                return (
-                                  <span>
-                                    $
-                                    {rawValue.toLocaleString(undefined, {
-                                      maximumFractionDigits: 2,
-                                      minimumFractionDigits: 0,
-                                    })}
-                                  </span>
-                                );
+                                
+                                if (
+                                  useLiquidityAdjustment &&
+                                  Math.abs(rawValue - adjustedValue) > 0.01
+                                ) {
+                                  return (
+                                    <span>
+                                      $
+                                      {adjustedValue.toLocaleString(undefined, {
+                                        maximumFractionDigits: 2,
+                                        minimumFractionDigits: 0,
+                                      })}
+                                      <span
+                                        style={{
+                                          opacity: 0.6,
+                                          fontSize: "9px",
+                                        }}
+                                      >
+                                        {" "}
+                                        ($
+                                        {rawValue.toLocaleString(undefined, {
+                                          maximumFractionDigits: 0,
+                                        })}
+                                        )
+                                      </span>
+                                    </span>
+                                  );
+                                } else {
+                                  return (
+                                    <span>
+                                      $
+                                      {rawValue.toLocaleString(undefined, {
+                                        maximumFractionDigits: 2,
+                                        minimumFractionDigits: 0,
+                                      })}
+                                    </span>
+                                  );
+                                }
                               })()}
                             </BalanceValue>
                           </TokenBalance>
@@ -1852,72 +1961,91 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                   </>
                 )}
 
-                <SectionHeader>
-                  <SectionIcon>📈</SectionIcon>
-                  Tokens by 24h volume
-                </SectionHeader>
-                <TokenList>
-                  {tokensByVolume.map((t, i) => (
-                    <TokenItem
-                      key={`${tokenSymbol(t)}-vol-${i}`}
-                      onClick={() => {
-                        onSelect(t);
-                        handleClose();
-                      }}
-                    >
-                      <TokenInfo>
-                        <TokenIcon>
-                          <img
-                            style={{
-                              width: "28px",
-                              height: "28px",
-                              borderRadius: "50%",
-                            }}
-                            src={`https://asset-verification.nautilus.sh/icons/${
-                              t?.tokenId || 0
-                            }.png`}
-                            alt={`${tokenSymbol(t)} icon`}
-                          />
-                        </TokenIcon>
-                        <TokenDetails>
-                          <TokenName>
-                            {tokenSymbol(t)}
-                          </TokenName>
-                          <TokenSymbol>
-                            {(() => {
-                              const usdPrice = getTokenUsdPrice(t);
-                              return usdPrice > 0
-                                ? `$${usdPrice.toFixed(6)}`
-                                : "No price data";
-                            })()}
-                          </TokenSymbol>
-                        </TokenDetails>
-                      </TokenInfo>
-                      {activeAccount && (
-                        <TokenBalance>
-                          <BalanceAmount>
-                            {balanceLoading
-                              ? "..."
-                              : tokenBalances[t.tokenId] || "0"}
-                          </BalanceAmount>
-                          {(() => {
-                            const rawValue = getBalanceValue(t, false);
-                            if (rawValue === 0) return null;
-                            return (
-                              <BalanceValue>
-                                $
-                                {rawValue.toLocaleString(undefined, {
-                                  maximumFractionDigits: 2,
-                                  minimumFractionDigits: 0,
-                                })}
-                              </BalanceValue>
-                            );
-                          })()}
-                        </TokenBalance>
-                      )}
-                    </TokenItem>
-                  ))}
-                </TokenList>
+                {displayCategory === "byVolume" && (
+                  <>
+                    <SectionHeader>
+                      <SectionIcon>📈</SectionIcon>
+                      Tokens by 24h volume ({tokensByVolume.length})
+                    </SectionHeader>
+                    <TokenList>
+                      {tokensByVolume.map((t, i) => (
+                        <TokenItem
+                          key={`${tokenSymbol(t)}-vol-${i}`}
+                          onClick={() => {
+                            onSelect(t);
+                            handleClose();
+                          }}
+                        >
+                          <TokenInfo>
+                            <TokenIcon>
+                              <img
+                                style={{
+                                  width: "28px",
+                                  height: "28px",
+                                  borderRadius: "50%",
+                                }}
+                                src={`https://asset-verification.nautilus.sh/icons/${
+                                  t?.tokenId || 0
+                                }.png`}
+                                alt={`${tokenSymbol(t)} icon`}
+                              />
+                            </TokenIcon>
+                            <TokenDetails>
+                              <TokenName>
+                                {tokenSymbol(t)}
+                                {getTokenUsdPrice(t) > 0 && (
+                                  <TooltipContainer data-tooltip="Has DEX price data">
+                                    <TickerIndicator>$</TickerIndicator>
+                                  </TooltipContainer>
+                                )}
+                                {t.ticker?.liquidity_in_usd &&
+                                  parseFloat(t.ticker.liquidity_in_usd) > 0 && (
+                                    <TooltipContainer
+                                      data-tooltip={`Liquidity: $${parseFloat(
+                                        t.ticker.liquidity_in_usd
+                                      ).toLocaleString()}`}
+                                    >
+                                      <LiquidityIndicator>L</LiquidityIndicator>
+                                    </TooltipContainer>
+                                  )}
+                              </TokenName>
+                              <TokenSymbol>
+                                {(() => {
+                                  const usdPrice = getTokenUsdPrice(t);
+                                  return usdPrice > 0
+                                    ? `$${usdPrice.toFixed(6)}`
+                                    : "No price data";
+                                })()}
+                              </TokenSymbol>
+                            </TokenDetails>
+                          </TokenInfo>
+                          {activeAccount && (
+                            <TokenBalance>
+                              <BalanceAmount>
+                                {balanceLoading
+                                  ? "..."
+                                  : tokenBalances[t.tokenId] || "0"}
+                              </BalanceAmount>
+                              {(() => {
+                                const rawValue = getBalanceValue(t, false);
+                                if (rawValue === 0) return null;
+                                return (
+                                  <BalanceValue>
+                                    $
+                                    {rawValue.toLocaleString(undefined, {
+                                      maximumFractionDigits: 2,
+                                      minimumFractionDigits: 0,
+                                    })}
+                                  </BalanceValue>
+                                );
+                              })()}
+                            </TokenBalance>
+                          )}
+                        </TokenItem>
+                      ))}
+                    </TokenList>
+                  </>
+                )}
               </>
             )}
           </ModalContent>

@@ -731,207 +731,6 @@ const PoolRemove = () => {
 
       const buildN = [];
 
-      //
-      // TODO use api
-      //
-      // const tokens = [
-      //   {
-      //     contractId: 390001,
-      //     name: "Wrapped Voi",
-      //     symbol: "wVOI",
-      //     decimals: 6,
-      //     totalSupply:
-      //       "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //     creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
-      //     deleted: 0,
-      //     price: "1.000000",
-      //     tokenId: "0",
-      //     verified: null,
-      //     mintRound: 0,
-      //     globalState: {},
-      //   },
-      //   // {
-      //   //   contractId: 413153,
-      //   //   name: "Aramid ALGO",
-      //   //   symbol: "aAlgo",
-      //   //   decimals: 6,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
-      //   //   deleted: 0,
-      //   //   price: "1.00100099766100213213",
-      //   //   tokenId: "302189",
-      //   //   verified: null,
-      //   //   mintRound: 894792,
-      //   //   globalState: {},
-      //   // },
-      //   // {
-      //   //   contractId: 395614,
-      //   //   name: "aUSDC",
-      //   //   symbol: "aUSDC",
-      //   //   decimals: 6,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
-      //   //   deleted: 0,
-      //   //   price: "75.15856933383736351197",
-      //   //   tokenId: "302190",
-      //   //   verified: 1,
-      //   //   mintRound: 0,
-      //   //   globalState: {},
-      //   // },
-      //   // {
-      //   //   contractId: 859317,
-      //   //   name: "DeFi-nite",
-      //   //   symbol: "Finite",
-      //   //   decimals: 8,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "RTKWX3FTDNNIHMAWHK5SDPKH3VRPPW7OS5ZLWN6RFZODF7E22YOBK2OGPE",
-      //   //   deleted: 0,
-      //   //   price: "8.91790955467233058325",
-      //   //   tokenId: "797369",
-      //   //   verified: 1,
-      //   //   mintRound: 3380910,
-      //   //   globalState: {},
-      //   // },
-      //   // {
-      //   //   contractId: 40153155,
-      //   //   name: "Power",
-      //   //   symbol: "POW",
-      //   //   decimals: 6,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
-      //   //   deleted: 0,
-      //   //   mintRound: 8570683,
-      //   //   globalState: {},
-      //   //   change_1h: {
-      //   //     latest_price: "6.47894220925777557923",
-      //   //     earliest_price: "6.47894220924911715601",
-      //   //     percent_change: 1.3363235780799226e-10,
-      //   //   },
-      //   //   change_24h: {
-      //   //     latest_price: "7.58602202906612514776",
-      //   //     earliest_price: "4.7172058597064829288",
-      //   //     percent_change: 60.816005378619366,
-      //   //   },
-      //   //   change_7d: {
-      //   //     latest_price: "7.58602202906612514776",
-      //   //     earliest_price: "0.22222222219732779767",
-      //   //     percent_change: 3313.709913462177,
-      //   //   },
-      //   // },
-      //   // {
-      //   //   contractId: 40153248,
-      //   //   name: "Armaid ETH",
-      //   //   symbol: "aETH",
-      //   //   decimals: 6,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
-      //   //   deleted: 0,
-      //   //   mintRound: 8571019,
-      //   //   globalState: {},
-      //   //   change_1h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_24h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_7d: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   // },
-      //   // {
-      //   //   contractId: 40153308,
-      //   //   name: "Aramid ETH",
-      //   //   symbol: "aETH",
-      //   //   decimals: 6,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
-      //   //   deleted: 0,
-      //   //   mintRound: 8571213,
-      //   //   globalState: {},
-      //   //   change_1h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_24h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_7d: {
-      //   //     latest_price: "2830034.25426463551693057518",
-      //   //     earliest_price: "2327327.32732732732732732733",
-      //   //     percent_change: 21.600181505822402,
-      //   //   },
-      //   // },
-      //   // {
-      //   //   contractId: 40153368,
-      //   //   name: "Aramid BTC",
-      //   //   symbol: "aBTC",
-      //   //   decimals: 8,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
-      //   //   deleted: 0,
-      //   //   mintRound: 8571409,
-      //   //   globalState: {},
-      //   //   change_1h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_24h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_7d: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   // },
-      //   // {
-      //   //   contractId: 40153415,
-      //   //   name: "Aramid cbBTC",
-      //   //   symbol: "acbBTC",
-      //   //   decimals: 8,
-      //   //   totalSupply:
-      //   //     "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      //   //   creator: "SDSKGUS5AEIQATOLCSNC4PUK5GK6G6JRWMKUJY5GQRWMNXUTWURVUIQV3U",
-      //   //   deleted: 0,
-      //   //   mintRound: 8571573,
-      //   //   globalState: {},
-      //   //   change_1h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_24h: {
-      //   //     latest_price: null,
-      //   //     earliest_price: null,
-      //   //     percent_change: null,
-      //   //   },
-      //   //   change_7d: {
-      //   //     latest_price: "99397558.3864118895966029724",
-      //   //     earliest_price: "104692409.76645435244161358811",
-      //   //     percent_change: -5.0575312879454275,
-      //   //   },
-      //   // },
-      // ];
-
       const { data } = await axios.get(
         "https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all"
       );
@@ -951,6 +750,39 @@ const PoolRemove = () => {
         for (const tok of [tokA, tokB]) {
           const token = tokens?.find((t: any) => t.contractId === tok);
           if (!token) continue;
+          const ciRedeem = new CONTRACT(
+            tok,
+            algodClient,
+            indexerClient,
+            {
+              name: "",
+              description: "",
+              methods: [
+                {
+                  name: "arc200_exchange",
+                  args: [],
+                  readonly: true,
+                  returns: {
+                    type: "(uint64,address)",
+                  },
+                  desc: "ARC-200 exchange info (external)",
+                },
+              ],
+              events: [],
+            },
+            {
+              addr: activeAccount.address,
+              sk: new Uint8Array(0),
+            }
+          );
+          const exchangeR = await ciRedeem.arc200_exchange();
+          if (exchangeR.success) {
+            console.log(
+              "Token has exchange contract, skipping direct withdrawal"
+            );
+            continue;
+          }
+          console.log("Attempting to withdraw extra wrapped token", token);
           const assetId = Number(token?.tokenId || 0);
           if (!assetId && !token) continue;
           const tokBuilder =
