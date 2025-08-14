@@ -404,11 +404,40 @@ const Swap: FC<SwapProps> = ({
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+  // Helper function to clean and validate amount values
+  const cleanAmount = (value: string): string => {
+    if (!value) return '';
+    
+    // Remove commas and clean the value
+    const cleanValue = value.toString().replace(/,/g, '');
+    const numValue = parseFloat(cleanValue);
+    
+    if (isNaN(numValue)) {
+      console.warn('Invalid amount value:', value);
+      return '0';
+    }
+    
+    return numValue.toString();
+  };
+
   const handleMaxClick = () => {
+    console.log('Max button clicked. Original balance:', balance);
     if (balance) {
-      setAmount(balance);
+      const cleanBalance = cleanAmount(balance.toString());
+      console.log('Cleaned balance:', cleanBalance);
+      setAmount(cleanBalance);
     }
   };
+
+  // Ensure amount is always clean when it changes
+  useEffect(() => {
+    if (amount !== undefined && amount !== null) {
+      const cleanValue = cleanAmount(amount);
+      if (cleanValue !== amount) {
+        setAmount(cleanValue);
+      }
+    }
+  }, [amount]);
   const isWVOI = tokInfo?.tokenId === "0";
   const badge = isWVOI ? (
     <Tooltip title="Trusted by Nautilus" placement="right" arrow>

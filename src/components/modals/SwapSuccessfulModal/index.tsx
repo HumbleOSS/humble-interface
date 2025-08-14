@@ -454,6 +454,23 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
   tokOut,
   txId,
 }) => {
+  // Debug logging to help identify NaN issues
+  console.log('SwapSuccessfulModal received props:', {
+    swapIn,
+    swapOut,
+    tokIn,
+    tokOut,
+    txId
+  });
+
+  // Ensure we have safe fallback values to prevent NaN display
+  // Handle comma-formatted numbers properly
+  const cleanSwapIn = swapIn ? swapIn.replace(/,/g, '') : '';
+  const cleanSwapOut = swapOut ? swapOut.replace(/,/g, '') : '';
+  const safeSwapIn = (cleanSwapIn && !isNaN(parseFloat(cleanSwapIn))) ? swapIn : "0";
+  const safeSwapOut = (cleanSwapOut && !isNaN(parseFloat(cleanSwapOut))) ? swapOut : "0";
+  const safeTokIn = tokIn || "Unknown";
+  const safeTokOut = tokOut || "Unknown";
   const [tokInInfo, setTokInInfo] = useState<TokenInfo | null>(null);
   const [tokOutInfo, setTokOutInfo] = useState<TokenInfo | null>(null);
   const navigate = useNavigate();
@@ -481,16 +498,16 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
         )
         .then(({ data }) => {
           const tokInData = data.tokens.find(
-            (t: TokenInfo) => t.symbol === tokIn
+            (t: TokenInfo) => t.symbol === safeTokIn
           );
           const tokOutData = data.tokens.find(
-            (t: TokenInfo) => t.symbol === tokOut
+            (t: TokenInfo) => t.symbol === safeTokOut
           );
           setTokInInfo(tokInData);
           setTokOutInfo(tokOutData);
         });
     }
-  }, [open, tokIn, tokOut]);
+  }, [open, safeTokIn, safeTokOut]);
 
   const renderTokenIcon = (token: TokenInfo | null, symbol: string) => {
     if (symbol === "VOI") {
@@ -610,17 +627,17 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                 <SwapInContainer>
                   <SwapInContentContainer>
                     <SwapInTokenContainer>
-                      {renderTokenIcon(tokInInfo, tokIn)}
+                      {renderTokenIcon(tokInInfo, safeTokIn)}
                       {renderTokenLabel(
-                        tokIn,
-                        (tokInInfo?.verified || 0) > 0 || tokIn === "VOI",
+                        safeTokIn,
+                        (tokInInfo?.verified || 0) > 0 || safeTokIn === "VOI",
                         isDarkTheme
                       )}
                     </SwapInTokenContainer>
                     <SwapInValueContainer>
                       <SwapInValue>
                         <SwapInLabel className={isDarkTheme ? "dark" : "light"}>
-                          {swapIn}
+                          {safeSwapIn}
                         </SwapInLabel>
                       </SwapInValue>
                     </SwapInValueContainer>
@@ -630,20 +647,20 @@ const SwapSuccessfulModal: React.FC<SwapSuccessfulModalProps> = ({
                   <SwapOutContentContainer>
                     <SwapOutContent>
                       <SwapInTokenContainer>
-                        {renderTokenIcon(tokOutInfo, tokOut)}
+                        {renderTokenIcon(tokOutInfo, safeTokOut)}
                         {renderTokenLabel(
-                          tokOut,
-                          (tokOutInfo?.verified || 0) > 0 || tokOut === "VOI",
+                          safeTokOut,
+                          (tokOutInfo?.verified || 0) > 0 || safeTokOut === "VOI",
                           isDarkTheme
                         )}
                       </SwapInTokenContainer>
                       <SwapInValueContainer>
                         <SwapInValue>
-                          <SwapInLabel
-                            className={isDarkTheme ? "dark" : "light"}
-                          >
-                            {swapOut}
-                          </SwapInLabel>
+                                                  <SwapInLabel
+                          className={isDarkTheme ? "dark" : "light"}
+                        >
+                          {safeSwapOut}
+                        </SwapInLabel>
                         </SwapInValue>
                       </SwapInValueContainer>
                     </SwapOutContent>

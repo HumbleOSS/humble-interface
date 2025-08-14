@@ -1,6 +1,6 @@
 {
   "name": "humble-interface",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "",
   "main": "index.tsx",
   "type": "module",
@@ -55,7 +55,7 @@
     "react-use": "^17.5.1",
     "recharts": "^2.15.3",
     "styled-components": "^6.1.8",
-    "ulujs": "^0.12.12",
+    "ulujs": "^0.12.13",
     "usehooks-ts": "^2.15.0"
   },
   "devDependencies": {

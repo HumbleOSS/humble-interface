@@ -1302,7 +1302,8 @@ const Swap = () => {
         .then((r: any) => {
           const amount = r.amount;
           const minBalance = r["min-balance"];
-          const available = amount - minBalance;
+          const txnCost = 1e5; // conservative estimate of txn cost
+          const available = Math.max(0, amount - minBalance - txnCost);
           setBalance((available / 10 ** token.decimals).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
@@ -1682,10 +1683,28 @@ const Swap = () => {
 
       setTxId(confirmedTxId);
       setPoolId(pool2.poolId);
-      setSwapIn(fromAmount);
-      setSwapOut(toAmount);
-      setTokIn(token?.symbol || "");
-      setTokOut(token2?.symbol || "");
+      // Ensure amounts are valid numbers and provide fallbacks
+      // Remove commas and parse the amounts
+      const cleanFromAmount = fromAmount.replace(/,/g, "");
+      const cleanToAmount = toAmount.replace(/,/g, "");
+      const validFromAmount = parseFloat(cleanFromAmount) || 0;
+      const validToAmount = parseFloat(cleanToAmount) || 0;
+
+      console.log("Setting swap modal values:", {
+        fromAmount,
+        toAmount,
+        cleanFromAmount,
+        cleanToAmount,
+        validFromAmount,
+        validToAmount,
+        tokenSymbol: token?.symbol,
+        token2Symbol: token2?.symbol,
+      });
+
+      setSwapIn(validFromAmount.toString());
+      setSwapOut(validToAmount.toString());
+      setTokIn(token?.symbol || "Unknown");
+      setTokOut(token2?.symbol || "Unknown");
       setShowConfirmation(false);
       setSwapModalOpen(true);
     } catch (e: any) {
