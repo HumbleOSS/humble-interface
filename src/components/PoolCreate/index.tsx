@@ -815,7 +815,8 @@ const Swap = () => {
         .then((accInfo: any) => {
           const balance = accInfo.amount;
           const minBalance = accInfo["min-balance"];
-          const availableBalance = balance - minBalance;
+          const txnCost = 1e5; // conservative estimate of txn cost
+          const availableBalance = Math.max(0, balance - minBalance - txnCost);
           setBalance((availableBalance / 1e6).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
@@ -827,35 +828,59 @@ const Swap = () => {
             .lookupAssetByID(wrappedTokenId)
             .do()
             .then((assetInfo: any) => {
+              // set balance in case off arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
-              const balance = new BigNumber(
-                accAssetInfo["asset-holding"].amount
-              ).dividedBy(new BigNumber(10).pow(decimals));
-              setBalance(balance.toFixed(Math.min(6, decimals)));
+              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+              const ci = new arc200(token.tokenId, algodClient, indexerClient);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    (balance1Bi + balance2Bi).toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance(balance.toFixed(decimals));
+                }
+              });
             });
+        })
+        .catch((error: any) => {
+          const ci = new arc200(token.tokenId, algodClient, indexerClient);
+          ci.arc200_decimals().then((r: any) => {
+            if (r.success) {
+              const decimals = Number(r.returnValue);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    balance2Bi.toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance(balance.toFixed(decimals));
+                }
+              });
+            }
+          });
         });
     } else {
       const ci = new arc200(token.tokenId, algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token.decimals
-              ).toLocaleString()
-            );
+            const arc200_balanceOf = arc200_balanceOfR.returnValue;
+            const balanceBn = new BigNumber(arc200_balanceOf);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token.decimals))
+              .toFixed(token.decimals);
+            setBalance(balanceStr);
           }
         }
       );
     }
-  }, [tokens2, token, activeAccount]);
+  }, [tokens2, token, activeAccount, tokens]);
 
   // EFFECT set balance2
   useEffect(() => {
     if (!token2 || !activeAccount || !tokens2) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const ci = new arc200(token2.tokenId, algodClient, indexerClient);
     const wrappedTokenId = Number(
       tokens2.find((t) => t.contractId === token2.tokenId)?.tokenId
     );
@@ -866,7 +891,8 @@ const Swap = () => {
         .then((accInfo: any) => {
           const balance = accInfo.amount;
           const minBalance = accInfo["min-balance"];
-          const availableBalance = balance - minBalance;
+          const txnCost = 1e5; // conservative estimate of txn cost
+          const availableBalance = Math.max(0, balance - minBalance - txnCost);
           setBalance2((availableBalance / 1e6).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
@@ -878,23 +904,49 @@ const Swap = () => {
             .lookupAssetByID(wrappedTokenId)
             .do()
             .then((assetInfo: any) => {
+              // set balance in case off arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
-              const balance = new BigNumber(
-                accAssetInfo["asset-holding"].amount
-              ).dividedBy(new BigNumber(10).pow(decimals));
-              setBalance2(balance.toFixed(Math.min(6, decimals)));
+              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+              const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    (balance1Bi + balance2Bi).toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance2(balance.toFixed(decimals));
+                }
+              });
             });
+        })
+        .catch((error: any) => {
+          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+          ci.arc200_decimals().then((r: any) => {
+            if (r.success) {
+              const decimals = Number(r.returnValue);
+              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                if (r.success) {
+                  const balance2Bi = BigInt(r.returnValue);
+                  const balance = new BigNumber(
+                    balance2Bi.toString()
+                  ).dividedBy(new BigNumber(10).pow(decimals));
+                  setBalance2(balance.toFixed(decimals));
+                }
+              });
+            }
+          });
         });
     } else {
+      const ci = new arc200(token2.tokenId, algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
-            setBalance2(
-              (
-                Number(arc200_balanceOfR.returnValue) /
-                10 ** token2.decimals
-              ).toLocaleString()
-            );
+            const arc200_balanceOf = arc200_balanceOfR.returnValue;
+            const balanceBn = new BigNumber(arc200_balanceOf);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token2.decimals))
+              .toFixed(token2.decimals);
+            setBalance2(balanceStr);
           }
         }
       );
