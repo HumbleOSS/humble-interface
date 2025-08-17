@@ -55,7 +55,7 @@
     "react-use": "^17.5.1",
     "recharts": "^2.15.3",
     "styled-components": "^6.1.8",
-    "ulujs": "^0.12.13",
+    "ulujs": "^0.12.14",
     "usehooks-ts": "^2.15.0"
   },
   "devDependencies": {
