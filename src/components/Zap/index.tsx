@@ -16,12 +16,13 @@ import {
 import { useWallet } from "@txnlab/use-wallet-react";
 import CurrencyInputPanel from "../CurrencyInputPanel";
 import { getAlgorandClients } from "@/wallets";
-import { swap } from "ulujs";
+import { swap, arc200 } from "ulujs";
 import { TOKEN_WVOI1 } from "@/constants/tokens";
 import BigNumber from "bignumber.js";
 import algosdk from "algosdk";
 import { styled } from "@mui/material/styles";
 import Confetti from "react-confetti";
+import axios from "axios";
 
 const GradientCircularProgress = styled(CircularProgress)({
   color: "transparent",
@@ -118,6 +119,9 @@ const Zap: React.FC = () => {
   const [estimatedOutput, setEstimatedOutput] = useState<string | null>(null);
   const [poolSearchQuery, setPoolSearchQuery] = useState("");
   const [availableTokens, setAvailableTokens] = useState<Currency[]>([]);
+  
+  // Add tokens2 state for wrapped token support
+  const [tokens2, setTokens2] = useState<any[]>();
 
   const loadingMessages = [
     "Preparing your transaction...",
@@ -127,6 +131,39 @@ const Zap: React.FC = () => {
     "Aligning the blockchain stars...",
     "Warming up the quantum computers...",
   ];
+
+  // Fetch tokens2 for wrapped token support
+  useEffect(() => {
+    axios
+      .get(
+        "https://raw.githubusercontent.com/tinymanorg/tinyman-analytics-indexer/main/synced_tokens.json"
+      )
+      .then((res) => {
+        setTokens2(res.data);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch external tokens, falling back to local tokens:", error);
+        // Fallback to local tokens if external API is blocked
+        axios
+          .get("/api/tokens.json")
+          .then((res) => {
+            // Transform local token format to match expected format
+            const transformedTokens = res.data.map((token: any) => ({
+              contractId: token.tokenId,
+              tokenId: token.tokenId,
+              symbol: token.symbol.replace(/\0/g, '').trim(),
+              name: token.name.replace(/\0/g, '').trim(),
+              decimals: token.decimals,
+            }));
+            setTokens2(transformedTokens);
+          })
+          .catch((localError) => {
+            console.error("Failed to fetch local tokens:", localError);
+          });
+      });
+  }, []);
+
+  console.log({ tokens2 });
 
   useEffect(() => {
     if (isSigningModalOpen) {
@@ -172,6 +209,76 @@ const Zap: React.FC = () => {
       return prevTokens;
     });
   }, [activeAccount]);
+
+  // Add effect to update inputCurrency balance when selected (including wrapped tokens)
+  useEffect(() => {
+    if (!inputCurrency || !activeAccount || !tokens2) return;
+    
+    const updateBalance = async () => {
+      try {
+        const { algodClient, indexerClient } = getAlgorandClients();
+        
+        // Check if this is a wrapped token
+        const wrappedTokenId = Number(
+          tokens2.find((t) => t.contractId === inputCurrency.contractId)?.tokenId
+        );
+        
+        if (inputCurrency.tokenId === "0") {
+          // Native VOI token
+          const accountInfo = await algodClient
+            .accountInformation(activeAccount.address)
+            .do();
+          const amount = accountInfo.amount;
+          const minBalance = accountInfo["min-balance"];
+          const txnCost = 1e5; // conservative estimate of txn cost
+          const available = Math.max(0, amount - minBalance - txnCost);
+          const balance = (available / 10 ** inputCurrency.decimals).toLocaleString();
+          
+          setInputCurrency((prev: Currency | null) => prev ? { ...prev, balance } : null);
+        } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+          // Wrapped token - get both native asset balance and ARC200 balance
+          const accAssetInfo = await algodClient
+            .accountAssetInformation(activeAccount.address, wrappedTokenId)
+            .do();
+          const assetInfo = await indexerClient
+            .lookupAssetByID(wrappedTokenId)
+            .do();
+          
+          const decimals = assetInfo.asset.params.decimals;
+          const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+          
+          const ci = new arc200(inputCurrency.contractId, algodClient, indexerClient);
+          const balanceResult = await ci.arc200_balanceOf(activeAccount.address);
+          
+          if (balanceResult.success) {
+            const balance2Bi = BigInt(balanceResult.returnValue);
+            const totalBalance = new BigNumber((balance1Bi + balance2Bi).toString())
+              .dividedBy(new BigNumber(10).pow(decimals));
+            const balance = totalBalance.toFixed(decimals);
+            
+            setInputCurrency((prev: Currency | null) => prev ? { ...prev, balance } : null);
+          }
+        } else {
+          // Regular ARC200 token
+          const ci = new arc200(inputCurrency.contractId, algodClient, indexerClient);
+          const balanceResult = await ci.arc200_balanceOf(activeAccount.address);
+          
+          if (balanceResult.success) {
+            const balanceBi = BigInt(balanceResult.returnValue);
+            const balance = new BigNumber(balanceBi.toString())
+              .dividedBy(new BigNumber(10).pow(inputCurrency.decimals))
+              .toFixed(inputCurrency.decimals);
+            
+            setInputCurrency((prev: Currency | null) => prev ? { ...prev, balance } : null);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch token balance:", error);
+      }
+    };
+    
+    updateBalance();
+  }, [inputCurrency?.contractId, activeAccount, tokens2]);
 
   console.log({ availableTokens });
 
@@ -282,12 +389,22 @@ const Zap: React.FC = () => {
 
       const swapAForB = pool.tokAId === `${inputCurrency?.contractId}`;
 
+      // Get the correct tokenId for wrapped tokens
+      const getTokenId = (currency: Currency) => {
+        if (currency?.tokenId === "0") return null; // VOI/native token
+        if (!tokens2) return currency?.tokenId;
+        
+        // For wrapped tokens, find the native asset tokenId
+        const wrappedToken = tokens2.find((t) => t.contractId === currency?.contractId);
+        return wrappedToken?.tokenId || currency?.tokenId;
+      };
+
       const mA =
         pool.symbolA === "VOI"
           ? networkToken
           : {
               contractId: Number(pool.tokAId),
-              tokenId: swapAForB ? inputCurrency?.tokenId : null,
+              tokenId: swapAForB ? getTokenId(inputCurrency) : null,
               decimals: pool.tokADecimals,
               symbol: pool.symbolA,
             };
@@ -297,7 +414,7 @@ const Zap: React.FC = () => {
           ? networkToken
           : {
               contractId: Number(pool.tokBId),
-              tokenId: !swapAForB ? inputCurrency?.tokenId : null,
+              tokenId: !swapAForB ? getTokenId(inputCurrency) : null,
               decimals: pool.tokBDecimals,
               symbol: pool.symbolB,
             };
@@ -437,7 +554,7 @@ const Zap: React.FC = () => {
         ...mA,
         decimals: `${mA.decimals}`,
         amount: swapAForB ? fromAmount : outN,
-        tokenId: swapAForB ? inputCurrency?.tokenId : null,
+        tokenId: swapAForB ? getTokenId(inputCurrency) : null,
       };
 
       // remove tokenId conditionally to prevent deposit of wrapped token
@@ -445,7 +562,7 @@ const Zap: React.FC = () => {
         ...mB,
         decimals: `${mB.decimals}`,
         amount: swapAForB ? outN : fromAmount,
-        tokenId: swapAForB ? null : inputCurrency?.tokenId,
+        tokenId: swapAForB ? null : getTokenId(inputCurrency),
       };
 
       console.log(acc.addr, Number(pool.contractId), dA, dB, swapTxnObjs, {
