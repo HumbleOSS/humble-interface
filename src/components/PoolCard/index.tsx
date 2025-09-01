@@ -14,7 +14,7 @@ import { useCopyToClipboard } from "usehooks-ts";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { toast } from "react-toastify";
 
-const BLOCK_REWARD_ADJUSTMENT = 28.22 / 2; // block rewards for VOI pairs
+const BLOCK_REWARD_ADJUSTMENT = 22.56 / 2; // block rewards for VOI pairs
 
 const StyledLink = styled(Link)`
   text-decoration: none;
