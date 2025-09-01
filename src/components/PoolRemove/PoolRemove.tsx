@@ -77,7 +77,7 @@ const PoolRemove: React.FC = () => {
 
     const result = await poolRemoveHook.removeLiquidity();
     
-    if (result?.success) {
+    if (result?.success && result.tokAAmount !== undefined && result.tokBAmount !== undefined && result.tokASymbol && result.tokBSymbol) {
       // Set transaction result and open dialog
       setTxnResult({
         tokAAmount: result.tokAAmount,
