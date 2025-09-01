@@ -1426,38 +1426,38 @@ const Swap = () => {
           });
         });
     } else {
-      const ci = new CONTRACT(
-        token2.tokenId,
-        algodClient,
-        indexerClient,
-        {
-          name: "",
-          description: "",
-          methods: [
-            {
-              name: "arc200_exchange",
-              args: [],
-              readonly: false,
-              returns: {
-                type: "(uint64,address)",
-              },
-              desc: "ARC-200 exchange info (external)",
-            },
-          ],
-          events: [],
-        },
-        {
-          addr: activeAccount.address,
-          sk: new Uint8Array(0),
-        }
-      );
-      ci.arc200_exchange().then((r: any) => {
-        console.log("r", r);
-        if (r.success) {
-          const [fee, exchangeAddress] = r.returnValue;
-          console.log("fee", fee);
-          console.log("exchangeAddress", exchangeAddress);
-        } else {
+      // const ci = new CONTRACT(
+      //   token2.tokenId,
+      //   algodClient,
+      //   indexerClient,
+      //   {
+      //     name: "",
+      //     description: "",
+      //     methods: [
+      //       {
+      //         name: "arc200_exchange",
+      //         args: [],
+      //         readonly: false,
+      //         returns: {
+      //           type: "(uint64,address)",
+      //         },
+      //         desc: "ARC-200 exchange info (external)",
+      //       },
+      //     ],
+      //     events: [],
+      //   },
+      //   {
+      //     addr: activeAccount.address,
+      //     sk: new Uint8Array(0),
+      //   }
+      // );
+      // ci.arc200_exchange().then((r: any) => {
+      //   console.log("r", r);
+      //   if (r.success) {
+      //     const [fee, exchangeAddress] = r.returnValue;
+      //     console.log("fee", fee);
+      //     console.log("exchangeAddress", exchangeAddress);
+      //   } else {
           const ci = new arc200(token2.tokenId, algodClient, indexerClient);
           ci.arc200_balanceOf(activeAccount.address).then(
             (arc200_balanceOfR: any) => {
@@ -1471,8 +1471,8 @@ const Swap = () => {
             }
           );
         }
-      });
-    }
+      // });
+    // }
   }, [balance, token, token2, activeAccount]);
 
   // EFFECT: get voi balance

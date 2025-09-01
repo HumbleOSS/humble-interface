@@ -1279,7 +1279,8 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
     try {
       // Fetch account balances from Nautilus indexer
       const response = await axios.get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`,
+        //`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`,
+        `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/balances?accountId=${activeAccount.address}`,
         { timeout: 10000 } // 10 second timeout
       );
 
@@ -1350,9 +1351,9 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   React.useEffect(() => {
     fetchBalances();
 
-    // Set up periodic refresh every 30 seconds when modal is open
+    // Set up periodic refresh every 3 minutes when modal is open
     if (open) {
-      const interval = setInterval(fetchBalances, 30000);
+      const interval = setInterval(fetchBalances, 500_000);
       return () => clearInterval(interval);
     }
   }, [activeAccount, fetchBalances, open]);

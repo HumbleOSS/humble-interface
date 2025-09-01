@@ -132,7 +132,8 @@ const Pool = () => {
     if (!activeAccount) return;
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`
+        //`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`
+        `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/balances?accountId=${activeAccount.address}`
       )
       .then((res) => {
         setBalances(res.data.balances);

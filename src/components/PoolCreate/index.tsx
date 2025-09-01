@@ -1,404 +1,63 @@
 import styled from "@emotion/styled";
-import React, { FC, useEffect, useMemo, useState } from "react";
-import SwapIcon from "static/icon/icon-swap-stable-light.svg";
-import ActiveSwapIcon from "static/icon/icon-swap-active-light.svg";
+import React, { FC, useEffect, useMemo, useState, useCallback } from "react";
 import { RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { CircularProgress, Stack, Button as MButton } from "@mui/material";
-import { CONTRACT, abi, arc200, swap, swap200 } from "ulujs";
 import {
-  CONNECTOR_ALGO_SWAP200,
-  TOKEN_VIA,
-  TOKEN_WVOI1,
-} from "../../constants/tokens";
+  CircularProgress,
+  Stack,
+  Button as MButton,
+  Alert,
+  Box,
+} from "@mui/material";
+import { arc200, swap } from "ulujs";
+import { CONNECTOR_ALGO_SWAP200, TOKEN_WVOI1 } from "../../constants/tokens";
 import { getAlgorandClients } from "../../wallets";
 import TokenInput from "../TokenInput";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ARC200TokenI, PoolI } from "../../types";
-import { fetchToken, getToken, getTokens } from "../../store/tokenSlice";
+import { getToken, getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { getPools } from "../../store/poolSlice";
-import algosdk, { decodeAddress } from "algosdk";
+import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { hasAllowance } from "ulujs/types/arc200";
 import { tokenId, tokenSymbol } from "../../utils/dex";
 import BigNumber from "bignumber.js";
-import { CTCINFO_TRI } from "../../constants/dex";
-import { ZERO_ADDRESS } from "../../constants/avm";
-import { QUEST_ACTION, getActions, submitAction } from "../../config/quest";
 import ProgressBar from "../ProgressBar";
+import { POOL_SPEC } from "../../constants/poolSpec";
 
-const spec = {
-  name: "pool",
-  desc: "pool",
-  methods: [
-    {
-      name: "custom",
-      args: [],
-      returns: {
-        type: "void",
-      },
-    },
-    {
-      name: "Info",
-      args: [],
-      returns: {
-        type: "((uint256,uint256),(uint256,uint256),(uint256,uint256,uint256,address,byte),(uint256,uint256),uint64,uint64)",
-      },
-      readonly: true,
-    },
-    {
-      name: "Provider_deposit",
-      args: [
-        { type: "byte" },
-        { type: "(uint256,uint256)" },
-        { type: "uint256" },
-      ],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Provider_withdraw",
-      args: [{ type: "uint256" }, { type: "(uint256,uint256)" }],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "Provider_withdrawA",
-      args: [{ type: "uint256" }],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Provider_withdrawB",
-      args: [{ type: "uint256" }],
-      returns: { type: "uint256" },
-    },
-    {
-      name: "Trader_swapAForB",
-      args: [{ type: "byte" }, { type: "uint256" }, { type: "uint256" }],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "Trader_swapBForA",
-      args: [{ type: "byte" }, { type: "uint256" }, { type: "uint256" }],
-      returns: { type: "(uint256,uint256)" },
-    },
-    {
-      name: "arc200_approve",
-      desc: "Approve spender for a token",
-      args: [
-        {
-          type: "address",
-          name: "spender",
-          desc: "The address of the spender",
-        },
-        {
-          type: "uint256",
-          name: "value",
-          desc: "The amount of tokens to approve",
-        },
-      ],
-      returns: {
-        type: "bool",
-        desc: "Success",
-      },
-    },
-    {
-      name: "arc200_balanceOf",
-      desc: "Returns the current balance of the owner of the token",
-      readonly: true,
-      args: [
-        {
-          type: "address",
-          name: "owner",
-          desc: "The address of the owner of the token",
-        },
-      ],
-      returns: {
-        type: "uint256",
-        desc: "The current balance of the holder of the token",
-      },
-    },
-    {
-      name: "arc200_transfer",
-      desc: "Transfers tokens",
-      readonly: false,
-      args: [
-        {
-          type: "address",
-          name: "to",
-          desc: "The destination of the transfer",
-        },
-        {
-          type: "uint256",
-          name: "value",
-          desc: "Amount of tokens to transfer",
-        },
-      ],
-      returns: {
-        type: "bool",
-        desc: "Success",
-      },
-    },
-    {
-      name: "createBalanceBox",
-      desc: "Creates a balance box",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "byte",
-      },
-    },
-    //createAllowanceBox(address,address)void
-    {
-      name: "createAllowanceBox",
-      desc: "Creates an allowance box",
-      args: [
-        {
-          type: "address",
-        },
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "byte",
-      },
-    },
-    //createBalanceBoxes(address)void
-    {
-      name: "createBalanceBoxes",
-      desc: "Creates a balance box",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "void",
-      },
-    },
-    // hasBox((byte,byte[64]))byte
-    {
-      name: "hasBox",
-      desc: "Checks if the account has a box",
-      args: [
-        {
-          type: "(byte,byte[64])",
-        },
-      ],
-      returns: {
-        type: "byte",
-      },
-    },
-    {
-      name: "reserve",
-      args: [
-        {
-          type: "address",
-        },
-      ],
-      returns: {
-        type: "(uint256,uint256)",
-      },
-      readonly: true,
-    },
-    // wnt
-    {
-      name: "deposit",
-      args: [
-        {
-          name: "amount",
-          type: "uint64",
-          desc: "Amount to deposit",
-        },
-      ],
-      returns: {
-        type: "uint256",
-        desc: "Amount deposited",
-      },
-    },
-  ],
-  events: [],
-};
-
-interface AddIconProps {
-  theme: "light" | "dark";
+// Types
+interface PoolCreateState {
+  token?: ARC200TokenI;
+  token2?: ARC200TokenI;
+  fromAmount: string;
+  toAmount: string;
+  balance?: string;
+  balance2?: string;
+  poolExists: boolean;
+  pool?: PoolI;
+  isLoading: boolean;
+  isCreating: boolean;
+  error?: string;
 }
-const AddIcon: FC<AddIconProps> = ({ theme }) => {
-  return theme === "dark" ? (
-    <svg
-      width="49"
-      height="71"
-      viewBox="0 0 49 71"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <line
-        x1="22.0342"
-        y1="-2.18557e-08"
-        x2="22.0342"
-        y2="71"
-        stroke="white"
-        stroke-opacity="0.2"
-      />
-      <rect x="0.53418" y="11" width="48" height="48" rx="24" fill="black" />
-      <rect
-        x="1.03418"
-        y="11.5"
-        width="47"
-        height="47"
-        rx="23.5"
-        stroke="white"
-        stroke-opacity="0.2"
-      />
-      <path
-        d="M8.53418 35H40.5342"
-        stroke="white"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M24.5342 51V19"
-        stroke="white"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ) : (
-    <svg
-      width="49"
-      height="71"
-      viewBox="0 0 49 71"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <line
-        x1="22.0342"
-        y1="-2.18557e-08"
-        x2="22.0342"
-        y2="71"
-        stroke="#D8D8E1"
-      />
-      <rect
-        x="1.03418"
-        y="11.5"
-        width="47"
-        height="47"
-        rx="23.5"
-        fill="white"
-      />
-      <rect
-        x="1.03418"
-        y="11.5"
-        width="47"
-        height="47"
-        rx="23.5"
-        stroke="#D8D8E1"
-      />
-      <path
-        d="M8.53418 35H40.5342"
-        stroke="#141010"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M24.5342 51V19"
-        stroke="#141010"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
 
-const SpinnerIcon = () => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="26"
-      height="24"
-      viewBox="0 0 26 24"
-      fill="none"
-    >
-      <path
-        d="M4.78886 10.618L2.89155 8.7207L1.00513 10.618"
-        stroke="white"
-        stroke-width="1.63562"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M21.2104 13.3828L23.1078 15.2801L25.0051 13.3828"
-        stroke="white"
-        stroke-width="1.63562"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M23.0966 14.5293V11.9996C23.0966 6.41666 18.5714 1.90234 12.9994 1.90234C9.81541 1.90234 6.96943 3.38534 5.11572 5.68611"
-        stroke="white"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M2.90234 9.4707V12.0005C2.90234 17.5834 7.42756 22.0977 12.9996 22.0977C16.1836 22.0977 19.0296 20.6147 20.8833 18.3139"
-        stroke="white"
-        stroke-width="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
+interface TokenBalance {
+  token: ARC200TokenI;
+  balance: string;
+}
 
-const Note = styled.div`
-  align-self: stretch;
-  color: var(--Color-Neutral-Element-Primary, #fff);
-  font-feature-settings: "clig" off, "liga" off;
-  /* Body/P */
-  font-family: "IBM Plex Sans Condensed";
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 120%; /* 14.4px */
-`;
-
-const SwapHeadingContainer = styled.div`
-  width: 100%;
-`;
-
-const SwapHeading = styled.div`
-  color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  /* Heading/Display 2 */
-  font-family: "Plus Jakarta Sans";
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 120%; /* 21.6px */
-  &.dark {
-    color: var(--Color-Neutral-Element-Primary, #fff);
-  }
-`;
-
-const SwapRoot = styled.div`
+// Styled Components
+const PoolCreateRoot = styled.div`
   display: flex;
   padding: var(--Spacing-1000, 40px);
   flex-direction: column;
   align-items: center;
   gap: var(--Spacing-800, 24px);
   border-radius: var(--Radius-800, 24px);
+  max-width: 630px;
+  width: 100%;
+
   &.light {
     border: 1px solid
       var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
@@ -407,667 +66,489 @@ const SwapRoot = styled.div`
       rgba(255, 255, 255, 0.95)
     );
   }
+
   &.dark {
     border: 1px solid var(--Color-Brand-Primary, #41137e);
     background: var(--Color-Canvas-Transparent-white-950, #070709);
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
   }
-  @media screen and (min-width: 600px) {
-    width: 630px;
+`;
+
+const Header = styled.div`
+  width: 100%;
+  text-align: center;
+`;
+
+const Title = styled.h1`
+  color: var(--Color-Neutral-Element-Primary, #0c0c10);
+  font-family: "Plus Jakarta Sans";
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 120%;
+  margin: 0 0 8px 0;
+
+  &.dark {
+    color: var(--Color-Neutral-Element-Primary, #fff);
   }
 `;
 
-const SwapContainer = styled(Stack)`
+const Subtitle = styled.p`
+  color: var(--Color-Neutral-Element-Secondary, #7e7e9a);
+  font-family: "IBM Plex Sans Condensed";
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 140%;
+  margin: 0;
+`;
+
+const TokenContainer = styled(Stack)`
   display: flex;
   flex-direction: column;
   align-items: center;
   align-self: stretch;
+  gap: 16px;
 `;
 
-const BaseButton = styled.div`
-  cursor: pointer;
-`;
+const AddIcon: FC<{ theme: "light" | "dark" }> = ({ theme }) => (
+  <svg
+    width="49"
+    height="71"
+    viewBox="0 0 49 71"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <line
+      x1="22.0342"
+      y1="0"
+      x2="22.0342"
+      y2="71"
+      stroke={theme === "dark" ? "rgba(255,255,255,0.2)" : "#D8D8E1"}
+    />
+    <rect
+      x="0.53418"
+      y="11"
+      width="48"
+      height="48"
+      rx="24"
+      fill={theme === "dark" ? "black" : "white"}
+    />
+    <rect
+      x="1.03418"
+      y="11.5"
+      width="47"
+      height="47"
+      rx="23.5"
+      stroke={theme === "dark" ? "rgba(255,255,255,0.2)" : "#D8D8E1"}
+    />
+    <path
+      d="M8.53418 35H40.5342"
+      stroke={theme === "dark" ? "white" : "#141010"}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M24.5342 51V19"
+      stroke={theme === "dark" ? "white" : "#141010"}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
-const Button = styled(BaseButton)`
+const ActionButton = styled.button`
   display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-800, 24px);
-  flex-direction: column;
+  padding: 16px 24px;
   justify-content: center;
   align-items: center;
   gap: 10px;
   align-self: stretch;
-  border-radius: var(--Radius-750, 20px);
-  background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
-  &.active {
-    border-radius: var(--Radius-700, 16px);
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-family: "Plus Jakarta Sans";
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &.primary {
     background: var(--Color-Accent-CTA-Background-Default, #2958ff);
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: var(--Color-Accent-CTA-Background-Hover, #1e3fd8);
+    }
+  }
+
+  &.secondary {
+    background: var(--Color-Accent-Disabled-Soft, #d8d8e1);
+    color: var(--Color-Neutral-Element-Secondary, #7e7e9a);
   }
 `;
 
-const SummaryContainer = styled.div`
-  display: flex;
-  padding: 0px var(--Spacing-900, 32px);
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  align-self: stretch;
-`;
-
-const RateContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  align-self: stretch;
-  &.has-divider {
-    padding-bottom: 12px;
-    border-bottom: 1px solid
-      var(--Color-Neutral-Stroke-Primary, rgba(255, 255, 255, 0.2));
-  }
-`;
-
-const RateLabel = styled.div`
-  width: 200px;
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 120%; /* 19.2px */
-  &.dark {
-    color: var(--Color-Neutral-Stroke-Black, #fff);
-  }
-  &.light {
-    color: var(--Color-Neutral-Stroke-Black, #141010);
-  }
-`;
-
-const RateValue = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-`;
-
-const RateMain = styled.div`
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 120%; /* 19.2px */
-  &.dark {
-    color: var(--Color-Neutral-Stroke-Black, #fff);
-  }
-  &.light {
-    color: var(--Color-Neutral-Stroke-Black, #141010);
-  }
-`;
-
-const RateSub = styled.div`
-  color: #009c5a;
-  font-feature-settings: "clig" off, "liga" off;
+const InfoNote = styled.div`
+  color: var(--Color-Neutral-Element-Primary, #fff);
   font-family: "IBM Plex Sans Condensed";
-  font-size: 13px;
-  font-style: normal;
+  font-size: 12px;
   font-weight: 400;
-  line-height: 120%; /* 15.6px */
+  line-height: 140%;
+  text-align: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
 `;
 
-const BreakdownContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  align-self: stretch;
+const ErrorAlert = styled(Alert)`
+  width: 100%;
+  margin-bottom: 16px;
 `;
 
-const BreakdownStack = styled.div`
+const LoadingOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: -4px;
-  align-self: stretch;
-`;
-
-const BreakdownRow = styled.div`
-  display: flex;
-  padding: 4px 0px;
-  justify-content: space-between;
-  align-items: flex-start;
-  align-self: stretch;
-`;
-
-const BreakdownLabel = styled.div`
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "IBM Plex Sans Condensed";
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 180%; /* 28.8px */
-  gap: 4px;
-  display: flex;
-  flex-direction: row;
+  justify-content: center;
   align-items: center;
-  &.dark {
-    color: var(--Color-Neutral-Element-Primary, #fff);
-  }
-  &.light {
-    color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  }
+  border-radius: 24px;
+  z-index: 10;
 `;
 
-const BreakdownValueContiner = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-`;
+// Custom Hooks
+const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
+  const [balances, setBalances] = useState<Map<string, string>>(new Map());
 
-const BreakdownValue = styled.div`
-  leading-trim: both;
-  text-edge: cap;
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "IBM Plex Sans Condensed";
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 600;:sp
-  line-height: 120%; /* 18px */
-  &.dark {
-    color: var(--Color-Neutral-Element-Primary, #fff);
-  }
-  &.light {
-    color: var(--Color-Neutral-Element-Primary, #0c0c10);
-  }
-`;
+  const fetchBalance = useCallback(
+    async (token: ARC200TokenI) => {
+      if (!activeAccount || !tokens2) return;
 
-const InfoCircleIcon = () => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-    >
-      <path
-        d="M7.99992 14.6663C11.6666 14.6663 14.6666 11.6663 14.6666 7.99967C14.6666 4.33301 11.6666 1.33301 7.99992 1.33301C4.33325 1.33301 1.33325 4.33301 1.33325 7.99967C1.33325 11.6663 4.33325 14.6663 7.99992 14.6663Z"
-        stroke="white"
-        stroke-width="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 8V11.3333"
-        stroke="white"
-        stroke-width="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7.99634 5.33301H8.00233"
-        stroke="white"
-        stroke-width="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      const { algodClient, indexerClient } = getAlgorandClients();
+      const wrappedTokenId = Number(
+        tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
+      );
+
+      try {
+        if (token.tokenId === 0) {
+          const accInfo = await algodClient
+            .accountInformation(activeAccount.address)
+            .do();
+          const balance = Number(accInfo.amount);
+          const minBalance = Number(accInfo["min-balance"]);
+          const txnCost = 1e5;
+          const availableBalance = Math.max(0, balance - minBalance - txnCost);
+          return (availableBalance / 1e6).toLocaleString();
+        } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+          const accAssetInfo = await algodClient
+            .accountAssetInformation(activeAccount.address, wrappedTokenId)
+            .do();
+          const assetInfo = await indexerClient
+            .lookupAssetByID(wrappedTokenId)
+            .do();
+          const decimals = assetInfo.asset.params.decimals;
+          const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+          const ci = new arc200(token.tokenId, algodClient, indexerClient);
+          const r = await ci.arc200_balanceOf(activeAccount.address);
+          if (r.success) {
+            const balance2Bi = BigInt(r.returnValue);
+            const balance = new BigNumber(
+              (balance1Bi + balance2Bi).toString()
+            ).dividedBy(new BigNumber(10).pow(decimals));
+            return balance.toFixed(decimals);
+          }
+        } else {
+          const ci = new arc200(token.tokenId, algodClient, indexerClient);
+          const r = await ci.arc200_balanceOf(activeAccount.address);
+          if (r.success) {
+            const balanceBn = new BigNumber(r.returnValue.toString());
+            return balanceBn
+              .dividedBy(new BigNumber(10).pow(token.decimals))
+              .toFixed(token.decimals);
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error fetching balance for token ${token.tokenId}:`,
+          error
+        );
+      }
+      return "0";
+    },
+    [activeAccount, tokens2]
   );
+
+  const updateBalance = useCallback(
+    async (token: ARC200TokenI) => {
+      const balance = await fetchBalance(token);
+      if (balance) {
+        setBalances((prev) =>
+          new Map(prev).set(token.tokenId.toString(), balance)
+        );
+      }
+    },
+    [fetchBalance]
+  );
+
+  return { balances, updateBalance };
 };
 
-const Swap = () => {
+// Main Component
+const PoolCreate: FC = () => {
   const navigate = useNavigate();
-  /* Theme */
+  const dispatch = useDispatch();
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
-  const dispatch = useDispatch();
-  /* Tokens */
+  const { activeAccount, signTransactions } = useWallet();
+  const [searchParams] = useSearchParams();
+
+  // Redux state
   const tokens = useSelector((state: RootState) => state.tokens.tokens);
-  const tokenStatus = useSelector((state: RootState) => state.tokens.status);
+  const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
+
+  // Local state
+  const [state, setState] = useState<PoolCreateState>({
+    fromAmount: "",
+    toAmount: "",
+    poolExists: false,
+    isLoading: true,
+    isCreating: false,
+  });
+
+  const [tokens2, setTokens2] = useState<any[]>();
+  const [stubs, setStubs] = useState<any[]>();
+  const [tokenOptions, setTokenOptions] = useState<ARC200TokenI[]>();
+  const [tokenOptions2, setTokenOptions2] = useState<ARC200TokenI[]>();
+  const [message, setMessage] = useState<string>("");
+  const [progress, setProgress] = useState<number>(0);
+
+  // Custom hooks
+  const { balances, updateBalance } = useTokenBalances(tokens2, activeAccount);
+
+  // URL parameters
+  const paramPoolId = searchParams.get("poolId");
+  const paramTokAId = searchParams.get("tokAId");
+  const paramTokBId = searchParams.get("tokBId");
+
+  // Fetch initial data
   useEffect(() => {
     dispatch(getTokens() as unknown as UnknownAction);
-  }, [dispatch]);
+    dispatch(getPools() as unknown as UnknownAction);
 
-  const [tokens2, setTokens] = React.useState<any[]>();
-  useEffect(() => {
+    // Fetch tokens2
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=tokens`
+        "https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=tokens"
       )
-      .then((res) => {
-        setTokens(res.data.tokens);
-      });
-  }, []);
+      .then((res) => setTokens2(res.data.tokens))
+      .catch(console.error);
 
-  console.log({ tokens2 });
-
-  /* Stubs */
-
-  const [stubs, setStubs] = React.useState<any[]>();
-  useEffect(() => {
-    const exchangeHash = // TODO export to constants
+    // Fetch stubs
+    const exchangeHash =
       "1365fd96882cef38c711ca95a04f8b933ca151ad6a2470dae62c3036bfdd8147";
     axios
       .get(
         `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/stubs/pool?active=0&hash=${exchangeHash}`
       )
-      .then((res) => {
-        setStubs(res.data.stubs);
-      });
-  }, []);
-
-  console.log({ stubs });
-
-  /* Pools */
-  const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
-  const poolsStatus = useSelector((state: RootState) => state.pools.status);
-  useEffect(() => {
-    dispatch(getPools() as unknown as UnknownAction);
+      .then((res) => setStubs(res.data.stubs))
+      .catch(console.error);
   }, [dispatch]);
 
-  /* Params */
-  const [sp] = useSearchParams();
-  const paramPoolId = sp.get("poolId");
-  const paramTokAId = sp.get("tokAId");
-  const paramTokBId = sp.get("tokBId");
-
-  /* Wallet */
-  const {
-    //providers,
-    activeAccount,
-    signTransactions,
-    //sendTransactions,
-    //getAccountInfo,
-  } = useWallet();
-
-  const [pool, setPool] = useState<PoolI>();
-  const [ready, setReady] = useState<boolean>(false);
-
-  const [accInfo, setAccInfo] = React.useState<any>(null);
-  const [focus, setFocus] = useState<"from" | "to">("from");
-  const [fromAmount, setFromAmount] = React.useState<any>("");
-  const [toAmount, setToAmount] = React.useState<any>("");
-  const [on, setOn] = useState(false);
-
-  const [token, setToken] = useState<any>();
-  const [token2, setToken2] = useState<any>();
-
-  const [tokenOptions, setTokenOptions] = useState<ARC200TokenI[]>();
-  const [tokenOptions2, setTokenOptions2] = useState<ARC200TokenI[]>();
-  const [balance, setBalance] = React.useState<string>();
-  const [balance2, setBalance2] = React.useState<string>();
-
-  const [poolExists, setPoolExists] = useState<boolean>(false);
-
-  // EFFECT
+  // Initialize token options
   useEffect(() => {
-    if (!pools || !tokens || pool) return;
-    if (paramPoolId) {
-      const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
-      if (pool) {
-        const token = [TOKEN_WVOI1].includes(pool.tokA)
-          ? {
-              tokenId: 0,
-              name: "Voi",
-              symbol: "VOI",
-              decimals: 6,
-              totalSupply: BigInt(10_000_000_000 * 1e6),
-            }
-          : tokens.find((t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokA}`);
-        setToken(token);
-        const token2 = [TOKEN_WVOI1].includes(pool.tokB)
-          ? {
-              tokenId: 0,
-              name: "Voi",
-              symbol: "VOI",
-              decimals: 6,
-              totalSupply: BigInt(10_000_000_000 * 1e6),
-            }
-          : tokens.find((t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokB}`);
-        setToken2(token2);
-      }
-    }
-  }, [pools, tokens]);
+    if (!tokens) return;
+    const voiToken = {
+      tokenId: 0,
+      name: "Voi",
+      symbol: "VOI",
+      decimals: 6,
+      totalSupply: "10000000000000000",
+    };
+    setTokenOptions([voiToken, ...tokens]);
+  }, [tokens]);
 
+  // Handle URL parameters for token selection
   useEffect(() => {
     if (paramTokAId && !isNaN(Number(paramTokAId))) {
       if (paramTokAId === "0") {
-        setToken({
-          tokenId: "0",
-          name: "Voi",
-          symbol: "VOI",
-          decimals: 6,
-          totalSupply: BigInt(10_000_000_000 * 1e6),
-        });
+        setState((prev) => ({
+          ...prev,
+          token: {
+            tokenId: 0,
+            name: "Voi",
+            symbol: "VOI",
+            decimals: 6,
+            totalSupply: "10000000000000000",
+          },
+        }));
       } else {
-        const tokenId = Number(paramTokAId);
-        getToken(tokenId).then(setToken);
+        getToken(Number(paramTokAId)).then((token) =>
+          setState((prev) => ({ ...prev, token }))
+        );
       }
     }
-  }, []);
+  }, [paramTokAId]);
+
   useEffect(() => {
-    if (!activeAccount) return;
-    if (paramTokBId && !isNaN(Number(paramTokBId))) {
-      if (paramTokBId === "0") {
-        setToken2({
+    if (!activeAccount || !paramTokBId || isNaN(Number(paramTokBId))) return;
+    if (paramTokBId === "0") {
+      setState((prev) => ({
+        ...prev,
+        token2: {
           tokenId: 0,
           name: "Voi",
           symbol: "VOI",
           decimals: 6,
-          totalSupply: BigInt(10_000_000_000 * 1e6),
-        });
-      } else {
-        const tokenId = Number(paramTokBId);
-        getToken(tokenId).then(setToken2);
-      }
+          totalSupply: "10000000000000000",
+        },
+      }));
+    } else {
+      getToken(Number(paramTokBId)).then((token2) =>
+        setState((prev) => ({ ...prev, token2 }))
+      );
     }
   }, [activeAccount, paramTokBId]);
 
-  // EFFECT
+  // Update token options for second token
   useEffect(() => {
-    if (!tokens) return;
-    setTokenOptions([
-      {
-        tokenId: 0,
-        name: "Voi",
-        symbol: "VOI",
-        decimals: 6,
-        totalSupply: BigInt(10_000_000_000 * 1e6),
-      },
-      ...tokens,
-    ]);
-  }, [tokens, pools]);
-
-  // EFFECT: update tokenOptions2 on token change
-  useEffect(() => {
-    if (!token || !tokenOptions) return;
-    const exclude = [0, TOKEN_WVOI1].includes(token.tokenId)
+    if (!state.token || !tokenOptions) return;
+    const exclude = [0, TOKEN_WVOI1].includes(state.token.tokenId)
       ? [0, TOKEN_WVOI1]
-      : [token.tokenId];
-    const tokenOptions2 = tokenOptions.filter(
+      : [state.token.tokenId];
+    const filteredOptions = tokenOptions.filter(
       (t) => !exclude.includes(t.tokenId)
     );
-    // check if token options includes wVOI
-    setTokenOptions2(tokenOptions2);
-    setToAmount("0");
-    setFromAmount("0");
-  }, [token, tokenOptions]);
+    setTokenOptions2(filteredOptions);
+  }, [state.token, tokenOptions]);
 
-  console.log({ tokenOptions2 });
+  // Update balances when tokens change
+  useEffect(() => {
+    if (state.token) updateBalance(state.token);
+  }, [state.token, updateBalance]);
 
   useEffect(() => {
-    if (!token2) return;
-    setToAmount("");
-  }, [token2]);
+    if (state.token2) updateBalance(state.token2);
+  }, [state.token2, updateBalance]);
 
-  // EFFECT
-  useEffect(() => {
-    if (!token || !activeAccount || !tokens2) return;
-    const { algodClient, indexerClient } = getAlgorandClients();
-    const wrappedTokenId = Number(
-      tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
-    );
-    if (token.tokenId === 0) {
-      algodClient
-        .accountInformation(activeAccount.address)
-        .do()
-        .then((accInfo: any) => {
-          const balance = accInfo.amount;
-          const minBalance = accInfo["min-balance"];
-          const txnCost = 1e5; // conservative estimate of txn cost
-          const availableBalance = Math.max(0, balance - minBalance - txnCost);
-          setBalance((availableBalance / 1e6).toLocaleString());
-        });
-    } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
-      algodClient
-        .accountAssetInformation(activeAccount.address, wrappedTokenId)
-        .do()
-        .then((accAssetInfo: any) => {
-          indexerClient
-            .lookupAssetByID(wrappedTokenId)
-            .do()
-            .then((assetInfo: any) => {
-              // set balance in case off arc200 tokens that manage standard assets like new unit
-              const decimals = assetInfo.asset.params.decimals;
-              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
-              const ci = new arc200(token.tokenId, algodClient, indexerClient);
-              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                if (r.success) {
-                  const balance2Bi = BigInt(r.returnValue);
-                  const balance = new BigNumber(
-                    (balance1Bi + balance2Bi).toString()
-                  ).dividedBy(new BigNumber(10).pow(decimals));
-                  setBalance(balance.toFixed(decimals));
-                }
-              });
-            });
-        })
-        .catch((error: any) => {
-          const ci = new arc200(token.tokenId, algodClient, indexerClient);
-          ci.arc200_decimals().then((r: any) => {
-            if (r.success) {
-              const decimals = Number(r.returnValue);
-              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                if (r.success) {
-                  const balance2Bi = BigInt(r.returnValue);
-                  const balance = new BigNumber(
-                    balance2Bi.toString()
-                  ).dividedBy(new BigNumber(10).pow(decimals));
-                  setBalance(balance.toFixed(decimals));
-                }
-              });
-            }
-          });
-        });
-    } else {
-      const ci = new arc200(token.tokenId, algodClient, indexerClient);
-      ci.arc200_balanceOf(activeAccount.address).then(
-        (arc200_balanceOfR: any) => {
-          if (arc200_balanceOfR.success) {
-            const arc200_balanceOf = arc200_balanceOfR.returnValue;
-            const balanceBn = new BigNumber(arc200_balanceOf);
-            const balanceStr = balanceBn
-              .dividedBy(new BigNumber(10).pow(token.decimals))
-              .toFixed(token.decimals);
-            setBalance(balanceStr);
-          }
-        }
-      );
-    }
-  }, [tokens2, token, activeAccount, tokens]);
-
-  // EFFECT set balance2
-  useEffect(() => {
-    if (!token2 || !activeAccount || !tokens2) return;
-    const { algodClient, indexerClient } = getAlgorandClients();
-    const wrappedTokenId = Number(
-      tokens2.find((t) => t.contractId === token2.tokenId)?.tokenId
-    );
-    if (token2.tokenId === 0) {
-      algodClient
-        .accountInformation(activeAccount.address)
-        .do()
-        .then((accInfo: any) => {
-          const balance = accInfo.amount;
-          const minBalance = accInfo["min-balance"];
-          const txnCost = 1e5; // conservative estimate of txn cost
-          const availableBalance = Math.max(0, balance - minBalance - txnCost);
-          setBalance2((availableBalance / 1e6).toLocaleString());
-        });
-    } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
-      algodClient
-        .accountAssetInformation(activeAccount.address, wrappedTokenId)
-        .do()
-        .then((accAssetInfo: any) => {
-          indexerClient
-            .lookupAssetByID(wrappedTokenId)
-            .do()
-            .then((assetInfo: any) => {
-              // set balance in case off arc200 tokens that manage standard assets like new unit
-              const decimals = assetInfo.asset.params.decimals;
-              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
-              const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                if (r.success) {
-                  const balance2Bi = BigInt(r.returnValue);
-                  const balance = new BigNumber(
-                    (balance1Bi + balance2Bi).toString()
-                  ).dividedBy(new BigNumber(10).pow(decimals));
-                  setBalance2(balance.toFixed(decimals));
-                }
-              });
-            });
-        })
-        .catch((error: any) => {
-          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-          ci.arc200_decimals().then((r: any) => {
-            if (r.success) {
-              const decimals = Number(r.returnValue);
-              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                if (r.success) {
-                  const balance2Bi = BigInt(r.returnValue);
-                  const balance = new BigNumber(
-                    balance2Bi.toString()
-                  ).dividedBy(new BigNumber(10).pow(decimals));
-                  setBalance2(balance.toFixed(decimals));
-                }
-              });
-            }
-          });
-        });
-    } else {
-      const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-      ci.arc200_balanceOf(activeAccount.address).then(
-        (arc200_balanceOfR: any) => {
-          if (arc200_balanceOfR.success) {
-            const arc200_balanceOf = arc200_balanceOfR.returnValue;
-            const balanceBn = new BigNumber(arc200_balanceOf);
-            const balanceStr = balanceBn
-              .dividedBy(new BigNumber(10).pow(token2.decimals))
-              .toFixed(token2.decimals);
-            setBalance2(balanceStr);
-          }
-        }
-      );
-    }
-  }, [tokens2, token2, activeAccount]);
-
-  // EFFECT: get voi balance
-  // useEffect(() => {
-  //   if (activeAccount && providers && providers.length >= 3) {
-  //     getAccountInfo().then(setAccInfo);
-  //   }
-  // }, [activeAccount, providers]);
-
-  // EFFECT: get eligible pools
+  // Check for existing pools
   const eligiblePools = useMemo(() => {
     return pools.filter((p: PoolI) => {
       return (
-        [p.tokA, p.tokB].includes(tokenId(token)) &&
-        [p.tokA, p.tokB].includes(tokenId(token2)) &&
+        [p.tokA, p.tokB].includes(tokenId(state.token)) &&
+        [p.tokA, p.tokB].includes(tokenId(state.token2)) &&
         p.tokA !== p.tokB
       );
     });
-  }, [pools, token, token2]);
+  }, [pools, state.token, state.token2]);
 
   useEffect(() => {
-    if (!token || !token2 || !eligiblePools) return;
+    if (!state.token || !state.token2 || !eligiblePools.length) {
+      setState((prev) => ({ ...prev, poolExists: false, pool: undefined }));
+      return;
+    }
+
     const { algodClient, indexerClient } = getAlgorandClients();
-    const A = { ...token, tokenId: tokenId(token) };
-    const B = { ...token2, tokenId: tokenId(token2) };
+    const A = { ...state.token, tokenId: tokenId(state.token) };
+    const B = { ...state.token2, tokenId: tokenId(state.token2) };
+
     new swap(0, algodClient, indexerClient)
       .selectPool(eligiblePools, A, B, "round")
       .then((pool: any) => {
-        if (!!pool) {
+        if (pool) {
           toast.info(
             <div>
-              Existing {token.symbol}/{token2.symbol} pool found!
+              Existing {state.token?.symbol}/{state.token2?.symbol} pool found!
               <br />
               <MButton
-                onClick={() => {
-                  navigate(`/pool/add?poolId=${pool.poolId}`);
-                }}
+                onClick={() => navigate(`/pool/add?poolId=${pool.poolId}`)}
+                variant="contained"
+                size="small"
+                sx={{ mt: 1 }}
               >
                 Go to pool
               </MButton>
             </div>
           );
-          setPoolExists(true);
-          setPool(pool);
+          setState((prev) => ({ ...prev, poolExists: true, pool }));
         } else {
-          setPoolExists(false);
-          setPool(undefined);
+          setState((prev) => ({ ...prev, poolExists: false, pool: undefined }));
         }
-      });
-  }, [eligiblePools, token, token2]);
+      })
+      .catch(console.error);
+  }, [eligiblePools, state.token, state.token2, navigate]);
 
-  console.log({ poolExists });
-
+  // Validation
   const isValid = useMemo(() => {
-    return (
-      !!token &&
-      !!token2 &&
-      !!fromAmount &&
-      !!toAmount &&
-      !!balance &&
-      !!balance2 &&
-      Number(fromAmount.replace(/,/g, "")) <=
-        Number(balance.replace(/,/g, "")) &&
-      Number(toAmount.replace(/,/g, "")) <= Number(balance2.replace(/,/g, ""))
-    );
-  }, [balance, balance2, fromAmount, toAmount, token, token2]);
+    const fromBalance = balances.get(state.token?.tokenId.toString() || "");
+    const toBalance = balances.get(state.token2?.tokenId.toString() || "");
 
-  console.log("isValid", isValid);
+    return !!(
+      state.token &&
+      state.token2 &&
+      state.fromAmount &&
+      state.toAmount &&
+      fromBalance &&
+      toBalance &&
+      Number(state.fromAmount.replace(/,/g, "")) <=
+        Number(fromBalance.replace(/,/g, "")) &&
+      Number(state.toAmount.replace(/,/g, "")) <=
+        Number(toBalance.replace(/,/g, ""))
+    );
+  }, [state.token, state.token2, state.fromAmount, state.toAmount, balances]);
 
   const buttonLabel = useMemo(() => {
-    if (poolExists) {
-      return "Go to pool";
-    } else if (isValid) {
-      return "Add liquidity";
-    } else {
-      if (
-        Number(fromAmount.replace(/,/g, "")) >
-        Number(balance?.replace(/,/g, ""))
-      ) {
-        return `Insufficient ${tokenSymbol(token)} balance`;
-      } else if (
-        Number(toAmount.replace(/,/g, "")) > Number(balance2?.replace(/,/g, ""))
-      ) {
-        return `Insufficient ${tokenSymbol(token2)} balance`;
-      } else if (!token || !token2) {
-        return "Select token above";
-      } else if (!fromAmount || !toAmount) {
-        return "Enter amount above";
-      } else {
-        return "Invalid input";
-      }
-    }
-  }, [
-    isValid,
-    fromAmount,
-    toAmount,
-    balance,
-    balance2,
-    token,
-    token2,
-    poolExists,
-  ]);
+    if (state.poolExists) return "Go to existing pool";
+    if (!state.token || !state.token2) return "Select tokens";
+    if (!state.fromAmount || !state.toAmount) return "Enter amounts";
 
+    const fromBalance = balances.get(state.token.tokenId.toString());
+    const toBalance = balances.get(state.token2.tokenId.toString());
+
+    if (
+      Number(state.fromAmount.replace(/,/g, "")) >
+      Number(fromBalance?.replace(/,/g, "") || 0)
+    ) {
+      return `Insufficient ${tokenSymbol(state.token)} balance`;
+    }
+    if (
+      Number(state.toAmount.replace(/,/g, "")) >
+      Number(toBalance?.replace(/,/g, "") || 0)
+    ) {
+      return `Insufficient ${tokenSymbol(state.token2)} balance`;
+    }
+
+    return isValid ? "Create Pool" : "Invalid input";
+  }, [state, balances, isValid]);
+
+  // Pool creation handler
   const handlePoolCreate = async () => {
-    if (!activeAccount || !token || !token2 || !pools || !stubs) return;
+    if (!activeAccount || !state.token || !state.token2 || !pools || !stubs) {
+      setState((prev) => ({ ...prev, error: "Missing required data" }));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isCreating: true, error: undefined }));
+
     try {
       const { algodClient, indexerClient } = getAlgorandClients();
 
       setProgress(10);
       setMessage("Building transaction");
 
-      // select stub
-      let stub = stubs.find((s) => s.creator === activeAccount.address);
-      if (!stub) {
-        stub = stubs.find((s) => s.active === 0);
-      }
-      console.log({ stub });
+      // Select stub
+      let stub;
+      // let stub = stubs.find((s) => s.creator === activeAccount.address);
+      // if (!stub) {
+      //   stub = stubs.find((s) => s.active === 0);
+      // }
 
       let ctcInfo: number;
       const {
@@ -1079,6 +560,7 @@ const Swap = () => {
         GlobalNumUint,
         GlobalNumByteSlice,
       } = CONNECTOR_ALGO_SWAP200;
+
       const makeApplicationCreateTxnFromObjectObj = {
         from: activeAccount.address,
         suggestedParams: await algodClient.getTransactionParams().do(),
@@ -1092,232 +574,213 @@ const Swap = () => {
         extraPages,
         note: new Uint8Array(Buffer.from("ARC200 LP", "utf-8")),
       };
+
       const appCreateTxn = algosdk.makeApplicationCreateTxnFromObject(
         makeApplicationCreateTxnFromObjectObj
       );
-      if (!stub) {
-        const stxns = await signTransactions([appCreateTxn.toByte()]);
-        /*
-        const res: any = await toast.promise(
-          //.then(sendTransactions),
-          {
-            pending: "Pending transaction to deploy pool",
-            success: "Pool deployed",
-          }
-        );
-        */
-        const res = await algodClient
-          .sendRawTransaction(stxns as Uint8Array[])
-          .do();
-        console.log({ res, stxns });
-        // TODO fix broken
 
-        ctcInfo = res["application-index"];
-      } else {
-        ctcInfo = stub.contractId;
+      // if (!stub) {
+      setProgress(20);
+      setMessage("Deploying pool contract");
+
+      const stxns2 = await signTransactions([appCreateTxn.toByte()]);
+      const { txId } = await algodClient
+        .sendRawTransaction(stxns2 as Uint8Array[])
+        .do();
+
+      const res = await algosdk.waitForConfirmation(algodClient, txId, 3);
+
+      console.log({ res });
+
+      ctcInfo = res["application-index"];
+
+      console.log({ ctcInfo });
+      //}
+      // else {
+      //   ctcInfo = stub.contractId;
+      // }
+
+      setProgress(40);
+      setMessage("Adding initial liquidity");
+
+      const acc = {
+        addr: activeAccount.address,
+        sk: new Uint8Array(0),
+      };
+      const ci = new swap(ctcInfo, algodClient, indexerClient, { acc });
+
+      const networkToken = {
+        contractId: TOKEN_WVOI1,
+        tokenId: "0",
+        decimals: "6",
+        symbol: "VOI",
+      };
+
+      const mA =
+        state.token.tokenId === 0
+          ? networkToken
+          : tokens2?.find((t) => t.contractId === tokenId(state.token));
+
+      const mB =
+        state.token2.tokenId === 0
+          ? networkToken
+          : tokens2?.find((t) => t.contractId === tokenId(state.token2));
+
+      const A = { ...mA, amount: state.fromAmount.replace(/,/g, "") };
+      const B = { ...mB, amount: state.toAmount.replace(/,/g, "") };
+
+      const swapR = await ci.deposit(acc.addr, ctcInfo, A, B, [], {
+        debug: true,
+      });
+
+      if (!swapR.success) {
+        throw new Error("Failed to create deposit transaction");
       }
 
-      do {
-        const acc = {
-          addr: activeAccount?.address || "",
-          sk: new Uint8Array(0),
-        };
-        const ci = new swap(ctcInfo, algodClient, indexerClient, { acc });
+      const unsignedTxns = swapR.txns.map(
+        (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+      );
 
-        const networkToken = {
-          contractId: TOKEN_WVOI1,
-          tokenId: "0",
-          decimals: "6",
-          symbol: "VOI",
-        };
+      setProgress(60);
+      setMessage("Signing transaction");
 
-        console.log({ token, token2 });
+      const stxns = await signTransactions(unsignedTxns);
 
-        const mA =
-          token.tokenId === 0
-            ? networkToken
-            : tokens2?.find((t) => t.contractId === tokenId(token));
+      setProgress(80);
+      setMessage("Submitting transaction");
 
-        const mB =
-          token2.tokenId === 0
-            ? networkToken
-            : tokens2?.find((t) => t.contractId === tokenId(token2));
+      await algodClient.sendRawTransaction(stxns as Uint8Array[]).do();
 
-        const A = {
-          ...mA,
-          amount: fromAmount.replace(/,/g, ""),
-        };
-        const B = {
-          ...mB,
-          amount: toAmount.replace(/,/g, ""),
-        };
+      setProgress(90);
+      setMessage("Confirming pool creation");
 
-        const extraTxns = [];
-        //if (![token.tokenId, token2.tokenId].includes(0)) {
-        extraTxns.push(makeApplicationCreateTxnFromObjectObj);
-        //}
-
-        //const swapR: any = await ci.deposit(acc.addr, ctcInfo, A, B, extraTxns);
-        const swapR: any = await ci.deposit(acc.addr, ctcInfo, A, B, [], {
-          debug: true,
-        });
-
-        const unsignedTxns = [
-          ...swapR.txns.map(
-            (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-          ),
-        ];
-
-        setProgress(50);
-        setMessage("Signing transaction");
-
-        const stxns = await signTransactions(unsignedTxns);
-        /*
-        await toast.promise(
-          //.then(sendTransactions),
-          {
-            pending: `Creating new pool with liquidity ${fromAmount} ${tokenSymbol(
-              token
-            )} + ${toAmount} ${tokenSymbol(token2)}`,
-          },
-          {
-            type: "default",
-            position: "top-right",
-            theme: "dark",
-          }
-        );
-        */
-
-        await algodClient.sendRawTransaction(stxns as Uint8Array[]).do();
-      } while (0);
-
-      setProgress(70);
-
-      // -----------------------------------------
-      // QUEST HERE hmbl_pool_creation
-      // -----------------------------------------
-      // setMessage("Updating quest");
-      // do {
-      //   const address = activeAccount.address;
-      //   const actions: string[] = [QUEST_ACTION.CREATE_LIQUIDITY_POOL];
-      //   const {
-      //     data: { results },
-      //   } = await getActions(address);
-      //   for (const action of actions) {
-      //     const address = activeAccount.address;
-      //     const key = `${action}:${address}`;
-      //     const completedAction = results.find((el: any) => el.key === key);
-      //     if (!completedAction) {
-      //       await submitAction(action, address, {
-      //         poolId: ctcInfo,
-      //       });
-      //     }
-      //     // TODO notify quest completion here
-      //   }
-      // } while (0);
-      // -----------------------------------------
-      // confirm pool
-      // -----------------------------------------
       await new Promise((res) => setTimeout(res, 8000));
-      // -----------------------------------------
+
       setProgress(100);
-      // navigate
-      // -----------------------------------------
-      navigate(`/pool?filter=${token.symbol.toUpperCase()}`);
-    } catch (e: any) {
-      toast.error(e.message);
+      setMessage("Pool created successfully!");
+
+      toast.success(`Pool created successfully!`);
+      navigate(`/pool?filter=${state.token.symbol.toUpperCase()}`);
+    } catch (error: any) {
+      console.error("Pool creation error:", error);
+      setState((prev) => ({
+        ...prev,
+        error: error.message || "Failed to create pool",
+      }));
+      toast.error(error.message || "Failed to create pool");
     } finally {
+      setState((prev) => ({ ...prev, isCreating: false }));
       setProgress(0);
       setMessage("");
     }
   };
 
-  const isLoading = !pools || !tokens;
+  const handleNavigateToPool = () => {
+    if (state.pool) {
+      navigate(`/pool/add?poolId=${state.pool.poolId}`);
+    }
+  };
 
-  const [message, setMessage] = useState<string>("");
-  const [progress, setProgress] = useState<number>(0);
+  const isLoading = !pools || !tokens || !tokens2 || !stubs;
 
-  useEffect(() => {
-    if (progress === 0 || progress >= 100) return;
-    const timeout = setTimeout(() => {
-      setProgress(progress + 1);
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [progress]);
+  if (isLoading) {
+    return (
+      <PoolCreateRoot className={isDarkTheme ? "dark" : "light"}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="200px"
+        >
+          <CircularProgress />
+        </Box>
+      </PoolCreateRoot>
+    );
+  }
 
-  return !isLoading ? (
-    <SwapRoot className={isDarkTheme ? "dark" : "light"}>
-      <SwapHeadingContainer>
-        <SwapHeading className={isDarkTheme ? "dark" : "light"}>
-          Create Pool
-        </SwapHeading>
-      </SwapHeadingContainer>
-      <SwapContainer gap={on ? 1.43 : 0}>
+  return (
+    <PoolCreateRoot className={isDarkTheme ? "dark" : "light"}>
+      {state.isCreating && (
+        <LoadingOverlay>
+          <CircularProgress color="primary" />
+        </LoadingOverlay>
+      )}
+
+      <Header>
+        <Title className={isDarkTheme ? "dark" : "light"}>Create Pool</Title>
+        <Subtitle>Create a new liquidity pool to earn trading fees</Subtitle>
+      </Header>
+
+      {state.error && (
+        <ErrorAlert
+          severity="error"
+          onClose={() => setState((prev) => ({ ...prev, error: undefined }))}
+        >
+          {state.error}
+        </ErrorAlert>
+      )}
+
+      <TokenContainer>
         <TokenInput
           label="First token"
-          amount={fromAmount}
-          setAmount={setFromAmount}
-          token={token}
-          setToken={setToken}
-          balance={balance}
-          onFocus={() => setFocus("from")}
+          amount={state.fromAmount}
+          setAmount={(amount) =>
+            setState((prev) => ({ ...prev, fromAmount: amount }))
+          }
+          token={state.token}
+          setToken={(token) => setState((prev) => ({ ...prev, token }))}
+          balance={balances.get(state.token?.tokenId.toString() || "")}
+          onFocus={() => {}}
           options={tokenOptions}
-          showInput={!poolExists}
+          showInput={!state.poolExists}
         />
+
         <AddIcon theme={isDarkTheme ? "dark" : "light"} />
+
         <TokenInput
           label="Second token"
-          amount={toAmount}
-          setAmount={setToAmount}
-          token={token2}
-          setToken={setToken2}
-          options={tokenOptions2}
-          balance={balance2}
-          onFocus={() => setFocus("to")}
-          showInput={!poolExists}
-        />
-      </SwapContainer>
-      <Button
-        className={isValid || poolExists ? "active" : undefined}
-        onClick={() => {
-          if (!on) {
-            if (!poolExists) {
-              handlePoolCreate();
-            } else {
-              if (!pool) return;
-              navigate(`/pool/add?poolId=${pool.poolId}`);
-            }
+          amount={state.toAmount}
+          setAmount={(amount) =>
+            setState((prev) => ({ ...prev, toAmount: amount }))
           }
-        }}
+          token={state.token2}
+          setToken={(token2) => setState((prev) => ({ ...prev, token2 }))}
+          options={tokenOptions2}
+          balance={balances.get(state.token2?.tokenId.toString() || "")}
+          onFocus={() => {}}
+          showInput={!state.poolExists}
+        />
+      </TokenContainer>
+
+      <ActionButton
+        className={isValid || state.poolExists ? "primary" : "secondary"}
+        disabled={state.isCreating || (!isValid && !state.poolExists)}
+        onClick={state.poolExists ? handleNavigateToPool : handlePoolCreate}
       >
-        {!on ? (
-          buttonLabel
+        {state.isCreating ? (
+          <>
+            <CircularProgress size={20} color="inherit" />
+            Creating pool...
+          </>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-            }}
-          >
-            <CircularProgress color="inherit" size={20} />
-            Add liquidity in progress
-          </div>
+          buttonLabel
         )}
-      </Button>
-      <Note>
-        By adding liquidity you'll earn 0.25% of trades on this pair
-        proportional to your share of the pool Fees are added to the pool,
-        accumulate in real time and can be claimed by removing your liquidity.
-      </Note>
+      </ActionButton>
+
+      <InfoNote>
+        By creating a pool, you'll earn 0.25% of trades on this pair
+        proportional to your share. Fees are added to the pool, accumulate in
+        real time and can be claimed by removing your liquidity.
+      </InfoNote>
+
       <ProgressBar
         message={message}
         isActive={![0, 100].includes(progress)}
         currentStep={progress}
         totalSteps={100}
       />
-    </SwapRoot>
-  ) : null;
+    </PoolCreateRoot>
+  );
 };
 
-export default Swap;
+export default PoolCreate;
