@@ -118,6 +118,7 @@ const App: React.FC = () => {
     network: NetworkId.VOIMAIN,
     options: {
       resetNetwork: true,
+      debug: true,
     },
   });
 
