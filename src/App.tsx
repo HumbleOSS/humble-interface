@@ -15,6 +15,7 @@ import {
   WalletProvider,
 } from "@txnlab/use-wallet-react";
 import { useTokenRefresh } from "./hooks/useTokenRefresh";
+import { getCurrentNodeEnv } from "./utils/node";
 //import TokenRefreshStatus from "./components/TokenRefreshStatus";
 
 const BackgroundLayer = styled.div`
@@ -77,6 +78,8 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  const { ALGO_SERVER } = getCurrentNodeEnv();
+
   let walletConnectProjectId;
   if (!walletConnectProjectId) {
     walletConnectProjectId = "cd7fe0125d88d239da79fa286e6de2a8";
@@ -116,11 +119,6 @@ const App: React.FC = () => {
       },
     ],
     network: NetworkId.VOIMAIN,
-    algod: {
-      baseServer: "https://mainnet-api.voi.nodely.dev",
-      port: 443,
-      token: "",
-    },
     options: {
       resetNetwork: true,
       debug: true,
