@@ -116,6 +116,11 @@ const App: React.FC = () => {
       },
     ],
     network: NetworkId.VOIMAIN,
+    algod: {
+      baseServer: "https://mainnet-api.voi.nodely.dev",
+      port: 443,
+      token: "",
+    },
     options: {
       resetNetwork: true,
       debug: true,
