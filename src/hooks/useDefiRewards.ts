@@ -21,7 +21,7 @@ const useDefiRewards = () => {
             {
               poolId: 395553, // USDC/VOI
               aprBoost: 28.75, // TVL lte 250k USD
-              additionalAprBoost: 3.05, // POW Incentives
+              //additionalAprBoost: 3.05, // POW Incentives
             },
             {
               poolId: 413161,
@@ -43,11 +43,11 @@ const useDefiRewards = () => {
               aprBoost: 28.75 / 2, // TVL lte 250k aBTC
               additionalAprBoost: 0,
             },
-            {
-              poolId: 395554, // GM/VOI GM
-              aprBoost: 27,
-              additionalAprBoost: 0,
-            },
+            // {
+            //   poolId: 395554, // GM/VOI GM
+            //   aprBoost: 27,
+            //   additionalAprBoost: 0,
+            // },
             {
               poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
               aprBoost: 27,
@@ -73,16 +73,16 @@ const useDefiRewards = () => {
               aprBoost: 15,
               additionalAprBoost: 0,
             },
-            {
-              poolId: 40120385, // POW/VOI
-              aprBoost: 0,
-              additionalAprBoost: 9.167, // POW Incentives
-            },
-            {
-              poolId: 40171090, // POW/USD
-              aprBoost: 0,
-              additionalAprBoost: 27.5, // POW Incentives
-            },
+            // {
+            //   poolId: 40120385, // POW/VOI
+            //   aprBoost: 0,
+            //   additionalAprBoost: 9.167, // POW Incentives
+            // },
+            // {
+            //   poolId: 40171090, // POW/USD
+            //   aprBoost: 0,
+            //   additionalAprBoost: 27.5, // POW Incentives
+            // },
           ],
         };
         // Assuming the API returns an array of objects with poolId and aprBoost
