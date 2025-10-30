@@ -13,6 +13,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import HomeIcon from "@mui/icons-material/Home";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { useNotifications } from "../../contexts/NotificationContext";
 import NotificationModal from "../NotificationModal";
 
@@ -239,6 +240,7 @@ const Navbar = () => {
     { path: "/pool", label: "Pool", Icon: PoolLogo },
     //{ path: "/token", label: "Token", Icon: TokenLogo },
     { path: "/analytics", label: "Analytics", Icon: BarChartIcon },
+    { path: "/rewards", label: "Incentives", Icon: EmojiEventsIcon },
   ];
 
   const handleMenuClick = (path: string) => {
@@ -307,6 +309,11 @@ const Navbar = () => {
                 label: "Analytics",
                 href: "/analytics",
                 icon: BarChartIcon,
+              },
+              {
+                label: "Incentives",
+                href: "/rewards",
+                icon: EmojiEventsIcon,
               },
             ].map((item) => {
               const Item = item.icon;

@@ -11,3 +11,4 @@ export { Zap } from "./Zap";
 export { Analytics } from "./Analytics";
 export { AnalyticsToken } from "./AnalyticsToken";
 export { AnalyticsPair } from "./AnalyticsPair";
+export { Rewards } from "./Rewards";

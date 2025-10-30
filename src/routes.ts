@@ -54,4 +54,8 @@ export const routes = [
     path: "/analytics/pair/:id",
     Component: Page.AnalyticsPair,
   },
+  {
+    path: "/rewards",
+    Component: Page.Rewards,
+  },
 ];
