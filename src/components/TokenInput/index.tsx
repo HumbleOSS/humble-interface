@@ -410,6 +410,16 @@ const Swap: FC<SwapProps> = ({
     
     // Remove commas and clean the value
     const cleanValue = value.toString().replace(/,/g, '');
+    
+    // If the value ends with a decimal point, preserve it (user is still typing)
+    if (cleanValue.endsWith('.')) {
+      const beforeDecimal = cleanValue.slice(0, -1);
+      // Validate the part before decimal
+      if (beforeDecimal === '' || /^[0-9]+$/.test(beforeDecimal)) {
+        return cleanValue; // Return as-is to preserve the trailing decimal
+      }
+    }
+    
     const numValue = parseFloat(cleanValue);
     
     if (isNaN(numValue)) {
@@ -429,9 +439,13 @@ const Swap: FC<SwapProps> = ({
     }
   };
 
-  // Ensure amount is always clean when it changes
+  // Ensure amount is always clean when it changes, but preserve trailing decimals
   useEffect(() => {
-    if (amount !== undefined && amount !== null) {
+    if (amount !== undefined && amount !== null && amount !== "") {
+      // Don't clean if the value ends with a decimal point (user is typing)
+      if (amount.endsWith('.')) {
+        return;
+      }
       const cleanValue = cleanAmount(amount);
       if (cleanValue !== amount) {
         setAmount(cleanValue);
@@ -462,7 +476,7 @@ const Swap: FC<SwapProps> = ({
     icon = (
       <Tooltip title={tokInfo?.name} placement="top" arrow>
         <TokenIcon
-          src={`https://asset-verification.nautilus.sh/icons/${tokInfo?.contractId}.png`}
+          src={`https://asset-verification.nautilus.sh/icons/${tokInfo?.contractId === 390001 ? 0 : tokInfo?.contractId}.png`}
           alt={`${tokInfo?.symbol} icon`}
         />
       </Tooltip>
@@ -588,11 +602,30 @@ const Swap: FC<SwapProps> = ({
                   placeholder="0.00"
                   onKeyDown={() => onFocus()}
                   onChange={(e) => {
-                    const value = e.target.value;
+                    let value = e.target.value;
+
+                    // Allow empty input
+                    if (value === "") {
+                      setAmount("");
+                      return;
+                    }
 
                     // Only allow numbers, decimal point, and commas
                     if (!/^[0-9.,]*$/.test(value)) {
                       return;
+                    }
+
+                    // Prevent multiple decimal points - keep only the first one
+                    const firstDecimalIndex = value.indexOf(".");
+                    if (firstDecimalIndex !== -1) {
+                      const beforeDecimal = value.substring(0, firstDecimalIndex + 1);
+                      const afterDecimal = value.substring(firstDecimalIndex + 1).replace(/\./g, "");
+                      value = beforeDecimal + afterDecimal;
+                    }
+
+                    // Handle leading decimal point (e.g., ".5" -> "0.5")
+                    if (value.startsWith(".")) {
+                      value = "0" + value;
                     }
 
                     // Remove commas for processing
@@ -608,7 +641,7 @@ const Swap: FC<SwapProps> = ({
                     }
 
                     // If decimal places exceed token decimals, truncate
-                    if (parts[1].length > token.decimals) {
+                    if (parts[1] && parts[1].length > token.decimals) {
                       parts[1] = parts[1].substring(0, token.decimals);
                       // Reconstruct with original commas in integer part
                       const integerPartWithCommas = value.split(".")[0];

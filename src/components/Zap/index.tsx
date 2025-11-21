@@ -822,28 +822,56 @@ const Zap: React.FC = () => {
         
         try {
           const response = await fetch(
-            `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools?tokenId=${searchTokenId}`
+            `https://humble-api.voi.nautilus.sh/pools?tokenId=${searchTokenId}`
           );
           const data = await response.json();
           console.log("Pool API response:", data);
           if (data.pools && Array.isArray(data.pools)) {
             console.log("Found pools:", data.pools.length);
-            setAvailablePools(data.pools);
+            // Map new API structure to Pool interface
+            const mappedPools = data.pools.map((pool: any) => ({
+              ...pool,
+              contractId: Number(pool.poolId),
+              tokAId: pool.tokA,
+              tokBId: pool.tokB,
+              symbolA: pool.symbolA || "",
+              symbolB: pool.symbolB || "",
+              tokADecimals: pool.tokADecimals || 6,
+              tokBDecimals: pool.tokBDecimals || 6,
+              tvl: pool.tvl || 0,
+              tvlA: pool.tvlA || "0",
+              tvlB: pool.tvlB || "0",
+              apr: pool.apr || "0",
+            } as Pool));
+            setAvailablePools(mappedPools);
           } else {
             console.log("No pools found or invalid response format");
             // Try alternative API endpoint or show fallback pools
             try {
               const fallbackResponse = await fetch(
-                `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools`
+                `https://humble-api.voi.nautilus.sh/pools`
               );
               const fallbackData = await fallbackResponse.json();
               console.log("Fallback API response:", fallbackData);
               if (fallbackData.pools && Array.isArray(fallbackData.pools)) {
-                // Filter pools that contain the selected token
+                // Filter pools that contain the selected token (new API uses tokA/tokB instead of tokAId/tokBId)
                 const relevantPools = fallbackData.pools.filter((pool: any) => 
-                  pool.tokAId === searchTokenId.toString() || 
-                  pool.tokBId === searchTokenId.toString()
-                );
+                  pool.tokA === searchTokenId.toString() || 
+                  pool.tokB === searchTokenId.toString()
+                ).map((pool: any) => ({
+                  ...pool,
+                  contractId: Number(pool.poolId),
+                  tokAId: pool.tokA,
+                  tokBId: pool.tokB,
+                  symbolA: pool.symbolA || "",
+                  symbolB: pool.symbolB || "",
+                  tokADecimals: pool.tokADecimals || 6,
+                  tokBDecimals: pool.tokBDecimals || 6,
+                  tvl: pool.tvl || 0,
+                  tvlA: pool.tvlA || "0",
+                  tvlB: pool.tvlB || "0",
+                  apr: pool.apr || "0",
+                } as Pool));
                 console.log("Found relevant pools from fallback:", relevantPools.length);
                 setAvailablePools(relevantPools);
               } else {
@@ -1260,11 +1288,12 @@ const Zap: React.FC = () => {
 
   // Helper function to get token icon URL
   const getTokenIconUrl = useCallback((tokenId: string | number, symbol: string) => {
-    // Handle VOI token (tokenId: 0)
-    if (symbol === "VOI" || tokenId === "0" || tokenId === 0) {
+    const id = typeof tokenId === 'string' ? Number(tokenId) : tokenId;
+    // Map 390001 (wVOI) and 0 (VOI) to 0.png
+    if (symbol === "VOI" || symbol === "wVOI" || id === 0 || id === 390001) {
       return "https://asset-verification.nautilus.sh/icons/0.png";
     }
-    return `https://asset-verification.nautilus.sh/icons/${tokenId}.png`;
+    return `https://asset-verification.nautilus.sh/icons/${id}.png`;
   }, []);
 
   // Helper function to calculate price impact and share

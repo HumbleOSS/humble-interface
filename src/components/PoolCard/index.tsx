@@ -15,6 +15,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { toast } from "react-toastify";
 
 const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
+const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -558,13 +559,45 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   if ([pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)) {
     reward.blockReward = BLOCK_REWARD_ADJUSTMENT;
   }
-  const tokA = tokens?.find((t) => `${t.contractId}` === `${pool.tokAId}`);
-  const tokB = tokens?.find((t) => `${t.contractId}` === `${pool.tokBId}`);
-  const isWVOIf = (token: any) => {
-    if (token?.tokenId === "0") {
-      return true;
+  // Find tokens by matching contractId or tokenId
+  // Handle VOI (0) -> wVOI (390001) mapping
+  const findToken = (tokenIdStr: string) => {
+    const id = Number(tokenIdStr);
+    
+    // First try to find by contractId matching the tokenId string
+    let token = tokens?.find((t) => `${t.contractId}` === tokenIdStr);
+    
+    // If not found, try matching tokenId
+    if (!token) {
+      token = tokens?.find((t) => `${t.tokenId}` === tokenIdStr);
     }
-    return false;
+    
+    // Handle VOI (0) -> wVOI (390001) mapping
+    // If tokenId is 0 or 390001, try to find VOI token
+    if (!token && (id === 0 || id === TOKEN_WVOI1)) {
+      // Try to find by tokenId 0
+      token = tokens?.find((t) => t.tokenId === 0);
+      // If not found, try contractId 390001
+      if (!token) {
+        token = tokens?.find((t) => t.contractId === TOKEN_WVOI1);
+      }
+      // If still not found, try tokenId 390001
+      if (!token) {
+        token = tokens?.find((t) => t.tokenId === TOKEN_WVOI1);
+      }
+    }
+    
+    return token;
+  };
+  
+  const tokA = findToken(pool.tokAId);
+  const tokB = findToken(pool.tokBId);
+  const isWVOIf = (token: any) => {
+    if (!token) return false;
+    const tokenId = token.tokenId || 0;
+    const contractId = token.contractId || tokenId;
+    // Handle both VOI (0) and wVOI (390001)
+    return tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1;
   };
   const tokAIcon = isWVOIf(tokA) ? (
     <PairIconImage
@@ -573,7 +606,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     />
   ) : !!tokA?.verified ? (
     <PairIconImage
-      src={`https://asset-verification.nautilus.sh/icons/${tokA?.contractId}.png`}
+      src={`https://asset-verification.nautilus.sh/icons/${tokA?.contractId === 390001 ? 0 : tokA?.contractId}.png`}
       alt={`${tokA?.symbol} icon`}
     />
   ) : (
@@ -590,7 +623,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     />
   ) : !!tokB?.verified ? (
     <PairIconImage
-      src={`https://asset-verification.nautilus.sh/icons/${tokB?.contractId}.png`}
+      src={`https://asset-verification.nautilus.sh/icons/${tokB?.contractId === 390001 ? 0 : tokB?.contractId}.png`}
       alt={`${tokB?.symbol} icon`}
     />
   ) : (
@@ -679,10 +712,26 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
               <PairInfoContainer>
                 <PairInfo>
                   <PairTokens>
-                    <PairTokenLabel>{pool.symbolA}</PairTokenLabel>
+                    <PairTokenLabel>
+                      {(() => {
+                        // Display "VOI" for both tokenId 0 and 390001 (wVOI)
+                        if (!tokA) return `ID: ${pool.tokAId}`;
+                        const id = tokA.tokenId || tokA.contractId || 0;
+                        if (id === 0 || id === TOKEN_WVOI1) return "VOI";
+                        return tokA.symbol || `ID: ${pool.tokAId}`;
+                      })()}
+                    </PairTokenLabel>
                     {tokABadge}
                     {/*<CryptoIconPlaceholder />*/}
-                    <PairTokenLabel>/ {pool.symbolB}</PairTokenLabel>
+                    <PairTokenLabel>/
+                      {(() => {
+                        // Display "VOI" for both tokenId 0 and 390001 (wVOI)
+                        if (!tokB) return ` ID: ${pool.tokBId}`;
+                        const id = tokB.tokenId || tokB.contractId || 0;
+                        if (id === 0 || id === TOKEN_WVOI1) return " VOI";
+                        return ` ${tokB.symbol || `ID: ${pool.tokBId}`}`;
+                      })()}
+                    </PairTokenLabel>
                     {tokBBadge}
                     {/*<CryptoIconPlaceholder />*/}
                   </PairTokens>
@@ -798,7 +847,13 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   <Label>Tvl</Label>
                   <InfoCircleIcon />
                 </LabelWrapper>
-                <TVLLabel>{pool.tvl} VOI</TVLLabel>
+                <TVLLabel>
+                  {pool.tvl 
+                    ? typeof pool.tvl === 'number' 
+                      ? formatter.format(pool.tvl) 
+                      : pool.tvl
+                    : "0"} VOI
+                </TVLLabel>
               </Col3>
               <Col3 isDarkTheme={isDarkTheme}>
                 <LabelWrapper>

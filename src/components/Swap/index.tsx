@@ -29,7 +29,7 @@ import { getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { fetchPool, getPool, getPools } from "../../store/poolSlice";
 import { toast } from "react-toastify";
-import { tokenId, tokenSymbol } from "../../utils/dex";
+import { tokenId, tokenSymbol, getIconId } from "../../utils/dex";
 import BigNumber from "bignumber.js";
 import { CTCINFO_DEFAULT_LP } from "../../constants/dex";
 import SwapSuccessfulModal from "../modals/SwapSuccessfulModal";
@@ -884,9 +884,17 @@ const Swap = () => {
   const [pools2, setPools] = useState<PoolI[]>([]);
   useEffect(() => {
     axios
-      .get("https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools")
+      .get("https://humble-api.voi.nautilus.sh/pools")
       .then(({ data }) => {
-        setPools(data.pools);
+        // Map new API structure to PoolI format
+        const mappedPools = data.pools.map((p: any) => ({
+          poolId: Number(p.poolId),
+          tokA: Number(p.tokA),
+          tokB: Number(p.tokB),
+          round: p.lastRound || 0,
+          txId: p.txid || "",
+        } as PoolI));
+        setPools(mappedPools);
       });
   }, []);
 
@@ -909,11 +917,25 @@ const Swap = () => {
   useEffect(() => {
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+        `https://humble-api.voi.nautilus.sh/tokens`
       )
       .then(({ data }) => {
-        setTokens(data.tokens);
-      });
+        // Map the new API structure to the expected format
+        const mappedTokens = data.tokens.map((t: any) => {
+          const assetId = Number(t.assetId);
+          const isVOI = assetId === 0 || assetId === 390001;
+          return {
+            ...t,
+            contractId: assetId,
+            tokenId: assetId,
+            symbol: t.unitName || t.symbol,
+            decimals: Number(t.decimals),
+            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+          };
+        });
+        setTokens(mappedTokens);
+      })
+      .catch(console.error);
   }, []);
 
   console.log({ tokens2 });
@@ -973,6 +995,7 @@ const Swap = () => {
     const tokenOptions = [
       {
         tokenId: 0,
+        contractId: TOKEN_WVOI1, // Use 390001 internally for contractId
         name: "Voi",
         symbol: "VOI",
         decimals: 6,
@@ -1898,14 +1921,13 @@ const Swap = () => {
               <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
                 <TokenIconContainer>
                   <img
-                    src={`https://asset-verification.nautilus.sh/icons/${
-                      token?.tokenId === 0
-                        ? 0
-                        : tokens2?.find((t) => t.tokenId === token?.tokenId)
-                            ?.contractId ||
-                          token?.tokenId ||
-                          0
-                    }.png`}
+                    src={`https://asset-verification.nautilus.sh/icons/${getIconId(
+                      token?.tokenId === 0 
+                        ? TOKEN_WVOI1 
+                        : tokens2?.find((t) => t.tokenId === token?.tokenId)?.contractId ||
+                          token?.contractId ||
+                          token?.tokenId
+                    )}.png`}
                     alt={token?.symbol}
                     onError={(e) => {
                       e.currentTarget.src =
@@ -1929,14 +1951,13 @@ const Swap = () => {
               <SwapAmountRow className={isDarkTheme ? "dark" : "light"}>
                 <TokenIconContainer>
                   <img
-                    src={`https://asset-verification.nautilus.sh/icons/${
-                      token2?.tokenId === 0
-                        ? 0
-                        : tokens2?.find((t) => t.tokenId === token2?.tokenId)
-                            ?.contractId ||
-                          token2?.tokenId ||
-                          0
-                    }.png`}
+                    src={`https://asset-verification.nautilus.sh/icons/${getIconId(
+                      token2?.tokenId === 0 
+                        ? TOKEN_WVOI1 
+                        : tokens2?.find((t) => t.tokenId === token2?.tokenId)?.contractId ||
+                          token2?.contractId ||
+                          token2?.tokenId
+                    )}.png`}
                     alt={token2?.symbol}
                     onError={(e) => {
                       e.currentTarget.src =

@@ -492,9 +492,10 @@ const TokenCard: FC<TokenCardProps> = ({ token }) => {
       />
     );
   } else if (token.verified > 0) {
+    const iconId = token.contractId === 390001 ? 0 : token.contractId;
     icon = (
       <TokenIcon
-        src={`https://asset-verification.nautilus.sh/icons/${token.contractId}.png`}
+        src={`https://asset-verification.nautilus.sh/icons/${iconId}.png`}
         alt={`${token.symbol} icon`}
       />
     );

@@ -386,19 +386,10 @@ const convertToARC200Token = (token: any): ARC200TokenI | undefined => {
 const getTokenIconUrl = (tokenId?: number) => {
   if (!tokenId) return "";
 
-  // Handle wVOI special case
-  if (tokenId === 390001) {
-    return "https://asset-verification.nautilus.sh/icons/0.png";
-  }
-
-  // Handle regular tokens
-  if (tokenId) {
-    return `https://asset-verification.nautilus.sh/icons/${tokenId}.png`;
-  }
-
-  // all tokens are verified so this should never happen
-  // Fallback icon if needed
-  return "/default-token-icon.png"; // Add a default icon to your public folder
+  // Handle wVOI (390001) and VOI (0) - both use 0.png
+  const iconId = tokenId === 390001 ? 0 : tokenId;
+  
+  return `https://asset-verification.nautilus.sh/icons/${iconId}.png`;
 };
 
 const PoolRemove = () => {

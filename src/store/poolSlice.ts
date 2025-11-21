@@ -65,24 +65,17 @@ export const getPools = createAsyncThunk<
     const lastRound = pools.reduce((acc, val) => Math.max(acc, val.round), 0);
     //if (pools.length === 0) {
     const { data } = await axios.get(
-      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools`,
-      {
-        params: {
-          //["mint-min-round"]: lastRound,
-        },
-      }
+      `https://humble-api.voi.nautilus.sh/pools`
     );
     console.log("data", data);
-    const appPools = data.pools
-      .filter((p: any) => {
-        return p.providerId === "01";
-      })
-      .map((p: any) => ({
-        poolId: p.contractId,
-        tokA: Number(p.tokAId),
-        tokB: Number(p.tokBId),
-        round: p.mintRound,
-      }));
+    // New API structure: poolId, tokA, tokB, lastRound, txid
+    const appPools = data.pools.map((p: any) => ({
+      poolId: Number(p.poolId),
+      tokA: Number(p.tokA),
+      tokB: Number(p.tokB),
+      round: p.lastRound || 0,
+      txId: p.txid || "",
+    }));
     await db.table("pools").bulkPut(appPools);
     return appPools;
     //}

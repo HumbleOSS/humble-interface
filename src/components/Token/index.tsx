@@ -106,14 +106,21 @@ const Pool = () => {
   const [pools, setPools] = React.useState<IndexerPoolI[]>();
   useEffect(() => {
     axios
-      .get(`https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools`)
+      .get(`https://humble-api.voi.nautilus.sh/pools`)
       .then(({ data }) => {
         setPools(
-          data.pools.map((p: IndexerPoolI) => ({
+          data.pools.map((p: any) => ({
             ...p,
-            tvl: formatter.format(Number(p.tvl)),
-            vol: formatter.format(Number(p.volA) + Number(p.volB)),
-          }))
+            contractId: Number(p.poolId),
+            poolId: p.poolId,
+            tokAId: p.tokA,
+            tokBId: p.tokB,
+            tvl: p.tvl ? formatter.format(Number(p.tvl)) : "0",
+            vol: p.volA && p.volB ? formatter.format(Number(p.volA) + Number(p.volB)) : "0",
+            volA: p.volA || "0",
+            volB: p.volB || "0",
+            providerId: "01", // Humble DEX
+          } as IndexerPoolI))
         );
       });
   }, []);
@@ -122,10 +129,23 @@ const Pool = () => {
   useEffect(() => {
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+        `https://humble-api.voi.nautilus.sh/tokens`
       )
-      .then(({ data: { tokens } }) => {
-        setTokens(tokens);
+      .then(({ data }) => {
+        // Map the new API structure to the expected format
+        const mappedTokens = data.tokens.map((t: any) => {
+          const assetId = Number(t.assetId);
+          const isVOI = assetId === 0 || assetId === 390001;
+          return {
+            ...t,
+            contractId: assetId,
+            tokenId: assetId,
+            symbol: t.unitName || t.symbol,
+            decimals: Number(t.decimals),
+            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+          };
+        });
+        setTokens(mappedTokens);
       });
   }, []);
 

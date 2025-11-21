@@ -1062,9 +1062,16 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   );
 
   const filteredAndSortedTokens = React.useMemo(() => {
-    let filtered = (options || tokens).filter((t) =>
-      tokenSymbol(t).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
+    let filtered = (options || tokens).filter((t) => {
+      if (!debouncedSearchTerm) return true;
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      // Search by symbol, name, or tokenId
+      const symbolMatch = tokenSymbol(t).toLowerCase().includes(searchLower);
+      const nameMatch = (t.name || "").toLowerCase().includes(searchLower);
+      const tokenIdMatch = (t.tokenId?.toString() || "").includes(debouncedSearchTerm);
+      const contractIdMatch = (t.contractId?.toString() || "").includes(debouncedSearchTerm);
+      return symbolMatch || nameMatch || tokenIdMatch || contractIdMatch;
+    });
 
     // Sort tokens: tokens with balances first, then by selected criteria
     filtered.sort((a, b) => {

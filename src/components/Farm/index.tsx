@@ -201,10 +201,23 @@ const Farm = () => {
   useEffect(() => {
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+        `https://humble-api.voi.nautilus.sh/tokens`
       )
       .then(({ data }) => {
-        setTokens(data.tokens);
+        // Map the new API structure to the expected format
+        const mappedTokens = data.tokens.map((t: any) => {
+          const assetId = Number(t.assetId);
+          const isVOI = assetId === 0 || assetId === 390001;
+          return {
+            ...t,
+            contractId: assetId,
+            tokenId: assetId,
+            symbol: t.unitName || t.symbol,
+            decimals: Number(t.decimals),
+            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+          };
+        });
+        setTokens(mappedTokens);
       });
   }, []);
 

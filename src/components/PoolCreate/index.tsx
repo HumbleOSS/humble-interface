@@ -26,6 +26,7 @@ import { tokenId, tokenSymbol } from "../../utils/dex";
 import BigNumber from "bignumber.js";
 import ProgressBar from "../ProgressBar";
 import { POOL_SPEC } from "../../constants/poolSpec";
+import { getAsaIdFromArc200Contract, populateMappingFromTokens } from "../../config/arc200AsaMapping";
 
 // Types
 interface PoolCreateState {
@@ -229,14 +230,12 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
 
   const fetchBalance = useCallback(
     async (token: ARC200TokenI) => {
-      if (!activeAccount || !tokens2) return;
+      if (!activeAccount) return;
 
       const { algodClient, indexerClient } = getAlgorandClients();
-      const wrappedTokenId = Number(
-        tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
-      );
 
       try {
+        // VOI tokens can be fetched without tokens2
         if (token.tokenId === 0) {
           const accInfo = await algodClient
             .accountInformation(activeAccount.address)
@@ -246,33 +245,52 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
           const txnCost = 1e5;
           const availableBalance = Math.max(0, balance - minBalance - txnCost);
           return (availableBalance / 1e6).toLocaleString();
-        } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
-          const accAssetInfo = await algodClient
-            .accountAssetInformation(activeAccount.address, wrappedTokenId)
-            .do();
-          const assetInfo = await indexerClient
-            .lookupAssetByID(wrappedTokenId)
-            .do();
-          const decimals = assetInfo.asset.params.decimals;
-          const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
-          const ci = new arc200(token.tokenId, algodClient, indexerClient);
-          const r = await ci.arc200_balanceOf(activeAccount.address);
-          if (r.success) {
-            const balance2Bi = BigInt(r.returnValue);
-            const balance = new BigNumber(
-              (balance1Bi + balance2Bi).toString()
-            ).dividedBy(new BigNumber(10).pow(decimals));
-            return balance.toFixed(decimals);
+        }
+
+        // For other tokens, we need tokens2
+        if (!tokens2) return;
+
+        // First try to get ASA ID from config mapping, fallback to tokens2 lookup
+        let wrappedTokenId: number | undefined = getAsaIdFromArc200Contract(token.tokenId);
+        
+        if (wrappedTokenId === undefined) {
+          // Fallback to tokens2 lookup if not in config
+          wrappedTokenId = Number(
+            tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
+          );
+        }
+
+        // For tokens with tokenId !== 0, always check both asset balance and ARC200 balance
+        let assetBalanceBi = BigInt(0);
+        let decimals = token.decimals;
+
+        // Try to get asset balance if the token has an asset ID
+        if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+          try {
+            const accAssetInfo = await algodClient
+              .accountAssetInformation(activeAccount.address, wrappedTokenId)
+              .do();
+            const assetInfo = await indexerClient
+              .lookupAssetByID(wrappedTokenId)
+              .do();
+            decimals = assetInfo.asset.params.decimals;
+            assetBalanceBi = BigInt(accAssetInfo["asset-holding"].amount);
+          } catch (error) {
+            // Asset doesn't exist or account doesn't hold it, continue with 0
+            console.log(`No asset balance for token ${token.tokenId}`);
           }
-        } else {
-          const ci = new arc200(token.tokenId, algodClient, indexerClient);
-          const r = await ci.arc200_balanceOf(activeAccount.address);
-          if (r.success) {
-            const balanceBn = new BigNumber(r.returnValue.toString());
-            return balanceBn
-              .dividedBy(new BigNumber(10).pow(token.decimals))
-              .toFixed(token.decimals);
-          }
+        }
+
+        // Always get ARC200 balance
+        const ci = new arc200(token.tokenId, algodClient, indexerClient);
+        const r = await ci.arc200_balanceOf(activeAccount.address);
+        if (r.success) {
+          const arc200BalanceBi = BigInt(r.returnValue);
+          // Add asset balance and ARC200 balance together
+          const totalBalance = new BigNumber(
+            (assetBalanceBi + arc200BalanceBi).toString()
+          ).dividedBy(new BigNumber(10).pow(decimals));
+          return totalBalance.toFixed(decimals);
         }
       } catch (error) {
         console.error(
@@ -345,10 +363,25 @@ const PoolCreate: FC = () => {
 
     // Fetch tokens2
     axios
-      .get(
-        "https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=tokens"
-      )
-      .then((res) => setTokens2(res.data.tokens))
+      .get("https://humble-api.voi.nautilus.sh/tokens")
+      .then((res) => {
+        // Map the new API structure to the expected format
+        const mappedTokens = res.data.tokens.map((t: any) => {
+          const assetId = Number(t.assetId);
+          const isVOI = assetId === 0 || assetId === 390001;
+          return {
+            ...t,
+            contractId: assetId,
+            tokenId: assetId,
+            symbol: t.unitName || t.symbol,
+            decimals: Number(t.decimals),
+            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+          };
+        });
+        setTokens2(mappedTokens);
+        // Populate the ARC200 to ASA mapping from the API data
+        populateMappingFromTokens(mappedTokens);
+      })
       .catch(console.error);
 
     // Fetch stubs
@@ -366,7 +399,8 @@ const PoolCreate: FC = () => {
   useEffect(() => {
     if (!tokens) return;
     const voiToken = {
-      tokenId: 0,
+      tokenId: 0, // Display as 0
+      contractId: TOKEN_WVOI1, // Use 390001 internally
       name: "Voi",
       symbol: "VOI",
       decimals: 6,
@@ -382,7 +416,8 @@ const PoolCreate: FC = () => {
         setState((prev) => ({
           ...prev,
           token: {
-            tokenId: 0,
+            tokenId: 0, // Display as 0
+            contractId: TOKEN_WVOI1, // Use 390001 internally
             name: "Voi",
             symbol: "VOI",
             decimals: 6,
@@ -403,7 +438,8 @@ const PoolCreate: FC = () => {
       setState((prev) => ({
         ...prev,
         token2: {
-          tokenId: 0,
+          tokenId: 0, // Display as 0
+          contractId: TOKEN_WVOI1, // Use 390001 internally
           name: "Voi",
           symbol: "VOI",
           decimals: 6,
@@ -429,14 +465,18 @@ const PoolCreate: FC = () => {
     setTokenOptions2(filteredOptions);
   }, [state.token, tokenOptions]);
 
-  // Update balances when tokens change
+  // Update balances when tokens change or tokens2 becomes available
   useEffect(() => {
-    if (state.token) updateBalance(state.token);
-  }, [state.token, updateBalance]);
+    if (state.token && tokens2 && activeAccount) {
+      updateBalance(state.token);
+    }
+  }, [state.token, tokens2, activeAccount, updateBalance]);
 
   useEffect(() => {
-    if (state.token2) updateBalance(state.token2);
-  }, [state.token2, updateBalance]);
+    if (state.token2 && tokens2 && activeAccount) {
+      updateBalance(state.token2);
+    }
+  }, [state.token2, tokens2, activeAccount, updateBalance]);
 
   // Check for existing pools
   const eligiblePools = useMemo(() => {
@@ -616,22 +656,75 @@ const PoolCreate: FC = () => {
         symbol: "VOI",
       };
 
-      const mA =
-        state.token.tokenId === 0
-          ? networkToken
-          : tokens2?.find((t) => t.contractId === tokenId(state.token));
+      // Helper function to get token metadata, with fallback to state token
+      const getTokenMetadata = (
+        token: ARC200TokenI,
+        isNetworkToken: boolean
+      ) => {
+        if (isNetworkToken) {
+          // For VOI (tokenId 0), use 390001 internally but display as 0
+          return {
+            ...networkToken,
+            contractId: TOKEN_WVOI1, // Use 390001 internally
+            tokenId: "0", // Display as 0
+          };
+        }
 
-      const mB =
-        state.token2.tokenId === 0
-          ? networkToken
-          : tokens2?.find((t) => t.contractId === tokenId(state.token2));
+        // Use contractId if available (for VOI it will be 390001), otherwise map tokenId
+        const internalId = token.contractId || tokenId(token);
+        const foundToken = tokens2?.find((t) => t.contractId === internalId);
+
+        // Get the contract ID for this token
+        const contractId = token.contractId || tokenId(token);
+        
+        // Check if this contract ID has a corresponding ASA asset ID from config
+        const asaAssetId = getAsaIdFromArc200Contract(contractId);
+        
+        // Determine the correct tokenId for the transaction
+        // Priority: 1) ASA mapping from config, 2) tokenId from tokens2, 3) contract ID
+        let tokenIdForTransaction: string;
+        if (asaAssetId) {
+          // Use ASA asset ID from config mapping
+          tokenIdForTransaction = asaAssetId.toString();
+        } else if (foundToken?.tokenId) {
+          // Use tokenId from tokens2 (should be ASA asset ID)
+          tokenIdForTransaction = foundToken.tokenId.toString();
+        } else {
+          // Fallback to contract ID (for pure ARC200 tokens without ASA)
+          tokenIdForTransaction = contractId.toString();
+        }
+
+        if (foundToken) {
+          // Return foundToken but ensure tokenId is correct (use ASA mapping if available)
+          return {
+            ...foundToken,
+            contractId: contractId, // Ensure contractId is correct
+            tokenId: tokenIdForTransaction, // Use the correct ASA asset ID
+          };
+        }
+
+        // Fallback: construct from state token
+        return {
+          contractId: contractId, // ARC200 contract ID
+          tokenId: tokenIdForTransaction, // ASA asset ID if exists, otherwise contract ID
+          decimals: token.decimals.toString(),
+          symbol: token.symbol,
+        };
+      };
+
+      const mA = getTokenMetadata(state.token, state.token.tokenId === 0);
+      const mB = getTokenMetadata(state.token2, state.token2.tokenId === 0);
 
       const A = { ...mA, amount: state.fromAmount.replace(/,/g, "") };
       const B = { ...mB, amount: state.toAmount.replace(/,/g, "") };
 
+      console.log({ A, B, acc, ctcInfo });
+
       const swapR = await ci.deposit(acc.addr, ctcInfo, A, B, [], {
         debug: true,
       });
+
+      console.log({ swapR });
 
       if (!swapR.success) {
         throw new Error("Failed to create deposit transaction");
@@ -654,7 +747,7 @@ const PoolCreate: FC = () => {
       setProgress(90);
       setMessage("Confirming pool creation");
 
-      await new Promise((res) => setTimeout(res, 8000));
+      await new Promise((res) => setTimeout(res, 60_000));
 
       setProgress(100);
       setMessage("Pool created successfully!");

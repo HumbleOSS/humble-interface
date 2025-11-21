@@ -182,8 +182,8 @@ export const POOL_CONTRACT_SPEC = {
 
 // API endpoints
 export const API_ENDPOINTS = {
-  TOKENS: "https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all",
-  POOLS: "https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools",
+  TOKENS: "https://humble-api.voi.nautilus.sh/tokens",
+  POOLS: "https://humble-api.voi.nautilus.sh/pools",
 } as const;
 
 // Token configuration

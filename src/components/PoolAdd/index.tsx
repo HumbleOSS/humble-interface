@@ -722,10 +722,23 @@ const Swap = () => {
   useEffect(() => {
     axios
       .get(
-        `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+        `https://humble-api.voi.nautilus.sh/tokens`
       )
       .then((res) => {
-        setTokens(res.data.tokens);
+        // Map the new API structure to the expected format
+        const mappedTokens = res.data.tokens.map((t: any) => {
+          const assetId = Number(t.assetId);
+          const isVOI = assetId === 0 || assetId === 390001;
+          return {
+            ...t,
+            contractId: assetId,
+            tokenId: assetId,
+            symbol: t.unitName || t.symbol,
+            decimals: Number(t.decimals),
+            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+          };
+        });
+        setTokens(mappedTokens);
       });
   }, []);
 
@@ -1492,7 +1505,7 @@ const Swap = () => {
       if (paramNewPool === "true") {
         do {
           const { data } = await axios.get(
-            `https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/pools?contractId=${pool.poolId}`
+            `https://humble-api.voi.nautilus.sh/pools?contractId=${pool.poolId}`
           );
           if (data.pools.length > 0) break;
           await new Promise((res) => setTimeout(res, 5000));

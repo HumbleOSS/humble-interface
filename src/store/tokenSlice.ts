@@ -7,7 +7,7 @@ import { arc200 } from "ulujs";
 import { getAlgorandClients } from "../wallets";
 import axios from "axios";
 import { prepareString } from "../utils/string";
-import { NETWORK_TOKEN } from "../constants/tokens";
+import { NETWORK_TOKEN, TOKEN_WVOI1 } from "../constants/tokens";
 
 export interface TokensState {
   tokens: ARC200TokenI[];
@@ -89,27 +89,40 @@ export const getTokens = createAsyncThunk<
     //const mintMintRound =
     //  storedTokens.length === 0 ? 0 : storedTokens.slice(-1)[0].mintRound;
     const { data } = await axios.get(
-      `https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all`
+      `https://humble-api.voi.nautilus.sh/tokens`
     );
 
-    const appTokens = data.tokens.map((t: any) => ({
-      ...t,
-      name: t.name,
-      symbol: t.symbol,
-      decimals: t.decimals,
-      tokenId: t.contractId,
-      totalSupply: t.totalSupply,
-      mintRound: t.mintRound,
-    }));
+    const appTokens = data.tokens.map((t: any) => {
+      const assetId = Number(t.assetId);
+      // Assume tokens from Humble API are verified (they're from a trusted source)
+      // Also handle VOI (tokenId 0) and wVOI (390001) as special cases
+      const isVOI = assetId === 0 || assetId === 390001;
+      return {
+        ...t,
+        name: t.name,
+        symbol: t.unitName || t.symbol,
+        decimals: Number(t.decimals),
+        tokenId: assetId,
+        contractId: assetId, // Add contractId for compatibility
+        totalSupply: t.totalSupply,
+        mintRound: t.lastUpdated || 0,
+        verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+      };
+    });
 
     const filteredTokens: ARC200TokenI[] = appTokens.filter(
       (t: any) => !["ARC200LT", "LPT", "TEST"].includes(t.symbol)
     );
 
     // Ensure VOI (network token, tokenId: 0) is present in the list
+    // Display as 0 but use 390001 internally
     const hasVoi = filteredTokens.some((t) => t.tokenId === 0);
     if (!hasVoi) {
-      filteredTokens.unshift({ ...NETWORK_TOKEN.VOI });
+      filteredTokens.unshift({ 
+        ...NETWORK_TOKEN.VOI,
+        contractId: TOKEN_WVOI1, // Use 390001 internally
+        tokenId: 0, // Display as 0
+      });
     }
 
     //db.table("tokens").bulkPut(filteredTokens);

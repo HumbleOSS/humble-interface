@@ -239,7 +239,7 @@ const Navbar = () => {
     { path: "/swap", label: "Swap", Icon: SwapLogo },
     { path: "/pool", label: "Pool", Icon: PoolLogo },
     //{ path: "/token", label: "Token", Icon: TokenLogo },
-    { path: "/analytics", label: "Analytics", Icon: BarChartIcon },
+    //{ path: "/analytics", label: "Analytics", Icon: BarChartIcon },
     { path: "/rewards", label: "Incentives", Icon: EmojiEventsIcon },
   ];
 
@@ -305,11 +305,11 @@ const Navbar = () => {
               //  href: "/token",
               //  icon: TokenLogo,
               //},
-              {
-                label: "Analytics",
-                href: "/analytics",
-                icon: BarChartIcon,
-              },
+              // {
+              //   label: "Analytics",
+              //   href: "/analytics",
+              //   icon: BarChartIcon,
+              // },
               {
                 label: "Incentives",
                 href: "/rewards",

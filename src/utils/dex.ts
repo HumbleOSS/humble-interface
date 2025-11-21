@@ -6,12 +6,22 @@ export const tokenSymbol = (
   token: ARC200TokenI | undefined,
   excludeWrapped = false
 ) => {
-  const symbol = token?.symbol || "";
+  if (!token) return "";
+  
+  // Handle VOI (tokenId 0) and wVOI (390001) - both should display as "VOI"
+  const tokenId = token.tokenId || 0;
+  const contractId = token.contractId || tokenId;
+  
+  if (tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1) {
+    return "VOI";
+  }
+  
+  const symbol = token.symbol || "";
   if (symbol.match(/^wVOI/)) {
     if (excludeWrapped) {
       return "VOI";
     }
-    return "wVOI";
+    return "VOI"; // Always display as VOI, not wVOI
   } else {
     return prepareString(symbol);
   }
@@ -25,4 +35,16 @@ export const tokenId = (token: ARC200TokenI | undefined) => {
     default:
       return id;
   }
+};
+
+/**
+ * Get the icon ID for a token. Maps 390001 (wVOI) to 0 (VOI) for icon display.
+ * @param tokenIdOrContractId - The token ID or contract ID
+ * @returns The icon ID to use (0 for VOI/wVOI, otherwise the original ID)
+ */
+export const getIconId = (tokenIdOrContractId: number | string | undefined): number => {
+  if (!tokenIdOrContractId) return 0;
+  const id = typeof tokenIdOrContractId === 'string' ? Number(tokenIdOrContractId) : tokenIdOrContractId;
+  // Map 390001 (wVOI) to 0 (VOI) for icon display
+  return id === TOKEN_WVOI1 ? 0 : id;
 };

@@ -46,7 +46,8 @@ interface CurrencyInputPanelProps {
 }
 
 const getTokenIconUrl = (contractId: string) => {
-  return `https://asset-verification.nautilus.sh/icons/${contractId}.png`;
+  const iconId = contractId === "390001" ? "0" : contractId;
+  return `https://asset-verification.nautilus.sh/icons/${iconId}.png`;
 };
 
 const CurrencyInputPanel: React.FC<CurrencyInputPanelProps> = ({
