@@ -1133,7 +1133,7 @@ const Swap = () => {
     let normalizedTokenBalance: number;
     let normalizedToken2Balance: number;
 
-    if (isTokenA) {
+    // if (isTokenA) {
       // token is tokA, so poolBals.A is for token, poolBals.B is for token2
       normalizedTokenBalance = new BigNumber(poolBalsA)
         .div(new BigNumber(10).pow(token.decimals))
@@ -1141,15 +1141,15 @@ const Swap = () => {
       normalizedToken2Balance = new BigNumber(poolBalsB)
         .div(new BigNumber(10).pow(token2.decimals))
         .toNumber();
-    } else {
-      // token is tokB, so poolBals.B is for token, poolBals.A is for token2
-      normalizedTokenBalance = new BigNumber(poolBalsB)
-        .div(new BigNumber(10).pow(token.decimals))
-        .toNumber();
-      normalizedToken2Balance = new BigNumber(poolBalsA)
-        .div(new BigNumber(10).pow(token2.decimals))
-        .toNumber();
-    }
+    // } else {
+    //   // token is tokB, so poolBals.B is for token, poolBals.A is for token2
+    //   normalizedTokenBalance = new BigNumber(poolBalsB)
+    //     .div(new BigNumber(10).pow(token.decimals))
+    //     .toNumber();
+    //   normalizedToken2Balance = new BigNumber(poolBalsA)
+    //     .div(new BigNumber(10).pow(token2.decimals))
+    //     .toNumber();
+    // }
 
     // Calculate ratio: how much token2 per 1 token (using normalized pool balances)
     if (
@@ -1623,10 +1623,10 @@ const Swap = () => {
 
         // Get the contract ID for this token
         const contractId = token.contractId || tokenId(token);
-        
+
         // Check if this contract ID has a corresponding ASA asset ID from config
         const asaAssetId = getAsaIdFromArc200Contract(contractId);
-        
+
         // Determine the correct tokenId for the transaction
         // Priority: 1) ASA mapping from config, 2) tokenId from tokens2, 3) contract ID
         let tokenIdForTransaction: string;
