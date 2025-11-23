@@ -8,6 +8,12 @@ import { getAlgorandClients } from "../wallets";
 import axios from "axios";
 import { prepareString } from "../utils/string";
 import { NETWORK_TOKEN, TOKEN_WVOI1 } from "../constants/tokens";
+import { API_ENDPOINTS } from "../constants/poolRemove";
+import {
+  getAsaIdFromArc200Contract,
+  hasAsaMapping,
+  getAssetType,
+} from "@/config/arc200AsaMapping";
 
 export interface TokensState {
   tokens: ARC200TokenI[];
@@ -42,7 +48,9 @@ export const fetchToken = async (tokenId: number) => {
     arc200_totalSupplyR.success
   ) {
     const token = {
+      contractId: tokenId,
       tokenId,
+      assetType: getAssetType(tokenId),
       name: arc200_nameR.returnValue,
       symbol: arc200_symbolR.returnValue,
       decimals: Number(arc200_decimalsR.returnValue),
@@ -53,18 +61,9 @@ export const fetchToken = async (tokenId: number) => {
 };
 
 export const getToken = async (tokenId: number) => {
-  // const { algodClient, indexerClient } = getAlgorandClients();
-  // const makeCi = (ctcInfo: number) =>
-  //   new arc200(ctcInfo, algodClient, indexerClient, {
-  //     acc: {
-  //       addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
-  //       sk: new Uint8Array(0),
-  //     },
-  //     formatBytes: true,
-  //   });
   try {
     const tokenTable = db.table("tokens");
-    const token = await tokenTable.get({ tokenId });
+    const token = await tokenTable.get({ contractId: tokenId });
     if (!token) {
       const newToken = await fetchToken(tokenId);
       if (newToken) {
@@ -84,50 +83,60 @@ export const getTokens = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >("tokens/getTokens", async (_, { getState, rejectWithValue }) => {
   try {
-    //const tokenTable = db.table("tokens");
-    //const storedTokens = await tokenTable.toArray();
-    //const mintMintRound =
-    //  storedTokens.length === 0 ? 0 : storedTokens.slice(-1)[0].mintRound;
-    const { data } = await axios.get(
-      `https://humble-api.voi.nautilus.sh/tokens`
-    );
-
+    const { data } = await axios.get(API_ENDPOINTS.TOKENS);
     const appTokens = data.tokens.map((t: any) => {
-      const assetId = Number(t.assetId);
-      // Assume tokens from Humble API are verified (they're from a trusted source)
-      // Also handle VOI (tokenId 0) and wVOI (390001) as special cases
-      const isVOI = assetId === 0 || assetId === 390001;
-      return {
-        ...t,
+      const hasMapping = hasAsaMapping(Number(t.assetId));
+      const tokenId = hasMapping
+        ? String(getAsaIdFromArc200Contract(Number(t.assetId)))
+        : undefined;
+      const isVOI = tokenId === "0";
+      // 2 = trusted (gold badge), 1 = verified
+      const verified = isVOI ? 2 : 1;
+      const token = {
         name: t.name,
-        symbol: t.unitName || t.symbol,
+        symbol: t.unitName,
         decimals: Number(t.decimals),
-        tokenId: assetId,
-        contractId: assetId, // Add contractId for compatibility
+        tokenId: hasMapping ? Number(tokenId) : Number(t.assetId),
+        contractId: Number(t.assetId),
+        assetType: getAssetType(Number(t.assetId)),
         totalSupply: t.totalSupply,
         mintRound: t.lastUpdated || 0,
-        verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+        verified,
       };
+      
+      // Debug: Log aUSDC token creation
+      if (Number(t.assetId) === 395614 || t.name === "aUSDC" || t.unitName === "aUSDC") {
+        console.log("Creating aUSDC token:", {
+          assetId: t.assetId,
+          hasMapping,
+          tokenId: token.tokenId,
+          contractId: token.contractId,
+          symbol: token.symbol,
+          name: token.name,
+        });
+      }
+      
+      return token;
     });
-
-    const filteredTokens: ARC200TokenI[] = appTokens.filter(
-      (t: any) => !["ARC200LT", "LPT", "TEST"].includes(t.symbol)
+    db.table("tokens").bulkPut(appTokens);
+    const tokens = await db.table("tokens").toArray();
+    
+    // Debug: Check if aUSDC is in the tokens array
+    const ausdcInTokens = tokens.find(
+      (t) => t.contractId === 395614 || t.tokenId === 302190 || t.symbol === "aUSDC" || t.name === "aUSDC"
     );
-
-    // Ensure VOI (network token, tokenId: 0) is present in the list
-    // Display as 0 but use 390001 internally
-    const hasVoi = filteredTokens.some((t) => t.tokenId === 0);
-    if (!hasVoi) {
-      filteredTokens.unshift({ 
-        ...NETWORK_TOKEN.VOI,
-        contractId: TOKEN_WVOI1, // Use 390001 internally
-        tokenId: 0, // Display as 0
-      });
+    if (ausdcInTokens) {
+      console.log("aUSDC found in tokens array from DB:", ausdcInTokens);
+    } else {
+      console.log("aUSDC NOT found in tokens array. Total tokens:", tokens.length);
+      console.log("Looking for contractId 395614 or tokenId 302190...");
+      const byContractId = tokens.find((t) => t.contractId === 395614);
+      const byTokenId = tokens.find((t) => t.tokenId === 302190);
+      console.log("Token with contractId 395614:", byContractId);
+      console.log("Token with tokenId 302190:", byTokenId);
     }
-
-    //db.table("tokens").bulkPut(filteredTokens);
-    //const tokens = await tokenTable.toArray();
-    return filteredTokens;
+    
+    return tokens;
   } catch (error: any) {
     return rejectWithValue(error.message);
   }
@@ -152,64 +161,100 @@ export const getTokensWithTickers = createAsyncThunk<
   { tokens: ARC200TokenI[]; tickers: TickerI[] },
   void,
   { rejectValue: string; state: RootState }
->("tokens/getTokensWithTickers", async (_, { getState, rejectWithValue, dispatch }) => {
-  try {
-    // Fetch both tokens and tickers in parallel
-    const [tokensResult, tickersResult] = await Promise.allSettled([
-      dispatch(getTokens()).unwrap(),
-      dispatch(getTickers()).unwrap()
-    ]);
+>(
+  "tokens/getTokensWithTickers",
+  async (_, { getState, rejectWithValue, dispatch }) => {
+    try {
+      // Fetch both tokens and tickers in parallel
+      const [tokensResult, tickersResult] = await Promise.allSettled([
+        dispatch(getTokens()).unwrap(),
+        dispatch(getTickers()).unwrap(),
+      ]);
 
-    const tokens = tokensResult.status === 'fulfilled' ? tokensResult.value : [];
-    const tickers = tickersResult.status === 'fulfilled' ? tickersResult.value : [];
+      const tokens =
+        tokensResult.status === "fulfilled" ? tokensResult.value : [];
+      const tickers =
+        tickersResult.status === "fulfilled" ? tickersResult.value : [];
 
-    // Match tickers to tokens
-    const tokensWithTickers = tokens.map(token => {
-      const tokenIdStr = token.tokenId.toString();
-      
-      // For VOI (tokenId: 0), aggregate liquidity from all trading pairs
-      if (token.tokenId === 0) {
-        const voiTickers = tickers.filter(t => 
-          t.target_currency_id === "0" || t.base_currency_id === "0"
-        );
-        
-        if (voiTickers.length > 0) {
-          // Sum up liquidity from all VOI pairs
-          const totalLiquidity = voiTickers.reduce((sum, ticker) => {
-            const liquidity = parseFloat(ticker.liquidity_in_usd || "0");
-            return sum + (isNaN(liquidity) ? 0 : liquidity);
-          }, 0);
+      // Match tickers to tokens
+      // Filter out tokens without tokenId first, as they can't be matched with tickers
+      const tokensWithTickers = tokens
+        .filter((token) => token.tokenId !== undefined)
+        .map((token) => {
+          const tokenIdStr = token.tokenId!.toString();
           
-          // Use the first ticker as base and update liquidity
-          const aggregatedTicker = {
-            ...voiTickers[0],
-            liquidity_in_usd: totalLiquidity.toString()
-          };
+          // Debug: Log aUSDC token processing
+          if (token.contractId === 395614 || token.tokenId === 302190 || token.symbol === "aUSDC" || token.name === "aUSDC") {
+            console.log("Processing aUSDC in getTokensWithTickers:", {
+              contractId: token.contractId,
+              tokenId: token.tokenId,
+              tokenIdStr,
+              symbol: token.symbol,
+              name: token.name,
+            });
+          }
+
+          // For VOI (tokenId: 0), aggregate liquidity from all trading pairs
+          if (token.tokenId === 0) {
+            const voiTickers = tickers.filter(
+              (t) => t.target_currency_id === "0" || t.base_currency_id === "0"
+            );
+
+            if (voiTickers.length > 0) {
+              // Sum up liquidity from all VOI pairs
+              const totalLiquidity = voiTickers.reduce((sum, ticker) => {
+                const liquidity = parseFloat(ticker.liquidity_in_usd || "0");
+                return sum + (isNaN(liquidity) ? 0 : liquidity);
+              }, 0);
+
+              // Use the first ticker as base and update liquidity
+              const aggregatedTicker = {
+                ...voiTickers[0],
+                liquidity_in_usd: totalLiquidity.toString(),
+              };
+
+              return {
+                ...token,
+                ticker: aggregatedTicker,
+              };
+            }
+          }
+
+          // For other tokens, use original logic
+          // Try matching by tokenId first, then by contractId (since tickers might use either)
+          const contractIdStr = token.contractId?.toString();
+          const ticker = tickers.find(
+            (t) =>
+              t.base_currency_id === tokenIdStr ||
+              t.target_currency_id === tokenIdStr ||
+              (contractIdStr && (
+                t.base_currency_id === contractIdStr ||
+                t.target_currency_id === contractIdStr
+              ))
+          );
           
+          // Debug: Log aUSDC ticker matching
+          if (token.contractId === 395614 || token.tokenId === 302190 || token.symbol === "aUSDC" || token.name === "aUSDC") {
+            console.log("aUSDC ticker matching:", {
+              tokenIdStr,
+              contractIdStr,
+              foundTicker: !!ticker,
+              ticker: ticker ? { base: ticker.base_currency_id, target: ticker.target_currency_id } : null,
+            });
+          }
+
           return {
             ...token,
-            ticker: aggregatedTicker
+            ticker,
           };
-        }
-      }
-      
-      // For other tokens, use original logic
-      const ticker = tickers.find(t => 
-        t.base_currency_id === tokenIdStr ||
-        t.target_currency_id === tokenIdStr
-      );
-      
-      return {
-        ...token,
-        ticker
-      };
-    });
+        });
 
-    return { tokens: tokensWithTickers, tickers };
-  } catch (error: any) {
-    return rejectWithValue(error.message);
+      return { tokens: tokensWithTickers, tickers };
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
   }
-});
+);
 
 const initialState: TokensState = {
   tokens: [],
@@ -298,16 +343,24 @@ const tokenSlice = createSlice({
   },
 });
 
-export const { updateToken, setLastRefresh, setLastTickerRefresh, updateTokenTicker } = tokenSlice.actions;
+export const {
+  updateToken,
+  setLastRefresh,
+  setLastTickerRefresh,
+  updateTokenTicker,
+} = tokenSlice.actions;
 
 // Selectors
 export const selectTokens = (state: RootState) => state.tokens.tokens;
 export const selectTokensStatus = (state: RootState) => state.tokens.status;
 export const selectTickers = (state: RootState) => state.tokens.tickers;
-export const selectTickersStatus = (state: RootState) => state.tokens.tickerStatus;
-export const selectTickersError = (state: RootState) => state.tokens.tickerError;
+export const selectTickersStatus = (state: RootState) =>
+  state.tokens.tickerStatus;
+export const selectTickersError = (state: RootState) =>
+  state.tokens.tickerError;
 export const selectLastRefresh = (state: RootState) => state.tokens.lastRefresh;
-export const selectLastTickerRefresh = (state: RootState) => state.tokens.lastTickerRefresh;
+export const selectLastTickerRefresh = (state: RootState) =>
+  state.tokens.lastTickerRefresh;
 export const selectTimeSinceLastRefresh = (state: RootState) => {
   const lastRefresh = state.tokens.lastRefresh;
   return lastRefresh ? Date.now() - lastRefresh : null;
@@ -319,28 +372,34 @@ export const selectTimeSinceLastTickerRefresh = (state: RootState) => {
 
 // Get ticker for a specific token by tokenId
 export const selectTokenTicker = (tokenId: number) => (state: RootState) => {
-  const token = state.tokens.tokens.find(t => t.tokenId === tokenId);
+  const token = state.tokens.tokens.find((t) => t.tokenId === tokenId);
   return token?.ticker;
 };
 
 // Get all tokens with their ticker information
 export const selectTokensWithTickers = (state: RootState) => {
-  return state.tokens.tokens.filter(token => token.ticker);
+  return state.tokens.tokens.filter((token) => token.ticker);
 };
 
 // Get ticker by ticker_id
 export const selectTickerById = (tickerId: string) => (state: RootState) => {
-  return state.tokens.tickers.find(ticker => ticker.ticker_id === tickerId);
+  return state.tokens.tickers.find((ticker) => ticker.ticker_id === tickerId);
 };
 
 // Get tickers for a specific base currency
-export const selectTickersByBaseCurrency = (baseCurrency: string) => (state: RootState) => {
-  return state.tokens.tickers.filter(ticker => ticker.base_currency === baseCurrency);
-};
+export const selectTickersByBaseCurrency =
+  (baseCurrency: string) => (state: RootState) => {
+    return state.tokens.tickers.filter(
+      (ticker) => ticker.base_currency === baseCurrency
+    );
+  };
 
 // Get tickers for a specific target currency (e.g., VOI)
-export const selectTickersByTargetCurrency = (targetCurrency: string) => (state: RootState) => {
-  return state.tokens.tickers.filter(ticker => ticker.target_currency === targetCurrency);
-};
+export const selectTickersByTargetCurrency =
+  (targetCurrency: string) => (state: RootState) => {
+    return state.tokens.tickers.filter(
+      (ticker) => ticker.target_currency === targetCurrency
+    );
+  };
 
 export default tokenSlice.reducer;

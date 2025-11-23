@@ -14,6 +14,7 @@ export const TOKEN_AALGO = 413153;
 export const NETWORK_TOKEN = {
   VOI: {
     tokenId: 0,
+    contractId: TOKEN_WVOI1, // Use 390001 internally for contractId
     name: "Voi",
     symbol: "VOI",
     decimals: 6,

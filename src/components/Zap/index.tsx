@@ -36,6 +36,7 @@ import algosdk from "algosdk";
 import { styled } from "@mui/material/styles";
 import Confetti from "react-confetti";
 import axios from "axios";
+import { getAsaIdFromArc200Contract } from "@/config/arc200AsaMapping";
 
 const GradientCircularProgress = styled(CircularProgress)({
   color: "transparent",
@@ -1028,14 +1029,31 @@ const Zap: React.FC = () => {
         symbol: "VOI",
       };
 
-      const swapAForB = pool.tokAId === `${inputCurrency?.tokenId}`;
+      const swapAForB = pool.tokAId === `${inputCurrency?.tokenId}` || pool.tokAId === `${inputCurrency?.contractId}`;
+
+      // Helper function to get the correct tokenId (ASA asset ID) for transactions
+      const getTokenIdForTransaction = (contractId: number | undefined): string | null => {
+        if (!contractId) return null;
+        
+        // Priority: 1) ASA mapping from config, 2) contract ID (for pure ARC200 tokens)
+        const asaAssetId = getAsaIdFromArc200Contract(contractId);
+        if (asaAssetId) {
+          return asaAssetId.toString();
+        } else {
+          // For pure ARC200 tokens without ASA, use contract ID
+          return contractId.toString();
+        }
+      };
+
+      // Get the contract ID from inputCurrency (prioritize contractId over tokenId)
+      const inputContractId = inputCurrency?.contractId || inputCurrency?.tokenId;
 
       const mA =
         pool.symbolA === "VOI"
           ? networkToken
           : {
               contractId: Number(pool.tokAId),
-              tokenId: swapAForB ? inputCurrency?.tokenId : null,
+              tokenId: swapAForB ? getTokenIdForTransaction(inputContractId) : null,
               decimals: pool.tokADecimals,
               symbol: pool.symbolA,
             };
@@ -1045,7 +1063,7 @@ const Zap: React.FC = () => {
           ? networkToken
           : {
               contractId: Number(pool.tokBId),
-              tokenId: !swapAForB ? inputCurrency?.tokenId : null,
+              tokenId: !swapAForB ? getTokenIdForTransaction(inputContractId) : null,
               decimals: pool.tokBDecimals,
               symbol: pool.symbolB,
             };
@@ -1185,7 +1203,7 @@ const Zap: React.FC = () => {
         ...mA,
         decimals: `${mA.decimals}`,
         amount: swapAForB ? fromAmount : outN,
-        tokenId: swapAForB ? inputCurrency?.tokenId?.toString() : null,
+        tokenId: swapAForB ? getTokenIdForTransaction(inputContractId) : null,
       };
 
       // remove tokenId conditionally to prevent deposit of wrapped token
@@ -1193,7 +1211,7 @@ const Zap: React.FC = () => {
         ...mB,
         decimals: `${mB.decimals}`,
         amount: swapAForB ? outN : fromAmount,
-        tokenId: swapAForB ? null : inputCurrency?.tokenId?.toString(),
+        tokenId: swapAForB ? null : getTokenIdForTransaction(inputContractId),
       };
 
       console.log(acc.addr, Number(pool.contractId), dA, dB, swapTxnObjs, {

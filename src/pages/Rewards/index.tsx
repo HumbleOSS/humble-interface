@@ -28,6 +28,7 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import { tokenSymbol } from "../../utils/dex";
 
 const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // match PoolCard logic
+const ESTIMATED_SWAP_APR = 5; // estimated swap APR percentage
 
 export const Rewards: React.FC = () => {
   const rewards = useDefiRewards();
@@ -67,7 +68,7 @@ export const Rewards: React.FC = () => {
         ? BLOCK_REWARD_ADJUSTMENT
         : 0;
       const additional = r.additionalAprBoost || 0;
-      const totalBoost = (r.aprBoost || 0) + blockReward + additional;
+      const totalBoost = (r.aprBoost || 0) + blockReward + additional + ESTIMATED_SWAP_APR;
       return {
         ...r,
         tokAId,
@@ -426,7 +427,7 @@ export const Rewards: React.FC = () => {
               color: isDarkTheme ? "rgba(255,255,255,0.75)" : "#6b7280",
             }}
           >
-            Note: Total APR includes block rewards for VOI pairs.
+            Note: Total APR includes block rewards for VOI pairs and an estimated swap APR of 5%.
           </Typography>
         </>
       )}

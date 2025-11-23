@@ -8,6 +8,7 @@ import { tokenSymbol } from "../../utils/dex";
 import { prepareString } from "../../utils/string";
 import { Fade, Grow, Stack, Tooltip } from "@mui/material";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import { TOKEN_WVOI1 } from "../../constants/tokens";
 
 const MaxButton = styled.div`
   display: flex;
@@ -452,16 +453,25 @@ const Swap: FC<SwapProps> = ({
       }
     }
   }, [amount]);
-  const isWVOI = tokInfo?.tokenId === "0";
+  // Check if token is VOI (handle both string and number, and both tokenId and contractId)
+  const isWVOI = 
+    tokInfo?.tokenId === "0" || 
+    tokInfo?.tokenId === 0 || 
+    tokInfo?.contractId === 390001 ||
+    tokInfo?.contractId === TOKEN_WVOI1 ||
+    token?.tokenId === 0 ||
+    token?.contractId === TOKEN_WVOI1;
+  
   const badge = isWVOI ? (
     <Tooltip title="Trusted by Nautilus" placement="right" arrow>
       <VerifiedUserIcon fontSize="small" sx={{ color: "gold " }} />
     </Tooltip>
-  ) : tokInfo?.verified || 0 > 0 ? (
+  ) : (tokInfo?.verified || 0) > 0 ? (
     <Tooltip title="Verified by Nautilus" placement="right" arrow>
       <VerifiedUserIcon fontSize="small" />
     </Tooltip>
   ) : null;
+  
   let icon = null;
   if (isWVOI) {
     icon = (
@@ -472,12 +482,32 @@ const Swap: FC<SwapProps> = ({
         />
       </Tooltip>
     );
-  } else if (tokInfo?.verified > 0) {
+  } else if (tokInfo?.verified > 0 || tokInfo?.contractId) {
+    const contractId = tokInfo?.contractId === 390001 ? 0 : (tokInfo?.contractId || tokInfo?.tokenId || token?.contractId || token?.tokenId || 0);
     icon = (
-      <Tooltip title={tokInfo?.name} placement="top" arrow>
+      <Tooltip title={tokInfo?.name || token?.name || "Token"} placement="top" arrow>
         <TokenIcon
-          src={`https://asset-verification.nautilus.sh/icons/${tokInfo?.contractId === 390001 ? 0 : tokInfo?.contractId}.png`}
-          alt={`${tokInfo?.symbol} icon`}
+          src={`https://asset-verification.nautilus.sh/icons/${contractId}.png`}
+          alt={`${tokInfo?.symbol || token?.symbol || "Token"} icon`}
+          onError={(e) => {
+            // Fallback to default icon if image fails to load
+            e.currentTarget.src = "https://asset-verification.nautilus.sh/icons/0.png";
+          }}
+        />
+      </Tooltip>
+    );
+  } else if (token) {
+    // Fallback: show icon based on token even if tokInfo is not available
+    const contractId = token.contractId === TOKEN_WVOI1 ? 0 : (token.contractId || token.tokenId || 0);
+    icon = (
+      <Tooltip title={token.name || "Token"} placement="top" arrow>
+        <TokenIcon
+          src={`https://asset-verification.nautilus.sh/icons/${contractId}.png`}
+          alt={`${token.symbol || "Token"} icon`}
+          onError={(e) => {
+            // Fallback to default icon if image fails to load
+            e.currentTarget.src = "https://asset-verification.nautilus.sh/icons/0.png";
+          }}
         />
       </Tooltip>
     );
@@ -578,7 +608,7 @@ const Swap: FC<SwapProps> = ({
                     </TokenLabel>
                     <TokenIdContainer>
                       <TokenIdLabel>
-                        ID: {displayId || token?.tokenId || 0}
+                        ID: {displayId || token?.contractId || token?.tokenId || 0}
                       </TokenIdLabel>
                     </TokenIdContainer>
                   </Stack>
@@ -655,9 +685,6 @@ const Swap: FC<SwapProps> = ({
                 />
               </TokenInputContainer>
             </TokenInput>
-            <InputValueHelperText className={isDarkTheme ? "dark" : "light"}>
-              ~ {getVoiValue()} VOI
-            </InputValueHelperText>
           </TokenInputGroup>
         </Fade>
       </Row1>

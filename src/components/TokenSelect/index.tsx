@@ -264,8 +264,10 @@ const ModalBox = styled(Box)`
   transform: translate(-50%, -50%);
   width: 95%;
   max-width: 480px;
-  background-color: ${(props) => (props.theme.isDarkTheme ? "#0a0a0a" : "#fff")};
-  border: 1px solid ${(props) => (props.theme.isDarkTheme ? "#262626" : "#e5e7eb")};
+  background-color: ${(props) =>
+    props.theme.isDarkTheme ? "#0a0a0a" : "#fff"};
+  border: 1px solid
+    ${(props) => (props.theme.isDarkTheme ? "#262626" : "#e5e7eb")};
   border-radius: 20px;
   padding: 0;
   max-height: 90vh;
@@ -284,7 +286,8 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px 8px;
-  background: ${(props) => (props.theme.isDarkTheme ? "#0f0f0f" : "transparent")};
+  background: ${(props) =>
+    props.theme.isDarkTheme ? "#0f0f0f" : "transparent"};
 `;
 
 const ModalHeading = styled.h2`
@@ -370,7 +373,8 @@ const SearchContainer = styled.div`
 const SearchInput = styled.input`
   width: calc(100% - 4px);
   padding: 12px 40px 12px 40px;
-  border: 1px solid ${(props) => (props.theme.isDarkTheme ? "#2c2c2c" : "#e5e7eb")};
+  border: 1px solid
+    ${(props) => (props.theme.isDarkTheme ? "#2c2c2c" : "#e5e7eb")};
   border-radius: 12px;
   background: ${(props) => (props.theme.isDarkTheme ? "#1e1e1e" : "#f9fafb")};
   color: ${(props) => (props.theme.isDarkTheme ? "#f5f5f5" : "#111")};
@@ -448,7 +452,8 @@ const QuickButton = styled.button`
   justify-content: center;
   gap: 6px;
   padding: 8px 12px;
-  border: 1px solid ${(props) => (props.theme.isDarkTheme ? "#242427" : "#e5e7eb")};
+  border: 1px solid
+    ${(props) => (props.theme.isDarkTheme ? "#242427" : "#e5e7eb")};
   border-radius: 8px;
   background: ${(props) => (props.theme.isDarkTheme ? "#161618" : "#f9fafb")};
   color: ${(props) => (props.theme.isDarkTheme ? "#f5f5f5" : "#111")};
@@ -462,7 +467,8 @@ const QuickButton = styled.button`
 
   &:hover {
     background: ${(props) => (props.theme.isDarkTheme ? "#1e1e21" : "#f3f4f6")};
-    border-color: ${(props) => (props.theme.isDarkTheme ? "#2a2a2d" : "#d1d5db")};
+    border-color: ${(props) =>
+      props.theme.isDarkTheme ? "#2a2a2d" : "#d1d5db"};
   }
 
   &:active {
@@ -818,33 +824,34 @@ const TotalValueText = styled.div`
 `;
 
 // Quick button configuration based on token contract IDs
+// Note: These IDs are contractIds, not tokenIds (for tokens with mappings like aUSDC)
 const QUICK_BUTTONS = [
   {
-    tokenId: TOKEN_VOI,
+    contractId: TOKEN_VOI, // VOI uses 0 as both contractId and tokenId
     symbol: "VOI",
     icon: "V",
     label: "VOI",
   },
   {
-    tokenId: TOKEN_AUSDC,
+    contractId: 47138068, // WAD
+    symbol: "WAD",
+    icon: "W",
+    label: "WAD",
+  },
+  {
+    contractId: TOKEN_AUSDC, // aUSDC: contractId=395614, tokenId=302190
     symbol: "USDC",
     icon: "U",
     label: "USDC",
   },
   {
-    tokenId: 420069,
+    contractId: 420069, // UNIT
     symbol: "UNIT",
     icon: "U",
     label: "UNIT",
   },
   {
-    tokenId: 40153155,
-    symbol: "POW",
-    icon: "W",
-    label: "POW",
-  },
-  {
-    tokenId: 413153,
+    contractId: 413153, // aAlgo: contractId=413153, tokenId=302189
     symbol: "ALGO",
     icon: "A",
     label: "ALGO",
@@ -873,11 +880,7 @@ const ToggleButton = styled.button<{ active: boolean }>`
         : "#41137e"
       : "transparent"};
   color: ${(props) =>
-    props.active
-      ? "#fff"
-      : props.theme.isDarkTheme
-      ? "#888"
-      : "#6b7280"};
+    props.active ? "#fff" : props.theme.isDarkTheme ? "#888" : "#6b7280"};
   font-family: "Plus Jakarta Sans";
   font-size: 12px;
   font-weight: 500;
@@ -897,6 +900,7 @@ const ToggleButton = styled.button<{ active: boolean }>`
 `;
 
 const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
+  const { activeAccount } = useWallet();
   console.log("token", token);
   console.log("options", options);
   const isDarkTheme = useSelector(
@@ -904,9 +908,25 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   );
   const dispatch = useDispatch();
   const tokens: ARC200TokenI[] = useSelector(selectTokens);
+  console.log("selecttokens", tokens);
+  
+  // Debug: Check if aUSDC is in the tokens from Redux store
+  const ausdcInRedux = tokens.find(
+    (t) => t.contractId === 395614 || t.tokenId === 302190 || t.symbol === "aUSDC" || t.name === "aUSDC"
+  );
+  if (ausdcInRedux) {
+    console.log("aUSDC found in Redux store tokens:", ausdcInRedux);
+  } else {
+    console.log("aUSDC NOT found in Redux store. Total tokens:", tokens.length);
+    console.log("Sample tokens from Redux:", tokens.slice(0, 5).map(t => ({ 
+      symbol: t.symbol, 
+      contractId: t.contractId, 
+      tokenId: t.tokenId,
+      name: t.name 
+    })));
+  }
+  
   const tickers = useSelector(selectTickers);
-  const tokenStatus = useSelector((state: RootState) => state.tokens.status);
-  const { activeAccount } = useWallet();
 
   console.log("tickers", tickers);
 
@@ -940,9 +960,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   const [tokenBalances, setTokenBalances] = React.useState<
     Record<number, string>
   >({});
-  const [displayCategory, setDisplayCategory] = React.useState<"yourTokens" | "byVolume">("yourTokens");
+  const [displayCategory, setDisplayCategory] = React.useState<
+    "yourTokens" | "byVolume"
+  >("yourTokens");
 
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] =
+    React.useState<string>("");
   React.useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
     return () => clearTimeout(handle);
@@ -955,7 +978,11 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   // Helper function to get token USD price from DEX data
   const getTokenUsdPrice = React.useCallback(
     (token: ARC200TokenI): number => {
-      return dexPrices[token.tokenId.toString()] || 0;
+      if (token.tokenId === undefined) return 0;
+      // DEX prices are stored by contractId (or tokenId if no mapping)
+      // Try contractId first, then fall back to tokenId
+      const priceKey = token.contractId?.toString() ?? token.tokenId.toString();
+      return dexPrices[priceKey] || dexPrices[token.tokenId.toString()] || 0;
     },
     [dexPrices]
   );
@@ -1029,7 +1056,10 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
       token: ARC200TokenI,
       adjusted: boolean = useLiquidityAdjustment
     ): number => {
-      const balance = tokenBalances[token.tokenId];
+      if (token.tokenId === undefined) return 0;
+      // Use contractId for balance lookup since balances are stored by contractId
+      const balanceKey = token.contractId ?? token.tokenId;
+      const balance = tokenBalances[balanceKey];
       if (!balance || balance === "0") {
         return 0;
       }
@@ -1062,22 +1092,55 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   );
 
   const filteredAndSortedTokens = React.useMemo(() => {
-    let filtered = (options || tokens).filter((t) => {
+    // Merge options and tokens to ensure all tokens are available
+    // If options is provided, merge it with tokens to avoid missing tokens
+    const allTokens = options && options.length > 0 
+      ? [...new Map([...tokens, ...options]
+          .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+          .map(t => [t.contractId ?? t.tokenId, t])).values()]
+      : tokens.filter(t => t != null);
+    
+    // Filter out tokens without tokenId first, as they can't be used
+    let filtered = allTokens.filter((t) => t != null && t.tokenId !== undefined);
+    
+    // Debug: Check for aUSDC
+    const ausdcToken = filtered.find(
+      (t) => t.contractId === 395614 || t.tokenId === 302190 || t.symbol === "aUSDC" || t.name === "aUSDC"
+    );
+    if (ausdcToken) {
+      console.log("aUSDC token found in filtered list:", ausdcToken);
+    } else {
+      console.log("aUSDC token NOT found. Total tokens:", filtered.length);
+      console.log("options length:", options?.length || 0);
+      console.log("tokens length:", tokens.length);
+      console.log("allTokens length:", allTokens.length);
+      console.log("Sample tokens:", filtered.slice(0, 5).map(t => ({ symbol: t.symbol, contractId: t.contractId, tokenId: t.tokenId })));
+    }
+    filtered = filtered.filter((t) => {
       if (!debouncedSearchTerm) return true;
       const searchLower = debouncedSearchTerm.toLowerCase();
       // Search by symbol, name, or tokenId
       const symbolMatch = tokenSymbol(t).toLowerCase().includes(searchLower);
       const nameMatch = (t.name || "").toLowerCase().includes(searchLower);
-      const tokenIdMatch = (t.tokenId?.toString() || "").includes(debouncedSearchTerm);
-      const contractIdMatch = (t.contractId?.toString() || "").includes(debouncedSearchTerm);
+      const tokenIdMatch = (t.tokenId?.toString() || "").includes(
+        debouncedSearchTerm
+      );
+      const contractIdMatch = (t.contractId?.toString() || "").includes(
+        debouncedSearchTerm
+      );
       return symbolMatch || nameMatch || tokenIdMatch || contractIdMatch;
     });
 
     // Sort tokens: tokens with balances first, then by selected criteria
     filtered.sort((a, b) => {
       // First, sort by balance (tokens with balances come first)
-      const aBalance = tokenBalances[a.tokenId];
-      const bBalance = tokenBalances[b.tokenId];
+      // Use contractId for balance lookup since balances are stored by contractId
+      const aBalanceKey = a.contractId ?? a.tokenId;
+      const bBalanceKey = b.contractId ?? b.tokenId;
+      const aBalance =
+        aBalanceKey !== undefined ? tokenBalances[aBalanceKey] : undefined;
+      const bBalance =
+        bBalanceKey !== undefined ? tokenBalances[bBalanceKey] : undefined;
       const aHasBalance =
         aBalance &&
         aBalance !== "0" &&
@@ -1183,9 +1246,17 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   ]);
 
   const userTokens = React.useMemo(() => {
-    const source = options || tokens;
+    // Merge options and tokens to ensure all tokens are available
+    const allTokens = options && options.length > 0 
+      ? [...new Map([...tokens, ...options]
+          .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+          .map(t => [t.contractId ?? t.tokenId, t])).values()]
+      : tokens.filter(t => t != null);
+    const source = allTokens.filter((t) => t != null && t.tokenId !== undefined);
     const withBalance = source.filter((t) => {
-      const bal = tokenBalances[t.tokenId];
+      // Use contractId for balance lookup since balances are stored by contractId
+      const balanceKey = t.contractId ?? t.tokenId!;
+      const bal = tokenBalances[balanceKey];
       const num = bal ? parseFloat(bal.replace(/,/g, "")) : 0;
       return !!num && !isNaN(num) && num > 0;
     });
@@ -1195,7 +1266,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   }, [options, tokens, tokenBalances, getBalanceValue]);
 
   const tokensByVolume = React.useMemo(() => {
-    const source = options || tokens;
+    // Merge options and tokens to ensure all tokens are available
+    const source = options && options.length > 0 
+      ? [...new Map([...tokens, ...options]
+          .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+          .map(t => [t.contractId ?? t.tokenId, t])).values()]
+      : tokens.filter(t => t != null);
     const scored = source.map((t) => {
       let volUsd = 0;
       if (t.ticker) {
@@ -1244,7 +1320,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
           }
         });
 
-        // Find USDC (aUSDC - tokenId: 395614) price in VOI
+        // Find USDC (aUSDC - contractId: 395614) price in VOI
         const usdcTokenId = "395614";
         const usdcToVoiPrice = priceMap[usdcTokenId];
 
@@ -1286,7 +1362,6 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
     try {
       // Fetch account balances from Nautilus indexer
       const response = await axios.get(
-        //`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`,
         `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/balances?accountId=${activeAccount.address}`,
         { timeout: 10000 } // 10 second timeout
       );
@@ -1390,8 +1465,15 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   // Calculate total portfolio value
   const getTotalPortfolioValue = (): number => {
     if (!activeAccount || balanceLoading) return 0;
+    
+    // Merge options and tokens to ensure all tokens are available
+    const allTokens = options && options.length > 0 
+      ? [...new Map([...tokens, ...options]
+          .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+          .map(t => [t.contractId ?? t.tokenId, t])).values()]
+      : tokens.filter(t => t != null);
 
-    return (options || tokens).reduce((total, token) => {
+    return allTokens.reduce((total, token) => {
       return total + getBalanceValue(token, useLiquidityAdjustment);
     }, 0);
   };
@@ -1413,7 +1495,12 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
         open={open}
         onClose={handleClose}
         aria-labelledby="token-select-modal"
-        BackdropProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' } }}
+        BackdropProps={{
+          sx: {
+            backgroundColor: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+          },
+        }}
       >
         <ModalBox>
           <ModalHeader>
@@ -1445,7 +1532,9 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                 autoFocus
               />
               {searchTerm && (
-                <ClearSearchButton onClick={() => setSearchTerm("")}>×</ClearSearchButton>
+                <ClearSearchButton onClick={() => setSearchTerm("")}>
+                  ×
+                </ClearSearchButton>
               )}
             </SearchContainer>
 
@@ -1469,12 +1558,22 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
               <QuickButtonsContainer>
                 <QuickButtonsGrid>
                   {QUICK_BUTTONS.slice(0, 4).map(
-                    (button: { tokenId: number; icon: string; label: string }) => (
+                    (button: {
+                      contractId: number;
+                      icon: string;
+                      label: string;
+                    }) => (
                       <QuickButton
-                        key={button.tokenId}
+                        key={button.contractId}
                         onClick={() => {
+                          // Find by contractId (for tokens with mappings like aUSDC),
+                          // with fallback to tokenId for backwards compatibility
                           const selected =
-                            tokens.find((t) => t.tokenId === button.tokenId) || tokens[0];
+                            tokens.find(
+                              (t) =>
+                                t.contractId === button.contractId ||
+                                t.tokenId === button.contractId
+                            ) || tokens[0];
                           onSelect(selected);
                           handleClose();
                         }}
@@ -1534,12 +1633,18 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                           }}
                         >
                           {(() => {
-                            const rawTotal = (options || tokens).reduce(
+                            // Merge options and tokens to ensure all tokens are available
+                            const allTokens = options && options.length > 0 
+                              ? [...new Map([...tokens, ...options]
+                                  .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+                                  .map(t => [t.contractId ?? t.tokenId, t])).values()]
+                              : tokens.filter(t => t != null);
+                            const rawTotal = allTokens.reduce(
                               (total, token) =>
                                 total + getBalanceValue(token, false),
                               0
                             );
-                            const adjustedTotal = (options || tokens).reduce(
+                            const adjustedTotal = allTokens.reduce(
                               (total, token) =>
                                 total + getBalanceValue(token, true),
                               0
@@ -1569,19 +1674,27 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                       </div>
                     ) : (
                       (() => {
-                        const rawTotal = (options || tokens).reduce(
+                        // Merge options and tokens to ensure all tokens are available
+                        const allTokens = options && options.length > 0 
+                          ? [...new Map([...tokens, ...options]
+                              .filter(t => t != null && (t.contractId != null || t.tokenId != null))
+                              .map(t => [t.contractId ?? t.tokenId, t])).values()]
+                          : tokens.filter(t => t != null);
+                        const rawTotal = allTokens.reduce(
                           (total, token) =>
                             total + getBalanceValue(token, false),
                           0
                         );
-                        const adjustedTotal = (options || tokens).reduce(
+                        const adjustedTotal = allTokens.reduce(
                           (total, token) =>
                             total + getBalanceValue(token, true),
                           0
                         );
-                        const tokenCount = (options || tokens).filter(
+                        const tokenCount = allTokens.filter(
                           (token) => {
-                            const balance = tokenBalances[token.tokenId];
+                            // Use contractId for balance lookup since balances are stored by contractId
+                            const balanceKey = token.contractId ?? token.tokenId;
+                            const balance = tokenBalances[balanceKey];
                             return (
                               balance &&
                               balance !== "0" &&
@@ -1631,15 +1744,21 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
 
                   <AdContainer>
                     {balanceLoading ? (
-                      <Skeleton variant="rectangular" width="100%" height="100%" />
+                      <Skeleton
+                        variant="rectangular"
+                        width="100%"
+                        height="100%"
+                      />
                     ) : (
                       (() => {
                         const ad = ADS[adIndex] || ADS[0];
-                        const image = (
-                          <AdImage src={ad.src} alt={ad.alt} />
-                        );
+                        const image = <AdImage src={ad.src} alt={ad.alt} />;
                         return ad?.href ? (
-                          <AdLink href={ad.href} target="_blank" rel="noopener noreferrer">
+                          <AdLink
+                            href={ad.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             {image}
                             <AdBadge>Sponsored</AdBadge>
                           </AdLink>
@@ -1709,9 +1828,18 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                             borderRadius: "50%",
                           }}
                           src={`https://asset-verification.nautilus.sh/icons/${
-                            t?.tokenId || 0
+                            t?.contractId === 390001 ? 0 : (t?.contractId ?? t?.tokenId ?? 0)
                           }.png`}
                           alt={`${tokenSymbol(t)} icon`}
+                          onError={(e) => {
+                            // Fallback to tokenId if contractId icon doesn't exist
+                            const target = e.currentTarget;
+                            if (t?.tokenId && t?.tokenId !== (t?.contractId ?? 0)) {
+                              target.src = `https://asset-verification.nautilus.sh/icons/${t.tokenId}.png`;
+                            } else {
+                              target.src = "https://asset-verification.nautilus.sh/icons/0.png";
+                            }
+                          }}
                         />
                       </TokenIcon>
                       <TokenDetails>
@@ -1776,11 +1904,11 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                         <BalanceAmount>
                           {balanceLoading
                             ? "..."
-                            : tokenBalances[t.tokenId] || "0"}
+                            : tokenBalances[t.contractId ?? t.tokenId] || "0"}
                         </BalanceAmount>
                         {!balanceLoading &&
-                          tokenBalances[t.tokenId] &&
-                          tokenBalances[t.tokenId] !== "0" && (
+                          tokenBalances[t.contractId ?? t.tokenId] &&
+                          tokenBalances[t.contractId ?? t.tokenId] !== "0" && (
                             <BalanceValue>
                               {(() => {
                                 const rawValue = getBalanceValue(t, false);
@@ -1808,10 +1936,13 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                                     >
                                       <span>
                                         $
-                                        {adjustedValue.toLocaleString(undefined, {
-                                          maximumFractionDigits: 2,
-                                          minimumFractionDigits: 0,
-                                        })}
+                                        {adjustedValue.toLocaleString(
+                                          undefined,
+                                          {
+                                            maximumFractionDigits: 2,
+                                            minimumFractionDigits: 0,
+                                          }
+                                        )}
                                         <span
                                           style={{
                                             opacity: 0.6,
@@ -1855,119 +1986,139 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
               </TokenList>
             ) : (
               <>
-                {activeAccount && displayCategory === "yourTokens" && userTokens.length > 0 && (
-                  <>
-                    <SectionHeader>
-                      <SectionIcon>👤</SectionIcon>
-                      Your tokens ({userTokens.length})
-                    </SectionHeader>
-                    <TokenList>
-                      {userTokens.map((t, i) => (
-                        <TokenItem
-                          key={`${tokenSymbol(t)}-mine-${i}`}
-                          onClick={() => {
-                            onSelect(t);
-                            handleClose();
-                          }}
-                        >
-                          <TokenInfo>
-                            <TokenIcon>
-                              <img
-                                style={{
-                                  width: "28px",
-                                  height: "28px",
-                                  borderRadius: "50%",
-                                }}
-                                src={`https://asset-verification.nautilus.sh/icons/${
-                                  t?.tokenId || 0
-                                }.png`}
-                                alt={`${tokenSymbol(t)} icon`}
-                              />
-                            </TokenIcon>
-                            <TokenDetails>
-                              <TokenName>
-                                {tokenSymbol(t)}
-                                {getTokenUsdPrice(t) > 0 && (
-                                  <TooltipContainer data-tooltip="Has DEX price data">
-                                    <TickerIndicator>$</TickerIndicator>
-                                  </TooltipContainer>
-                                )}
-                                {t.ticker?.liquidity_in_usd &&
-                                  parseFloat(t.ticker.liquidity_in_usd) > 0 && (
-                                    <TooltipContainer
-                                      data-tooltip={`Liquidity: $${parseFloat(
-                                        t.ticker.liquidity_in_usd
-                                      ).toLocaleString()}`}
-                                    >
-                                      <LiquidityIndicator>L</LiquidityIndicator>
+                {activeAccount &&
+                  displayCategory === "yourTokens" &&
+                  userTokens.length > 0 && (
+                    <>
+                      <SectionHeader>
+                        <SectionIcon>👤</SectionIcon>
+                        Your tokens ({userTokens.length})
+                      </SectionHeader>
+                      <TokenList>
+                        {userTokens.map((t, i) => (
+                          <TokenItem
+                            key={`${tokenSymbol(t)}-mine-${i}`}
+                            onClick={() => {
+                              onSelect(t);
+                              handleClose();
+                            }}
+                          >
+                            <TokenInfo>
+                              <TokenIcon>
+                                <img
+                                  style={{
+                                    width: "28px",
+                                    height: "28px",
+                                    borderRadius: "50%",
+                                  }}
+                                  src={`https://asset-verification.nautilus.sh/icons/${
+                                    t?.contractId === 390001 ? 0 : (t?.contractId ?? t?.tokenId ?? 0)
+                                  }.png`}
+                                  alt={`${tokenSymbol(t)} icon`}
+                                  onError={(e) => {
+                                    // Fallback to tokenId if contractId icon doesn't exist
+                                    const target = e.currentTarget;
+                                    if (t?.tokenId && t?.tokenId !== (t?.contractId ?? 0)) {
+                                      target.src = `https://asset-verification.nautilus.sh/icons/${t.tokenId}.png`;
+                                    } else {
+                                      target.src = "https://asset-verification.nautilus.sh/icons/0.png";
+                                    }
+                                  }}
+                                />
+                              </TokenIcon>
+                              <TokenDetails>
+                                <TokenName>
+                                  {tokenSymbol(t)}
+                                  {getTokenUsdPrice(t) > 0 && (
+                                    <TooltipContainer data-tooltip="Has DEX price data">
+                                      <TickerIndicator>$</TickerIndicator>
                                     </TooltipContainer>
                                   )}
-                              </TokenName>
-                              <TokenSymbol>
-                                {(() => {
-                                  const usdPrice = getTokenUsdPrice(t);
-                                  return usdPrice > 0
-                                    ? `$${usdPrice.toFixed(6)}`
-                                    : "No price data";
-                                })()}
-                              </TokenSymbol>
-                            </TokenDetails>
-                          </TokenInfo>
-                          <TokenBalance>
-                            <BalanceAmount>
-                              {tokenBalances[t.tokenId] || "0"}
-                            </BalanceAmount>
-                            <BalanceValue>
-                              {(() => {
-                                const rawValue = getBalanceValue(t, false);
-                                const adjustedValue = getBalanceValue(t, true);
-                                if (rawValue === 0) return "";
-                                
-                                if (
-                                  useLiquidityAdjustment &&
-                                  Math.abs(rawValue - adjustedValue) > 0.01
-                                ) {
-                                  return (
-                                    <span>
-                                      $
-                                      {adjustedValue.toLocaleString(undefined, {
-                                        maximumFractionDigits: 2,
-                                        minimumFractionDigits: 0,
-                                      })}
-                                      <span
-                                        style={{
-                                          opacity: 0.6,
-                                          fontSize: "9px",
-                                        }}
+                                  {t.ticker?.liquidity_in_usd &&
+                                    parseFloat(t.ticker.liquidity_in_usd) >
+                                      0 && (
+                                      <TooltipContainer
+                                        data-tooltip={`Liquidity: $${parseFloat(
+                                          t.ticker.liquidity_in_usd
+                                        ).toLocaleString()}`}
                                       >
-                                        {" "}
-                                        ($
-                                        {rawValue.toLocaleString(undefined, {
-                                          maximumFractionDigits: 0,
-                                        })}
-                                        )
+                                        <LiquidityIndicator>
+                                          L
+                                        </LiquidityIndicator>
+                                      </TooltipContainer>
+                                    )}
+                                </TokenName>
+                                <TokenSymbol>
+                                  {(() => {
+                                    const usdPrice = getTokenUsdPrice(t);
+                                    return usdPrice > 0
+                                      ? `$${usdPrice.toFixed(6)}`
+                                      : "No price data";
+                                  })()}
+                                </TokenSymbol>
+                              </TokenDetails>
+                            </TokenInfo>
+                            <TokenBalance>
+                              <BalanceAmount>
+                                {tokenBalances[t.contractId ?? t.tokenId] || "0"}
+                              </BalanceAmount>
+                              <BalanceValue>
+                                {(() => {
+                                  const rawValue = getBalanceValue(t, false);
+                                  const adjustedValue = getBalanceValue(
+                                    t,
+                                    true
+                                  );
+                                  if (rawValue === 0) return "";
+
+                                  if (
+                                    useLiquidityAdjustment &&
+                                    Math.abs(rawValue - adjustedValue) > 0.01
+                                  ) {
+                                    return (
+                                      <span>
+                                        $
+                                        {adjustedValue.toLocaleString(
+                                          undefined,
+                                          {
+                                            maximumFractionDigits: 2,
+                                            minimumFractionDigits: 0,
+                                          }
+                                        )}
+                                        <span
+                                          style={{
+                                            opacity: 0.6,
+                                            fontSize: "9px",
+                                          }}
+                                        >
+                                          {" "}
+                                          ($
+                                          {rawValue.toLocaleString(undefined, {
+                                            maximumFractionDigits: 0,
+                                          })}
+                                          )
+                                        </span>
                                       </span>
-                                    </span>
-                                  );
-                                } else {
-                                  return (
-                                    <span>
-                                      $
-                                      {rawValue.toLocaleString(undefined, {
-                                        maximumFractionDigits: 2,
-                                        minimumFractionDigits: 0,
-                                      })}
-                                    </span>
-                                  );
-                                }
-                              })()}
-                            </BalanceValue>
-                          </TokenBalance>
-                        </TokenItem>
-                      ))}
-                    </TokenList>
-                  </>
-                )}
+                                    );
+                                  } else {
+                                    return (
+                                      <span>
+                                        $
+                                        {rawValue.toLocaleString(undefined, {
+                                          maximumFractionDigits: 2,
+                                          minimumFractionDigits: 0,
+                                        })}
+                                      </span>
+                                    );
+                                  }
+                                })()}
+                              </BalanceValue>
+                            </TokenBalance>
+                          </TokenItem>
+                        ))}
+                      </TokenList>
+                    </>
+                  )}
 
                 {displayCategory === "byVolume" && (
                   <>
@@ -1993,9 +2144,18 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                                   borderRadius: "50%",
                                 }}
                                 src={`https://asset-verification.nautilus.sh/icons/${
-                                  t?.tokenId || 0
+                                  t?.contractId === 390001 ? 0 : (t?.contractId ?? t?.tokenId ?? 0)
                                 }.png`}
                                 alt={`${tokenSymbol(t)} icon`}
+                                onError={(e) => {
+                                  // Fallback to tokenId if contractId icon doesn't exist
+                                  const target = e.currentTarget;
+                                  if (t?.tokenId && t?.tokenId !== (t?.contractId ?? 0)) {
+                                    target.src = `https://asset-verification.nautilus.sh/icons/${t.tokenId}.png`;
+                                  } else {
+                                    target.src = "https://asset-verification.nautilus.sh/icons/0.png";
+                                  }
+                                }}
                               />
                             </TokenIcon>
                             <TokenDetails>
@@ -2032,7 +2192,7 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
                               <BalanceAmount>
                                 {balanceLoading
                                   ? "..."
-                                  : tokenBalances[t.tokenId] || "0"}
+                                  : tokenBalances[t.contractId ?? t.tokenId] || "0"}
                               </BalanceAmount>
                               {(() => {
                                 const rawValue = getBalanceValue(t, false);

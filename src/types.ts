@@ -45,6 +45,7 @@ export interface Token extends TokenI {
 export interface ARC200TokenI {
   tokenId: number;
   contractId?: number;
+  assetType?: string;
   name: string;
   symbol: string;
   decimals: number;

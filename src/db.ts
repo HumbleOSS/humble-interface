@@ -47,4 +47,28 @@ dexDb
       });
   });
 
+// Define version 4 with contractId as primary key in tokens table
+dexDb
+  .version(4)
+  .stores({
+    tokens: "contractId, tokenId, name, symbol, decimals, totalSupply, mintRound, assetType",
+    pools: "poolId, tokA, tokB",
+    farms:
+      "txId, round, ts, poolId, who, stakeToken, rewardsToken, rewards, start, end",
+    stake: "txId, round, ts, poolId, who, amount, staked, totalStaked",
+    poolBals: "pk, round, ts, poolId, balA, balB, rate",
+    volumes: "pk, round, ts, poolId, inA, inB",
+  })
+  .upgrade((tx) => {
+    // Upgrade logic: migrate tokens to use contractId as primary key
+    // For tokens without contractId, use tokenId as contractId
+    return tx.table("tokens")
+      .toCollection()
+      .modify((token) => {
+        if (!token.contractId) {
+          token.contractId = token.tokenId;
+        }
+      });
+  });
+
 export default dexDb;

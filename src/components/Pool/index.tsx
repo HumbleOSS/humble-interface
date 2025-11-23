@@ -104,12 +104,12 @@ const ButtonLabel = styled(Button)`
 
 const applyFilter = (p: any, f: string, tokens?: any[]) => {
   const filterUpper = f.toUpperCase();
-  
+
   // Check token IDs
   if (`${p.tokAId}` === f || `${p.tokBId}` === f || p.poolId === filterUpper) {
     return true;
   }
-  
+
   // Check symbolA and symbolB if they exist
   if (p.symbolA && String(p.symbolA).toUpperCase().indexOf(filterUpper) >= 0) {
     return true;
@@ -117,7 +117,7 @@ const applyFilter = (p: any, f: string, tokens?: any[]) => {
   if (p.symbolB && String(p.symbolB).toUpperCase().indexOf(filterUpper) >= 0) {
     return true;
   }
-  
+
   // If tokens array is available, check token symbols by matching tokAId/tokBId
   if (tokens && tokens.length > 0) {
     const findToken = (tokenIdStr: string) => {
@@ -128,24 +128,32 @@ const applyFilter = (p: any, f: string, tokens?: any[]) => {
       }
       // Handle VOI (0) -> wVOI (390001) mapping
       if (!token && (id === 0 || id === 390001)) {
-        token = tokens.find((t: any) => t.tokenId === 0 || t.contractId === 390001);
+        token = tokens.find(
+          (t: any) => t.tokenId === 0 || t.contractId === 390001
+        );
       }
       return token;
     };
-    
+
     const tokA = findToken(p.tokAId);
     const tokB = findToken(p.tokBId);
-    
-    if (tokA && (tokA.symbol?.toUpperCase().indexOf(filterUpper) >= 0 || 
-                 tokA.name?.toUpperCase().indexOf(filterUpper) >= 0)) {
+
+    if (
+      tokA &&
+      (tokA.symbol?.toUpperCase().indexOf(filterUpper) >= 0 ||
+        tokA.name?.toUpperCase().indexOf(filterUpper) >= 0)
+    ) {
       return true;
     }
-    if (tokB && (tokB.symbol?.toUpperCase().indexOf(filterUpper) >= 0 || 
-                 tokB.name?.toUpperCase().indexOf(filterUpper) >= 0)) {
+    if (
+      tokB &&
+      (tokB.symbol?.toUpperCase().indexOf(filterUpper) >= 0 ||
+        tokB.name?.toUpperCase().indexOf(filterUpper) >= 0)
+    ) {
       return true;
     }
   }
-  
+
   return false;
 };
 
@@ -175,7 +183,6 @@ const Pool = () => {
     if (!activeAccount) return;
     axios
       .get(
-        //`https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/balances?accountId=${activeAccount.address}`
         `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/balances?accountId=${activeAccount.address}`
       )
       .then((res) => {
@@ -185,53 +192,55 @@ const Pool = () => {
 
   const [tokens, setTokens] = React.useState<any[]>();
   useEffect(() => {
-    axios
-      .get(
-        `https://humble-api.voi.nautilus.sh/tokens`
-      )
-      .then((res) => {
-        // Map the new API structure to the expected format
-        const mappedTokens = res.data.tokens.map((t: any) => {
-          const assetId = Number(t.assetId);
-          // Assume tokens from Humble API are verified (they're from a trusted source)
-          // Also handle VOI (tokenId 0) and wVOI (390001) as special cases
-          const isVOI = assetId === 0 || assetId === 390001;
-          return {
-            ...t,
-            contractId: assetId,
-            tokenId: assetId,
-            symbol: t.unitName || t.symbol,
-            decimals: Number(t.decimals),
-            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
-          };
-        });
-        
-        // Ensure VOI (tokenId 0) is in the list for pool matching
-        // VOI should have contractId 390001 but tokenId 0 for display
-        const hasVoi = mappedTokens.some((t: any) => t.tokenId === 0 || t.contractId === 390001);
-        if (!hasVoi) {
-          mappedTokens.unshift({
-            tokenId: 0,
-            contractId: 390001, // Use 390001 internally
-            name: "Voi",
-            symbol: "VOI",
-            decimals: 6,
-            verified: 2,
-          });
-        }
-        
-        setTokens(mappedTokens);
+    axios.get(`https://humble-api.voi.nautilus.sh/tokens`).then((res) => {
+      // Map the new API structure to the expected format
+      const mappedTokens = res.data.tokens.map((t: any) => {
+        const assetId = Number(t.assetId);
+        // Assume tokens from Humble API are verified (they're from a trusted source)
+        // Also handle VOI (tokenId 0) and wVOI (390001) as special cases
+        const isVOI = assetId === 0 || assetId === 390001;
+        return {
+          ...t,
+          contractId: assetId,
+          tokenId: assetId,
+          symbol: t.unitName || t.symbol,
+          decimals: Number(t.decimals),
+          verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+        };
       });
+
+      // Ensure VOI (tokenId 0) is in the list for pool matching
+      // VOI should have contractId 390001 but tokenId 0 for display
+      const hasVoi = mappedTokens.some(
+        (t: any) => t.tokenId === 0 || t.contractId === 390001
+      );
+      if (!hasVoi) {
+        mappedTokens.unshift({
+          tokenId: 0,
+          contractId: 390001, // Use 390001 internally
+          name: "Voi",
+          symbol: "VOI",
+          decimals: 6,
+          verified: 2,
+        });
+      }
+
+      setTokens(mappedTokens);
+    });
   }, [activeAccount]);
 
   // POOLs
   const fetchPools = async () => {
     try {
-      const { data } = await axios.get(`https://humble-api.voi.nautilus.sh/pools`);
+      const { data } = await axios.get(
+        `https://humble-api.voi.nautilus.sh/pools`
+      );
       const { algodClient, indexerClient } = getAlgorandClients();
-      
+
       // Fetch tokens first to get decimals
-      const tokensResponse = await axios.get(`https://humble-api.voi.nautilus.sh/tokens`);
+      const tokensResponse = await axios.get(
+        `https://humble-api.voi.nautilus.sh/tokens`
+      );
       const tokensMap = new Map();
       tokensResponse.data.tokens.forEach((t: any) => {
         const assetId = Number(t.assetId);
@@ -243,7 +252,7 @@ const Pool = () => {
       // Add VOI token
       tokensMap.set(0, { decimals: 6, symbol: "VOI" });
       tokensMap.set(390001, { decimals: 6, symbol: "VOI" });
-      
+
       // Fetch pool balances in parallel to calculate TVL
       const poolsWithBalances = await Promise.all(
         data.pools.map(async (p: any) => {
@@ -251,33 +260,47 @@ const Pool = () => {
             const poolId = Number(p.poolId);
             const ci = new swap(poolId, algodClient, indexerClient);
             const infoR = await ci.Info();
-            
+
             if (infoR.success) {
               const info = infoR.returnValue;
               const poolBalA = info.poolBals?.A || "0";
               const poolBalB = info.poolBals?.B || "0";
-              
+
               // Get token decimals from tokens map
               const tokAId = Number(p.tokA);
               const tokBId = Number(p.tokB);
-              const tokAInfo = tokensMap.get(tokAId) || { decimals: 6, symbol: "" };
-              const tokBInfo = tokensMap.get(tokBId) || { decimals: 6, symbol: "" };
-              
+              const tokAInfo = tokensMap.get(tokAId) || {
+                decimals: 6,
+                symbol: "",
+              };
+              const tokBInfo = tokensMap.get(tokBId) || {
+                decimals: 6,
+                symbol: "",
+              };
+
               // Get decimals for each token
               const decimalsA = tokAInfo.decimals;
               const decimalsB = tokBInfo.decimals;
-              
+
               // Calculate TVL: convert balances using correct decimals
-              const balA = new BigNumber(poolBalA).dividedBy(new BigNumber(10).pow(decimalsA));
-              const balB = new BigNumber(poolBalB).dividedBy(new BigNumber(10).pow(decimalsB));
-              
+              const balA = new BigNumber(poolBalA).dividedBy(
+                new BigNumber(10).pow(decimalsA)
+              );
+              const balB = new BigNumber(poolBalB).dividedBy(
+                new BigNumber(10).pow(decimalsB)
+              );
+
               // If one token is VOI (390001), TVL = 2 * VOI balance (since pool maintains 50/50 ratio)
-              const isVoiPair = tokAId === 390001 || tokBId === 390001 || tokAId === 0 || tokBId === 0;
-              
+              const isVoiPair =
+                tokAId === 390001 ||
+                tokBId === 390001 ||
+                tokAId === 0 ||
+                tokBId === 0;
+
               let tvl = 0;
               if (isVoiPair) {
                 // If VOI is one of the tokens, TVL = 2 * VOI balance (since both sides should be equal value)
-                const voiBal = (tokAId === 390001 || tokAId === 0) ? balA : balB;
+                const voiBal = tokAId === 390001 || tokAId === 0 ? balA : balB;
                 // Multiply by 2 (both sides of pool)
                 tvl = voiBal.multipliedBy(2).toNumber();
               } else {
@@ -286,7 +309,7 @@ const Pool = () => {
                 const minBal = BigNumber.minimum(balA, balB);
                 tvl = minBal.multipliedBy(2).toNumber();
               }
-              
+
               return {
                 ...p,
                 contractId: poolId,
@@ -356,7 +379,7 @@ const Pool = () => {
           }
         })
       );
-      
+
       setPools(poolsWithBalances);
     } catch (error) {
       console.error("Error fetching pools:", error);
@@ -372,19 +395,22 @@ const Pool = () => {
     const filtered = uniqPools.filter(
       (p) => !badPools.includes(p.contractId) && applyFilter(p, filter, tokens)
     );
-    
+
     // Helper function to check if a pool is a VOI pair
     const isVoiPair = (pool: IndexerPoolI) => {
       const tokA = Number(pool.tokAId);
       const tokB = Number(pool.tokBId);
       return tokA === 390001 || tokB === 390001 || tokA === 0 || tokB === 0;
     };
-    
+
     // Helper function to find corresponding VOI pair for a non-VOI pool
-    const findCorrespondingVoiPair = (pool: IndexerPoolI, allPools: IndexerPoolI[]) => {
+    const findCorrespondingVoiPair = (
+      pool: IndexerPoolI,
+      allPools: IndexerPoolI[]
+    ) => {
       const tokA = Number(pool.tokAId);
       const tokB = Number(pool.tokBId);
-      
+
       // Find VOI/tokA pairs (VOI can be in either position)
       const voiPairA = allPools.find((p) => {
         const pTokA = Number(p.tokAId);
@@ -394,7 +420,7 @@ const Pool = () => {
           ((pTokB === 390001 || pTokB === 0) && pTokA === tokA)
         );
       });
-      
+
       // Find VOI/tokB pairs (VOI can be in either position)
       const voiPairB = allPools.find((p) => {
         const pTokA = Number(p.tokAId);
@@ -404,46 +430,72 @@ const Pool = () => {
           ((pTokB === 390001 || pTokB === 0) && pTokA === tokB)
         );
       });
-      
+
       // Return the VOI pair with higher TVL, or the first one found
       if (voiPairA && voiPairB) {
-        const tvlA = typeof voiPairA.tvl === 'number' ? voiPairA.tvl : (typeof voiPairA.tvl === 'string' ? parseFloat(voiPairA.tvl) || 0 : 0);
-        const tvlB = typeof voiPairB.tvl === 'number' ? voiPairB.tvl : (typeof voiPairB.tvl === 'string' ? parseFloat(voiPairB.tvl) || 0 : 0);
+        const tvlA =
+          typeof voiPairA.tvl === "number"
+            ? voiPairA.tvl
+            : typeof voiPairA.tvl === "string"
+            ? parseFloat(voiPairA.tvl) || 0
+            : 0;
+        const tvlB =
+          typeof voiPairB.tvl === "number"
+            ? voiPairB.tvl
+            : typeof voiPairB.tvl === "string"
+            ? parseFloat(voiPairB.tvl) || 0
+            : 0;
         return tvlA > tvlB ? voiPairA : voiPairB;
       }
       return voiPairA || voiPairB;
     };
-    
+
     // Sort by TVL descending, but prioritize non-VOI pairs over their corresponding VOI pairs if they have higher TVL
     return filtered.sort((a, b) => {
-      const tvlA = typeof a.tvl === 'number' ? a.tvl : (typeof a.tvl === 'string' ? parseFloat(a.tvl) || 0 : 0);
-      const tvlB = typeof b.tvl === 'number' ? b.tvl : (typeof b.tvl === 'string' ? parseFloat(b.tvl) || 0 : 0);
-      
+      const tvlA =
+        typeof a.tvl === "number"
+          ? a.tvl
+          : typeof a.tvl === "string"
+          ? parseFloat(a.tvl) || 0
+          : 0;
+      const tvlB =
+        typeof b.tvl === "number"
+          ? b.tvl
+          : typeof b.tvl === "string"
+          ? parseFloat(b.tvl) || 0
+          : 0;
+
       const aIsVoiPair = isVoiPair(a);
       const bIsVoiPair = isVoiPair(b);
-      
+
       // If a is a non-VOI pair and b is its corresponding VOI pair
       if (!aIsVoiPair && bIsVoiPair) {
         const correspondingVoiPair = findCorrespondingVoiPair(a, filtered);
-        if (correspondingVoiPair && correspondingVoiPair.contractId === b.contractId) {
+        if (
+          correspondingVoiPair &&
+          correspondingVoiPair.contractId === b.contractId
+        ) {
           // If non-VOI pair has higher TVL than its VOI pair, prioritize it
           if (tvlA > tvlB) {
             return -1; // a comes before b
           }
         }
       }
-      
+
       // If b is a non-VOI pair and a is its corresponding VOI pair
       if (!bIsVoiPair && aIsVoiPair) {
         const correspondingVoiPair = findCorrespondingVoiPair(b, filtered);
-        if (correspondingVoiPair && correspondingVoiPair.contractId === a.contractId) {
+        if (
+          correspondingVoiPair &&
+          correspondingVoiPair.contractId === a.contractId
+        ) {
           // If non-VOI pair has higher TVL than its VOI pair, prioritize it
           if (tvlB > tvlA) {
             return 1; // b comes before a
           }
         }
       }
-      
+
       // Default: sort by TVL descending
       return tvlB - tvlA;
     });

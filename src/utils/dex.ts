@@ -9,15 +9,16 @@ export const tokenSymbol = (
   if (!token) return "";
   
   // Handle VOI (tokenId 0) and wVOI (390001) - both should display as "VOI"
-  const tokenId = token.tokenId || 0;
-  const contractId = token.contractId || tokenId;
+  const tokenId = token.tokenId ?? 0;
+  const contractId = token.contractId ?? tokenId;
   
+  // Check for VOI: tokenId is 0, or contractId is 390001, or tokenId is 390001
   if (tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1) {
     return "VOI";
   }
   
   const symbol = token.symbol || "";
-  if (symbol.match(/^wVOI/)) {
+  if (symbol.match(/^wVOI/i)) {
     if (excludeWrapped) {
       return "VOI";
     }

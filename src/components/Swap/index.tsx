@@ -25,7 +25,7 @@ import { getAlgorandClients } from "../../wallets";
 import TokenInput from "../TokenInput";
 import { useSearchParams } from "react-router-dom";
 import { ARC200TokenI, PoolI } from "../../types";
-import { getTokens } from "../../store/tokenSlice";
+import { getTokens, getTokensWithTickers, selectTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { fetchPool, getPool, getPools } from "../../store/poolSlice";
 import { toast } from "react-toastify";
@@ -39,6 +39,7 @@ import ProgressBar from "../ProgressBar";
 import algosdk from "algosdk";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { SwapOptionsModal } from "../modals/SwapOptionsModal";
+import { getAsaIdFromArc200Contract } from "@/config/arc200AsaMapping";
 
 const SwapDisplay = styled.div`
   display: flex;
@@ -871,7 +872,8 @@ const Swap = () => {
   const tokens = useSelector((state: RootState) => state.tokens.tokens);
   const tokenStatus = useSelector((state: RootState) => state.tokens.status);
   useEffect(() => {
-    dispatch(getTokens() as unknown as UnknownAction);
+    // Use getTokensWithTickers to ensure tokens are loaded with all data
+    dispatch(getTokensWithTickers() as unknown as UnknownAction);
   }, [dispatch]);
 
   /* Pools */
@@ -883,19 +885,20 @@ const Swap = () => {
 
   const [pools2, setPools] = useState<PoolI[]>([]);
   useEffect(() => {
-    axios
-      .get("https://humble-api.voi.nautilus.sh/pools")
-      .then(({ data }) => {
-        // Map new API structure to PoolI format
-        const mappedPools = data.pools.map((p: any) => ({
-          poolId: Number(p.poolId),
-          tokA: Number(p.tokA),
-          tokB: Number(p.tokB),
-          round: p.lastRound || 0,
-          txId: p.txid || "",
-        } as PoolI));
-        setPools(mappedPools);
-      });
+    axios.get("https://humble-api.voi.nautilus.sh/pools").then(({ data }) => {
+      // Map new API structure to PoolI format
+      const mappedPools = data.pools.map(
+        (p: any) =>
+          ({
+            poolId: Number(p.poolId),
+            tokA: Number(p.tokA),
+            tokB: Number(p.tokB),
+            round: p.lastRound || 0,
+            txId: p.txid || "",
+          } as PoolI)
+      );
+      setPools(mappedPools);
+    });
   }, []);
 
   const [sp] = useSearchParams();
@@ -913,32 +916,8 @@ const Swap = () => {
   const [tokOut, setTokOut] = useState("");
   const [swapModalOpen, setSwapModalOpen] = useState(false);
 
-  const [tokens2, setTokens] = React.useState<any[]>();
-  useEffect(() => {
-    axios
-      .get(
-        `https://humble-api.voi.nautilus.sh/tokens`
-      )
-      .then(({ data }) => {
-        // Map the new API structure to the expected format
-        const mappedTokens = data.tokens.map((t: any) => {
-          const assetId = Number(t.assetId);
-          const isVOI = assetId === 0 || assetId === 390001;
-          return {
-            ...t,
-            contractId: assetId,
-            tokenId: assetId,
-            symbol: t.unitName || t.symbol,
-            decimals: Number(t.decimals),
-            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
-          };
-        });
-        setTokens(mappedTokens);
-      })
-      .catch(console.error);
-  }, []);
-
-  console.log({ tokens2 });
+  // Use tokens from Redux store (already fetched via getTokens dispatch above)
+  const tokens2 = tokens;
 
   // EFFECT: get pool for paramPoolId
   useEffect(() => {
@@ -948,26 +927,6 @@ const Swap = () => {
   // don't remember what this is used for
 
   const [pool, setPool] = useState<PoolI>();
-
-  // EFFECT: set pool to match paramPoolId
-  useEffect(() => {
-    if (!pools || !tokens || pool) return;
-    if (paramPoolId) {
-      const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
-      if (pool) {
-        const token = [TOKEN_WVOI1].includes(pool.tokA)
-          ? NETWORK_TOKEN.VOI
-          : tokens.find((t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokA}`);
-        setToken(token);
-        const token2 = [TOKEN_WVOI1].includes(pool.tokB)
-          ? NETWORK_TOKEN.VOI
-          : tokens.find((t: ARC200TokenI) => `${t.tokenId}` === `${pool.tokB}`);
-        setToken2(token2);
-      }
-    }
-  }, [pool, pools, tokens, tokens2]);
-
-  //const [accInfo, setAccInfo] = React.useState<any>(null);
 
   const [focus, setFocus] = useState<"from" | "to" | undefined>();
   const [fromAmount, setFromAmount] = React.useState<any>("");
@@ -982,6 +941,42 @@ const Swap = () => {
 
   const [balance, setBalance] = React.useState<string>();
   const [balance2, setBalance2] = React.useState<string>();
+
+  // EFFECT: set pool to match paramPoolId
+  useEffect(() => {
+    // Only set tokens from pool if we have pools, tokens, and paramPoolId, but tokens aren't set yet
+    if (!pools || !tokens || pools.length === 0 || tokens.length === 0) return;
+    if (!paramPoolId) return;
+    // Don't override if tokens are already set (unless they're undefined)
+    if (token && token2) return;
+    
+    const foundPool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
+    if (foundPool) {
+      const newToken = [TOKEN_WVOI1, 0].includes(foundPool.tokA)
+        ? { ...NETWORK_TOKEN.VOI, contractId: TOKEN_WVOI1 }
+        : tokens.find(
+            (t: ARC200TokenI) => 
+              `${t.tokenId}` === `${foundPool.tokA}` ||
+              `${t.contractId}` === `${foundPool.tokA}`
+          );
+      console.log("Setting token from pool:", { poolTokA: foundPool.tokA, newToken, symbol: newToken?.symbol });
+      if (newToken && !token) {
+        setToken(newToken);
+      }
+      
+      const newToken2 = [TOKEN_WVOI1, 0].includes(foundPool.tokB)
+        ? { ...NETWORK_TOKEN.VOI, contractId: TOKEN_WVOI1 }
+        : tokens.find(
+            (t: ARC200TokenI) => 
+              `${t.tokenId}` === `${foundPool.tokB}` ||
+              `${t.contractId}` === `${foundPool.tokB}`
+          );
+      console.log("Setting token2 from pool:", { poolTokB: foundPool.tokB, newToken2, symbol: newToken2?.symbol });
+      if (newToken2 && !token2) {
+        setToken2(newToken2);
+      }
+    }
+  }, [pools, tokens, paramPoolId, token, token2]);
 
   // EFFECT: set token options
   useEffect(() => {
@@ -1001,21 +996,53 @@ const Swap = () => {
         decimals: 6,
         totalSupply: BigInt(10_000_000_000 * 1e6),
       },
-      ...tokens.filter((t: ARC200TokenI) => poolTokens.includes(t.tokenId)),
-    ].filter(
-      (t: ARC200TokenI) => t.tokenId !== token2?.tokenId && t.symbol !== "wVOI"
-    );
-    tokenOptions.sort((a, b) => a.tokenId - b.tokenId);
+      ...tokens.filter(
+        (t: ARC200TokenI) =>
+          t.tokenId !== undefined && 
+          (poolTokens.includes(t.tokenId) || 
+           (t.contractId !== undefined && poolTokens.includes(t.contractId)))
+      ),
+    ].filter((t: ARC200TokenI) => {
+      // Always include VOI unless token2 is actually VOI
+      if (t.tokenId === 0 && t.symbol === "VOI") {
+        // Only filter out VOI if token2 is also VOI (check both tokenId and contractId)
+        if (token2?.tokenId === 0 || token2?.contractId === TOKEN_WVOI1) {
+          return false;
+        }
+        return true;
+      }
+      // Filter out wVOI and tokens that match token2
+      return (
+        t.symbol !== "wVOI" &&
+        t.tokenId !== token2?.tokenId &&
+        t.contractId !== token2?.contractId
+      );
+    });
+    tokenOptions.sort((a, b) => (a.tokenId ?? 0) - (b.tokenId ?? 0));
     setTokenOptions(tokenOptions);
   }, [token2, tokens, pools]);
 
   const eligiblePools = useMemo(() => {
+    if (!token || !token2 || !pools || pools.length === 0) return [];
+    
+    // Get token IDs to match - handle VOI (0 or 390001)
+    const tokenAId = tokenId(token);
+    const tokenBId = tokenId(token2);
+    // Also check contractId for tokens with mappings
+    const tokenAContractId = token.contractId;
+    const tokenBContractId = token2.contractId;
+    
     const filteredPools = pools.filter((p: PoolI) => {
-      return (
-        [p.tokA, p.tokB].includes(tokenId(token)) &&
-        [p.tokA, p.tokB].includes(tokenId(token2)) &&
-        p.tokA !== p.tokB
-      );
+      // Check if pool contains both tokens (handling VOI as both 0 and 390001)
+      const hasTokenA = [p.tokA, p.tokB].includes(tokenAId) || 
+                        (tokenAContractId !== undefined && [p.tokA, p.tokB].includes(tokenAContractId)) ||
+                        (token.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
+                        (token.contractId === TOKEN_WVOI1 && [p.tokA, p.tokB].includes(TOKEN_WVOI1));
+      const hasTokenB = [p.tokA, p.tokB].includes(tokenBId) || 
+                        (tokenBContractId !== undefined && [p.tokA, p.tokB].includes(tokenBContractId)) ||
+                        (token2.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
+                        (token2.contractId === TOKEN_WVOI1 && [p.tokA, p.tokB].includes(TOKEN_WVOI1));
+      return hasTokenA && hasTokenB && p.tokA !== p.tokB;
     });
     filteredPools.sort((a, b) => b.poolId - a.poolId);
     return filteredPools.slice(-1);
@@ -1023,13 +1050,15 @@ const Swap = () => {
 
   console.log("eligiblePools", eligiblePools);
 
-  // EFFECT: reset token2 if not in eligible pools
+  // EFFECT: reset token2 if not in eligible pools (but only if we have a token selected)
   useEffect(() => {
-    if (eligiblePools.length === 0) {
+    // Don't reset if we're coming from a pool page (paramPoolId exists)
+    // Only reset if token is set but no eligible pools found
+    if (eligiblePools.length === 0 && token && !paramPoolId) {
       setToken2(undefined);
       setBalance2("");
     }
-  }, [token, token2, eligiblePools]);
+  }, [token, token2, eligiblePools, paramPoolId]);
 
   const [info, setInfo] = useState<any>();
   // EFFECT: set pool info
@@ -1045,35 +1074,82 @@ const Swap = () => {
 
   const [lhs, rhs, rate, rateReady] = useMemo(() => {
     if (!info || !token || !token2) return [1, 1, 1, false];
-    const A = { ...token, tokenId: tokenId(token) };
-    const B = {
-      ...token2,
-      tokenId: tokenId(token2),
-    };
-    const res = swap.rate(info, A, B);
-    const res2 = swap.rate(info, B, A);
-    return [1, 1 / res, res, true];
-    //res < 0.000001 ? [res2, 1, 1 / res2, true] : [1, 1 / res, res, true];
+    
+    // Determine which token is tokA and which is tokB in the pool
+    const tokenAId = tokenId(token);
+    const tokenBId = tokenId(token2);
+    const tokenAContractId = token.contractId;
+    const tokenBContractId = token2.contractId;
+    
+    // Check if token matches pool.tokA (handling both contractId and tokenId)
+    const isTokenA = info.tokA === tokenAId || 
+                     info.tokA === tokenAContractId ||
+                     (token.tokenId === 0 && info.tokA === 0) ||
+                     (token.contractId === TOKEN_WVOI1 && info.tokA === TOKEN_WVOI1);
+    
+    let calculatedRate: number;
+    
+    if (isTokenA) {
+      // Token is tokA, token2 is tokB
+      // Rate = how much of token2 you get for 1 unit of token
+      const balA = Number(info.poolBals.A);
+      const balB = Number(info.poolBals.B);
+      const decimalsA = token.decimals ?? 6;
+      const decimalsB = token2.decimals ?? 6;
+      
+      if (balA === 0 || balB === 0) {
+        calculatedRate = 0;
+      } else {
+        // Calculate rate: (balB / balA) * (10^decimalsA / 10^decimalsB)
+        calculatedRate = (balB / balA) * Math.pow(10, decimalsA - decimalsB);
+      }
+    } else {
+      // Token is tokB, token2 is tokA
+      // Rate = how much of token2 you get for 1 unit of token
+      const balA = Number(info.poolBals.A);
+      const balB = Number(info.poolBals.B);
+      const decimalsA = token2.decimals ?? 6;
+      const decimalsB = token.decimals ?? 6;
+      
+      if (balA === 0 || balB === 0) {
+        calculatedRate = 0;
+      } else {
+        // Calculate rate: (balA / balB) * (10^decimalsB / 10^decimalsA)
+        calculatedRate = (balA / balB) * Math.pow(10, decimalsB - decimalsA);
+      }
+    }
+    
+    // Fallback to swap.rate if calculated rate is invalid
+    if (!calculatedRate || !isFinite(calculatedRate) || calculatedRate <= 0) {
+      const A = { ...token, tokenId: tokenAId };
+      const B = { ...token2, tokenId: tokenBId };
+      const res = swap.rate(info, A, B);
+      calculatedRate = res && res > 0 ? res : 0;
+    }
+    
+    return [1, calculatedRate > 0 ? 1 / calculatedRate : 0, calculatedRate, true];
   }, [info, token, token2]);
 
   console.log("rate", rate);
 
   const invRate = useMemo(() => {
-    if (!rate || !rateReady) return;
-    return 1 / rate;
-  }, [rate, rateReady, token2]);
+    if (!rate || !rateReady || rate === 0) return undefined;
+    const inv = 1 / rate;
+    return isFinite(inv) ? inv : undefined;
+  }, [rate, rateReady]);
 
   console.log("invRate", invRate);
 
   const fee = useMemo(() => {
     if (!info || !token) return "0";
+    const tokenDecimals = token?.decimals ?? 6;
     const amount = new BigNumber(fromAmount.replace(/,/g, ""));
     if (amount.isNaN()) return "0";
     return amount
       .multipliedBy(info?.protoInfo.totFee)
       .dividedBy(10000)
-      .decimalPlaces(token.decimals, BigNumber.ROUND_DOWN)
-      .toFixed(token.decimals);
+      .decimalPlaces(tokenDecimals, BigNumber.ROUND_DOWN)
+      .toFixed(tokenDecimals);
   }, [info, fromAmount, token]);
 
   console.log("fee", fee);
@@ -1103,7 +1179,10 @@ const Swap = () => {
     }
     const { algodClient, indexerClient } = getAlgorandClients();
     const pool: any = eligiblePools[0];
-    if (!pool) return;
+    if (!pool) {
+      console.log("No eligible pool found for swap calculation");
+      return;
+    }
     const acc = {
       addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
       sk: new Uint8Array(0),
@@ -1116,7 +1195,18 @@ const Swap = () => {
       acc
     );
     ci.setFee(4000);
-    if (pool.tokA === tokenId(token)) {
+    
+    // Get token ID to match - use contractId if available, otherwise use tokenId
+    const tokenIdToMatch = token.contractId ?? tokenId(token);
+    const tokenIdToMatchAlt = tokenId(token);
+    
+    // Check if token matches pool.tokA (handling both contractId and tokenId)
+    const isTokenA = pool.tokA === tokenIdToMatch || 
+                     pool.tokA === tokenIdToMatchAlt ||
+                     (token.tokenId === 0 && pool.tokA === 0) ||
+                     (token.contractId === TOKEN_WVOI1 && pool.tokA === TOKEN_WVOI1);
+    
+    if (isTokenA) {
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ""));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
@@ -1135,9 +1225,14 @@ const Swap = () => {
             .toFixed(token2.decimals);
           setActualOutcome(toAmount);
           setToAmount(toAmount);
+        } else {
+          console.error("Trader_swapAForB failed:", r);
         }
+      }).catch((e: any) => {
+        console.error("Error in Trader_swapAForB:", e);
       });
-    } else if (pool.tokB === tokenId(token)) {
+    } else {
+      // Token matches pool.tokB
       const fromAmountBN = new BigNumber(fromAmount.replace(/,/g, ""));
       if (fromAmountBN.isNaN()) return;
       const fromAmountBI = BigInt(
@@ -1156,10 +1251,14 @@ const Swap = () => {
             .toFixed(token2.decimals);
           setActualOutcome(toAmount);
           setToAmount(toAmount);
+        } else {
+          console.error("Trader_swapBForA failed:", r);
         }
+      }).catch((e: any) => {
+        console.error("Error in Trader_swapBForA:", e);
       });
     }
-  }, [pool, token, token2, fromAmount, focus, eligiblePools]);
+  }, [token, token2, fromAmount, focus, eligiblePools]);
 
   console.log("actualOutcome", actualOutcome);
   console.log("toAmount", toAmount);
@@ -1174,7 +1273,10 @@ const Swap = () => {
       return;
     }
     const pool: any = eligiblePools[0];
-    if (!pool) return;
+    if (!pool) {
+      console.log("No eligible pool found for swap calculation (toAmount)");
+      return;
+    }
     const { algodClient, indexerClient } = getAlgorandClients();
     const acc = {
       addr: "G3MSA75OZEJTCCENOJDLDJK7UD7E2K5DNC7FVHCNOV7E3I4DTXTOWDUIFQ",
@@ -1188,7 +1290,20 @@ const Swap = () => {
       acc
     );
     ci.setFee(4000);
-    if (pool.tokA === tokenId(token2)) {
+    
+    // Get token IDs to match - use contractId if available, otherwise use tokenId
+    const token2IdToMatch = token2.contractId ?? tokenId(token2);
+    const token2IdToMatchAlt = tokenId(token2);
+    const tokenIdToMatch = token.contractId ?? tokenId(token);
+    const tokenIdToMatchAlt = tokenId(token);
+    
+    // Check if token2 matches pool.tokA
+    const isToken2A = pool.tokA === token2IdToMatch || 
+                      pool.tokA === token2IdToMatchAlt ||
+                      (token2.tokenId === 0 && pool.tokA === 0) ||
+                      (token2.contractId === TOKEN_WVOI1 && pool.tokA === TOKEN_WVOI1);
+    
+    if (isToken2A) {
       const toAmountBN = new BigNumber(toAmount.replace(/,/g, ""));
       if (toAmountBN.isNaN()) return;
       const toAmountBI = BigInt(
@@ -1215,7 +1330,8 @@ const Swap = () => {
           }
         }
       );
-    } else if (pool.tokA === tokenId(token)) {
+    } else {
+      // Token matches pool.tokB (token2 is tokB, token is tokA)
       const toAmountBN = new BigNumber(toAmount.replace(/,/g, ""));
       if (toAmountBN.isNaN()) return;
       const toAmountBI = BigInt(
@@ -1243,19 +1359,63 @@ const Swap = () => {
         }
       );
     }
-  }, [pool, token, token2, toAmount, focus, eligiblePools]);
+  }, [token, token2, toAmount, focus, eligiblePools]);
 
   console.log("fromAmount", fromAmount);
   console.log("actualOutcome", actualOutcome);
 
   const slippage = useMemo(() => {
-    if (!actualOutcome || !expectedOutcome) return;
-    return (
-      (Math.abs(Number(expectedOutcome) - Number(actualOutcome)) /
-        Number(expectedOutcome)) *
-      100
-    ).toFixed(2);
-  }, [actualOutcome, expectedOutcome]);
+    // Price impact measures how much the swap moves the pool price (excluding fees)
+    // For constant product AMM: price impact ≈ (amountIn / reserveIn) * 100
+    if (!info || !fromAmount || !token || !token2) return;
+    
+    const fromAmountNum = Number(fromAmount.replace(/,/g, ""));
+    
+    if (isNaN(fromAmountNum) || fromAmountNum === 0) return;
+    
+    // Determine which token is tokA and which is tokB in the pool
+    const tokenAId = tokenId(token);
+    const tokenAContractId = token.contractId;
+    
+    // Check if token matches pool.tokA
+    const isTokenA = info.tokA === tokenAId || 
+                     info.tokA === tokenAContractId ||
+                     (token.tokenId === 0 && info.tokA === 0) ||
+                     (token.contractId === TOKEN_WVOI1 && info.tokA === TOKEN_WVOI1);
+    
+    if (isTokenA) {
+      // Token is tokA, token2 is tokB
+      const balA = Number(info.poolBals.A);
+      const decimalsA = token.decimals ?? 6;
+      
+      if (balA === 0) return;
+      
+      // Convert amounts to same units (raw amounts)
+      const fromAmountRaw = fromAmountNum * Math.pow(10, decimalsA);
+      const reserveA = balA;
+      
+      // Price impact = (amountIn / reserveIn) * 100
+      // This is the approximate impact for constant product AMM
+      const priceImpact = (fromAmountRaw / reserveA) * 100;
+      
+      return priceImpact.toFixed(2);
+    } else {
+      // Token is tokB, token2 is tokA
+      const balB = Number(info.poolBals.B);
+      const decimalsB = token.decimals ?? 6;
+      
+      if (balB === 0) return;
+      
+      // Convert amounts to same units (raw amounts)
+      const fromAmountRaw = fromAmountNum * Math.pow(10, decimalsB);
+      const reserveB = balB;
+      
+      // Price impact = (amountIn / reserveIn) * 100
+      const priceImpact = (fromAmountRaw / reserveB) * 100;
+      
+      return priceImpact.toFixed(2);
+    }
+  }, [info, fromAmount, token, token2]);
 
   console.log("slippage", slippage);
 
@@ -1315,10 +1475,16 @@ const Swap = () => {
   useEffect(() => {
     if (!token || !activeAccount || !tokens || !tokens2) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const wrappedTokenId = Number(
-      tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
-    );
-    if (token.tokenId === 0) {
+    // Use contractId if available, otherwise use tokenId
+    const tokenIdToUse = token.contractId ?? token.tokenId;
+    // For ASAs, use tokenId directly as it's the ASA asset ID
+    // For other types, try to find it from tokens2, but fall back to tokenId
+    const wrappedTokenId = token.assetType === "asa" 
+      ? Number(token.tokenId)
+      : Number(
+          tokens2.find((t) => t.contractId === tokenIdToUse)?.tokenId || token.tokenId
+        );
+    if (token.assetType === "network") {
       algodClient
         .accountInformation(activeAccount.address)
         .do()
@@ -1329,7 +1495,7 @@ const Swap = () => {
           const available = Math.max(0, amount - minBalance - txnCost);
           setBalance((available / 10 ** token.decimals).toLocaleString());
         });
-    } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+    } else if (token.assetType === "asa") {
       algodClient
         .accountAssetInformation(activeAccount.address, wrappedTokenId)
         .do()
@@ -1341,7 +1507,7 @@ const Swap = () => {
               // set balance in case off arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
               const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
-              const ci = new arc200(token.tokenId, algodClient, indexerClient);
+              const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
               ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
                 if (r.success) {
                   const balance2Bi = BigInt(r.returnValue);
@@ -1354,7 +1520,7 @@ const Swap = () => {
             });
         })
         .catch((e: any) => {
-          const ci = new arc200(token.tokenId, algodClient, indexerClient);
+          const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
           ci.arc200_decimals().then((r: any) => {
             if (r.success) {
               const decimals = Number(r.returnValue);
@@ -1370,8 +1536,8 @@ const Swap = () => {
             }
           });
         });
-    } else {
-      const ci = new arc200(Number(token.tokenId), algodClient, indexerClient);
+    } else if (token.assetType === "arc200" && tokenIdToUse) {
+      const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(
         (arc200_balanceOfR: any) => {
           if (arc200_balanceOfR.success) {
@@ -1385,16 +1551,23 @@ const Swap = () => {
         }
       );
     }
+    // arc200-exchange
   }, [token, activeAccount, tokens, tokens2]);
 
   // EFFECT: get token2 balance
   useEffect(() => {
     if (!token2 || !activeAccount || !tokens2) return;
     const { algodClient, indexerClient } = getAlgorandClients();
-    const wrappedTokenId = Number(
-      tokens2.find((t) => t.contractId === token2.tokenId)?.tokenId
-    );
-    if (token2.tokenId === 0) {
+    // Use contractId if available, otherwise use tokenId
+    const tokenIdToUse = token2.contractId ?? token2.tokenId;
+    // For ASAs, use tokenId directly as it's the ASA asset ID
+    // For other types, try to find it from tokens2, but fall back to tokenId
+    const wrappedTokenId = token2.assetType === "asa"
+      ? Number(token2.tokenId)
+      : Number(
+          tokens2.find((t) => t.contractId === tokenIdToUse)?.tokenId || token2.tokenId
+        );
+    if (token2.tokenId === 0 || (token2.contractId === TOKEN_WVOI1 && token2.tokenId === 0)) {
       algodClient
         .accountInformation(activeAccount.address)
         .do()
@@ -1419,7 +1592,7 @@ const Swap = () => {
                   .dividedBy(new BigNumber(10).pow(decimals))
                   .toFixed(0)
               );
-              const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+              const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
               ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
                 if (r.success) {
                   const balance2Bi = BigInt(r.returnValue);
@@ -1432,7 +1605,7 @@ const Swap = () => {
             });
         })
         .catch((e: any) => {
-          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
+          const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
           ci.arc200_decimals().then((r: any) => {
             if (r.success) {
               const decimals = Number(r.returnValue);
@@ -1448,55 +1621,21 @@ const Swap = () => {
             }
           });
         });
-    } else {
-      // const ci = new CONTRACT(
-      //   token2.tokenId,
-      //   algodClient,
-      //   indexerClient,
-      //   {
-      //     name: "",
-      //     description: "",
-      //     methods: [
-      //       {
-      //         name: "arc200_exchange",
-      //         args: [],
-      //         readonly: false,
-      //         returns: {
-      //           type: "(uint64,address)",
-      //         },
-      //         desc: "ARC-200 exchange info (external)",
-      //       },
-      //     ],
-      //     events: [],
-      //   },
-      //   {
-      //     addr: activeAccount.address,
-      //     sk: new Uint8Array(0),
-      //   }
-      // );
-      // ci.arc200_exchange().then((r: any) => {
-      //   console.log("r", r);
-      //   if (r.success) {
-      //     const [fee, exchangeAddress] = r.returnValue;
-      //     console.log("fee", fee);
-      //     console.log("exchangeAddress", exchangeAddress);
-      //   } else {
-          const ci = new arc200(token2.tokenId, algodClient, indexerClient);
-          ci.arc200_balanceOf(activeAccount.address).then(
-            (arc200_balanceOfR: any) => {
-              if (arc200_balanceOfR.success) {
-                const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
-                const balanceStr = balanceBn
-                  .dividedBy(new BigNumber(10).pow(token2.decimals))
-                  .toFixed(token2.decimals);
-                setBalance2(balanceStr);
-              }
-            }
-          );
+    } else if (token2.assetType === "arc200" && tokenIdToUse) {
+      const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
+      ci.arc200_balanceOf(activeAccount.address).then(
+        (arc200_balanceOfR: any) => {
+          if (arc200_balanceOfR.success) {
+            const balanceBn = new BigNumber(arc200_balanceOfR.returnValue);
+            const balanceStr = balanceBn
+              .dividedBy(new BigNumber(10).pow(token2.decimals))
+              .toFixed(token2.decimals);
+            setBalance2(balanceStr);
+          }
         }
-      // });
-    // }
-  }, [balance, token, token2, activeAccount]);
+      );
+    }
+  }, [token2, activeAccount, tokens2]);
 
   // EFFECT: get voi balance
   /*
@@ -1536,6 +1675,12 @@ const Swap = () => {
 
   const poolBalance = useMemo(() => {
     if (!info || !token || !token2) return "-";
+    // Ensure we have valid decimals
+    const tokenDecimals = token?.decimals ?? 6;
+    const token2Decimals = token2?.decimals ?? 6;
+    const tokenSymbol = token?.symbol ?? "Unknown";
+    const token2Symbol = token2?.symbol ?? "Unknown";
+    
     const swapAForB =
       info.tokA === tokenId(token) && info.tokB === tokenId(token2);
     const balA = swapAForB ? info.poolBals.A : info.poolBals.B;
@@ -1543,15 +1688,15 @@ const Swap = () => {
 
     const balAF = formatter.format(
       new BigNumber(balA)
-        .dividedBy(new BigNumber(10).pow(token.decimals))
+        .dividedBy(new BigNumber(10).pow(tokenDecimals))
         .toNumber()
     );
     const balBF = formatter.format(
       new BigNumber(balB)
-        .dividedBy(new BigNumber(10).pow(token2.decimals))
+        .dividedBy(new BigNumber(10).pow(token2Decimals))
         .toNumber()
     );
-    return `${balBF} ${token2.symbol} / ${balAF} ${token.symbol}`;
+    return `${balBF} ${token2Symbol} / ${balAF} ${tokenSymbol}`;
   }, [pool, info, token, token2]);
 
   // Add new state for confirmation modal
@@ -1605,28 +1750,76 @@ const Swap = () => {
         symbol: "VOI",
       };
 
+      // Find tokens in tokens2, checking both contractId and tokenId
+      const tokenIdToFind = token?.contractId ?? token?.tokenId;
+      const token2IdToFind = token2?.contractId ?? token2?.tokenId;
+      
       const mA =
-        token?.tokenId === 0
+        token?.tokenId === 0 || token?.contractId === TOKEN_WVOI1
           ? networkToken
-          : tokens2?.find((t) => t.contractId === token?.tokenId);
+          : tokens2?.find(
+              (t) => 
+                t.contractId === tokenIdToFind || 
+                t.tokenId === tokenIdToFind ||
+                (t.contractId === token?.contractId) ||
+                (t.tokenId === token?.tokenId)
+            ) || token; // Fallback to token if not found
 
       const mB =
-        token2?.tokenId === 0
+        token2?.tokenId === 0 || token2?.contractId === TOKEN_WVOI1
           ? networkToken
-          : tokens2?.find((t) => t.contractId === token2?.tokenId);
+          : tokens2?.find(
+              (t) => 
+                t.contractId === token2IdToFind || 
+                t.tokenId === token2IdToFind ||
+                (t.contractId === token2?.contractId) ||
+                (t.tokenId === token2?.tokenId)
+            ) || token2; // Fallback to token2 if not found
 
-      const A = {
+      // Ensure we have valid decimals
+      const decimalsA = mA?.decimals ?? token?.decimals ?? 6;
+      const decimalsB = mB?.decimals ?? token2?.decimals ?? 6;
+
+      // Helper function to get the correct tokenId (ASA asset ID) for transactions
+      const getTokenIdForTransaction = (foundToken: any, contractId: number | undefined): string | undefined => {
+        if (!contractId) return undefined;
+        
+        // Priority: 1) ASA mapping from config, 2) tokenId from tokens2, 3) contract ID
+        const asaAssetId = getAsaIdFromArc200Contract(contractId);
+        if (asaAssetId) {
+          return asaAssetId.toString();
+        } else if (foundToken?.tokenId) {
+          return foundToken.tokenId.toString();
+        } else {
+          return contractId.toString();
+        }
+      };
+
+      // Get contract IDs
+      const contractIdA = mA?.contractId ?? token?.contractId;
+      const contractIdB = mB?.contractId ?? token2?.contractId;
+
+      // Build A object with contractId only if it exists
+      const A: any = {
         ...mA,
         amount: fromAmount.replace(/,/g, ""),
-        decimals: `${mA.decimals}`,
-        tokenId: mA.tokenId ?? undefined,
+        decimals: `${decimalsA}`,
+        tokenId: getTokenIdForTransaction(mA, contractIdA) ?? token?.tokenId?.toString(),
       };
-      const B = {
+      if (contractIdA) {
+        A.contractId = contractIdA;
+      }
+
+      // Build B object with contractId only if it exists
+      const B: any = {
         ...mB,
         amount: toAmount.replace(/,/g, ""),
-        decimals: `${mB.decimals}`,
-        tokenId: mB.tokenId ?? undefined,
+        decimals: `${decimalsB}`,
+        tokenId: getTokenIdForTransaction(mB, contractIdB) ?? token2?.tokenId?.toString(),
       };
+      if (contractIdB) {
+        B.contractId = contractIdB;
+      }
 
       const swapR = await ci.swap(acc.addr, pool2.poolId, A, B, [], {
         debug: true,
@@ -1745,27 +1938,69 @@ const Swap = () => {
   const [message, setMessage] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
 
+  const findTokenInfo = (token: ARC200TokenI, tokens2: any[]) => {
+    if (!token || !tokens2) return undefined;
+    // Handle VOI token (tokenId 0 or contractId 390001)
+    if (token.tokenId === 0 || token.contractId === TOKEN_WVOI1) {
+      return tokens2.find(
+        (t) =>
+          t.contractId === 0 ||
+          t.contractId === TOKEN_WVOI1 ||
+          t.tokenId === 0 ||
+          t.tokenId === TOKEN_WVOI1 ||
+          Number(t.contractId) === 0 ||
+          Number(t.contractId) === TOKEN_WVOI1 ||
+          Number(t.tokenId) === 0 ||
+          Number(t.tokenId) === TOKEN_WVOI1
+      );
+    }
+    // Try multiple matching strategies
+    return tokens2.find(
+      (t) =>
+        t.contractId === token.tokenId ||
+        t.contractId === token.contractId ||
+        t.tokenId === token.tokenId ||
+        `${t.tokenId}` === `${token.tokenId}` ||
+        Number(t.tokenId) === token.tokenId ||
+        Number(t.contractId) === token.tokenId ||
+        (token.contractId && Number(t.contractId) === token.contractId)
+    );
+  };
+
   const [tokAInfo, setTokAInfo] = useState<any>();
   useEffect(() => {
     if (!token || !tokens2) return;
-    const tokA = tokens2.find(
-      (t) =>
-        t.contractId === token.tokenId || `${t.tokenId}` === `${token.tokenId}`
-    );
-    if (!tokA) return;
-    setTokAInfo(tokA);
+    const tokA = findTokenInfo(token, tokens2);
+    if (tokA) {
+      setTokAInfo(tokA);
+    } else {
+      // Fallback: create tokInfo from token if not found in tokens2
+      setTokAInfo({
+        contractId: token.contractId || token.tokenId,
+        tokenId: token.tokenId,
+        symbol: token.symbol,
+        name: token.name,
+        verified: token.tokenId === 0 ? 2 : 1,
+      });
+    }
   }, [token, tokens2]);
 
   const [tokBInfo, setTokBInfo] = useState<any>();
   useEffect(() => {
     if (!token2 || !tokens2) return;
-    const tokB = tokens2.find(
-      (t) =>
-        t.contractId === token2.tokenId ||
-        `${t.tokenId}` === `${token2.tokenId}`
-    );
-    if (!tokB) return;
-    setTokBInfo(tokB);
+    const tokB = findTokenInfo(token2, tokens2);
+    if (tokB) {
+      setTokBInfo(tokB);
+    } else {
+      // Fallback: create tokInfo from token2 if not found in tokens2
+      setTokBInfo({
+        contractId: token2.contractId || token2.tokenId,
+        tokenId: token2.tokenId,
+        symbol: token2.symbol,
+        name: token2.name,
+        verified: token2.tokenId === 0 ? 2 : 1,
+      });
+    }
   }, [token2, tokens2]);
 
   const [showSettings, setShowSettings] = useState(false);
@@ -1797,10 +2032,7 @@ const Swap = () => {
             onFocus={() => setFocus("from")}
             options={tokenOptions}
             displayId={
-              tokens2?.find((t) => t.contractId === token?.tokenId)
-                ?.contractId ||
-              token?.tokenId ||
-              0
+              token?.contractId || token?.tokenId || 0
             }
             tokInfo={tokAInfo}
           />
@@ -1828,10 +2060,7 @@ const Swap = () => {
             balance={balance2}
             onFocus={() => setFocus("to")}
             displayId={
-              tokens2?.find((t) => t.contractId === token2?.tokenId)
-                ?.contractId ||
-              token2?.tokenId ||
-              0
+              token2?.contractId || token2?.tokenId || 0
             }
             tokInfo={tokBInfo}
           />
@@ -1922,11 +2151,12 @@ const Swap = () => {
                 <TokenIconContainer>
                   <img
                     src={`https://asset-verification.nautilus.sh/icons/${getIconId(
-                      token?.tokenId === 0 
-                        ? TOKEN_WVOI1 
-                        : tokens2?.find((t) => t.tokenId === token?.tokenId)?.contractId ||
-                          token?.contractId ||
-                          token?.tokenId
+                      token?.tokenId === 0
+                        ? TOKEN_WVOI1
+                        : tokens2?.find((t) => t.tokenId === token?.tokenId)
+                            ?.contractId ||
+                            token?.contractId ||
+                            token?.tokenId
                     )}.png`}
                     alt={token?.symbol}
                     onError={(e) => {
@@ -1952,11 +2182,12 @@ const Swap = () => {
                 <TokenIconContainer>
                   <img
                     src={`https://asset-verification.nautilus.sh/icons/${getIconId(
-                      token2?.tokenId === 0 
-                        ? TOKEN_WVOI1 
-                        : tokens2?.find((t) => t.tokenId === token2?.tokenId)?.contractId ||
-                          token2?.contractId ||
-                          token2?.tokenId
+                      token2?.tokenId === 0
+                        ? TOKEN_WVOI1
+                        : tokens2?.find((t) => t.tokenId === token2?.tokenId)
+                            ?.contractId ||
+                            token2?.contractId ||
+                            token2?.tokenId
                     )}.png`}
                     alt={token2?.symbol}
                     onError={(e) => {
@@ -1982,13 +2213,13 @@ const Swap = () => {
                   <RateValue>
                     {window.innerWidth > 600 && (
                       <RateMain className={isDarkTheme ? "dark" : "light"}>
-                        {lhs === 1 ? 1 : lhs?.toFixed(6)} {tokenSymbol(token)} ={" "}
-                        {lhs > 1 ? 1 : rate?.toFixed(6)} {tokenSymbol(token2)}
+                        1 {tokenSymbol(token)} ={" "}
+                        {rate && rate > 0 ? rate.toFixed(6) : "0.000000"} {tokenSymbol(token2)}
                       </RateMain>
                     )}
                     <RateSub>
-                      {lhs === 1 ? 1 : rhs} {tokenSymbol(token2)} ={" "}
-                      {invRate?.toFixed(6)} {tokenSymbol(token)}
+                      1 {tokenSymbol(token2)} ={" "}
+                      {invRate && invRate > 0 ? invRate.toFixed(6) : "0.000000"} {tokenSymbol(token)}
                     </RateSub>
                   </RateValue>
                 </RateContainer>
