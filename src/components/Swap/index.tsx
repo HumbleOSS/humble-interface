@@ -1499,7 +1499,10 @@ const Swap = () => {
             tokens.find((t) => t.contractId === tokenIdToUse)?.tokenId ||
               token.tokenId
           );
-    if (token.assetType === "network") {
+    if (
+      token.tokenId === 0 ||
+      (token.contractId === TOKEN_WVOI1 && token.tokenId === 0)
+    ) {
       algodClient
         .accountInformation(activeAccount.address)
         .do()
