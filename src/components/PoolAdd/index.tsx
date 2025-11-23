@@ -1454,54 +1454,70 @@ const Swap = () => {
           setBalance2((available / 10 ** token2.decimals).toLocaleString());
         });
     } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
-      algodClient
-        .accountAssetInformation(activeAccount.address, wrappedTokenId)
-        .do()
-        .then((accAssetInfo: any) => {
-          indexerClient
-            .lookupAssetByID(wrappedTokenId)
-            .do()
-            .then((assetInfo: any) => {
-              const decimals = assetInfo.asset.params.decimals;
-              const balance1Bi = BigInt(
-                new BigNumber(accAssetInfo["asset-holding"].amount)
-                  .dividedBy(new BigNumber(10).pow(decimals))
-                  .toFixed(0)
-              );
-              const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
-              ci.arc200_decimals().then((r: any) => {
-                if (r.success) {
-                  const decimals = Number(r.returnValue);
-                  ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                    if (r.success) {
-                      const balance2Bi = BigInt(r.returnValue);
-                      const balance = new BigNumber(
-                        (balance1Bi + balance2Bi).toString()
-                      ).dividedBy(new BigNumber(10).pow(decimals));
-                      setBalance2(balance.toFixed(decimals));
-                    }
-                  });
-                }
+      // For pure ASAs, just get the ASA balance directly
+      if (token2.assetType === "asa") {
+        algodClient
+          .accountAssetInformation(activeAccount.address, wrappedTokenId)
+          .do()
+          .then((accAssetInfo: any) => {
+            indexerClient
+              .lookupAssetByID(wrappedTokenId)
+              .do()
+              .then((assetInfo: any) => {
+                const decimals = assetInfo.asset.params.decimals;
+                const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+                const balance = new BigNumber(balance1Bi.toString())
+                  .dividedBy(new BigNumber(10).pow(decimals));
+                setBalance2(balance.toFixed(decimals));
               });
-            });
-        })
-        .catch((e: any) => {
-          const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
-          ci.arc200_decimals().then((r: any) => {
-            if (r.success) {
-              const decimals = Number(r.returnValue);
-              ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
-                if (r.success) {
-                  const balance2Bi = BigInt(r.returnValue);
-                  const balance = new BigNumber(
-                    balance2Bi.toString()
-                  ).dividedBy(new BigNumber(10).pow(decimals));
-                  setBalance2(balance.toFixed(decimals));
-                }
-              });
-            }
+          })
+          .catch((e: any) => {
+            // If ASA lookup fails, set balance to 0
+            setBalance2("0");
           });
-        });
+      } else {
+        // For hybrid tokens (ASA + ARC200), get both balances
+        algodClient
+          .accountAssetInformation(activeAccount.address, wrappedTokenId)
+          .do()
+          .then((accAssetInfo: any) => {
+            indexerClient
+              .lookupAssetByID(wrappedTokenId)
+              .do()
+              .then((assetInfo: any) => {
+                // set balance in case of arc200 tokens that manage standard assets like new unit
+                const decimals = assetInfo.asset.params.decimals;
+                const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
+                const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
+                ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                  if (r.success) {
+                    const balance2Bi = BigInt(r.returnValue);
+                    const balance = new BigNumber(
+                      (balance1Bi + balance2Bi).toString()
+                    ).dividedBy(new BigNumber(10).pow(decimals));
+                    setBalance2(balance.toFixed(decimals));
+                  }
+                });
+              });
+          })
+          .catch((e: any) => {
+            const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
+            ci.arc200_decimals().then((r: any) => {
+              if (r.success) {
+                const decimals = Number(r.returnValue);
+                ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
+                  if (r.success) {
+                    const balance2Bi = BigInt(r.returnValue);
+                    const balance = new BigNumber(
+                      balance2Bi.toString()
+                    ).dividedBy(new BigNumber(10).pow(decimals));
+                    setBalance2(balance.toFixed(decimals));
+                  }
+                });
+              }
+            });
+          });
+      }
     } else {
       const ci = new arc200(Number(tokenIdToUse), algodClient, indexerClient);
       ci.arc200_balanceOf(activeAccount.address).then(

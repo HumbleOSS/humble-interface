@@ -18,11 +18,12 @@ import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import { tokenSymbol } from "../../utils/dex";
 import DiscreteSlider from "../DiscreteSlider";
-import { getTokens } from "../../store/tokenSlice";
+import { getToken, getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
 import BigNumber from "bignumber.js";
 import debounce from "lodash/debounce";
 import axios from "axios";
+import { getPool, getPools } from "@/store/poolSlice";
 
 const SwapHeadingContainer = styled.div`
   width: 100%;
@@ -388,7 +389,7 @@ const getTokenIconUrl = (tokenId?: number) => {
 
   // Handle wVOI (390001) and VOI (0) - both use 0.png
   const iconId = tokenId === 390001 ? 0 : tokenId;
-  
+
   return `https://asset-verification.nautilus.sh/icons/${iconId}.png`;
 };
 
@@ -404,63 +405,51 @@ const PoolRemove = () => {
     dispatch(getTokens() as unknown as UnknownAction);
   }, [dispatch]);
 
+  console.log("tokens", tokens);
+
   /* Pools */
   const pools: PoolI[] = useSelector((state: RootState) => state.pools.pools);
+  useEffect(() => {
+    dispatch(getPools() as unknown as UnknownAction);
+  }, [dispatch]);
+
+  console.log("pools", pools);
 
   /* Params */
   const [sp] = useSearchParams();
   const paramPoolId = sp.get("poolId");
 
+  const [pool, setPool] = useState<PoolI>();
+  useEffect(() => {
+    getPool(Number(paramPoolId))
+      .then((pool) => {
+        console.log("pool", pool);
+        setPool(pool);
+      })
+      .catch((error) => {
+        console.error("Error fetching pool:", error);
+      });
+  }, [paramPoolId]);
+
   /* Wallet */
   const { activeAccount, signTransactions } = useWallet();
-
-  const [pool, setPool] = useState<PoolI>({
-    poolId: Number(paramPoolId),
-  } as PoolI);
 
   const [token, setToken] = useState<ARC200TokenI>();
   const [token2, setToken2] = useState<ARC200TokenI>();
   useEffect(() => {
-    if (pool || !pools || pools.length === 0 || !tokens || tokens.length === 0)
-      return;
-    if (paramPoolId) {
-      const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
-      if (pool) {
-        setPool(pool);
-        const token = tokens.find(
-          (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokA}`
-        );
-        const token2 = tokens.find(
-          (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokB}`
-        );
-
-        setToken(token);
-        setToken2(token2);
-      } else {
-        const pool = pools[0];
-        setPool(pool);
-        const token = tokens.find(
-          (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokA}`
-        );
-        const token2 = tokens.find(
-          (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokB}`
-        );
-        setToken(token);
-        setToken2(token2);
-      }
-    } else {
-      const pool = pools[0];
-      setPool(pool);
-      const token = tokens.find(
-        (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokA}`
-      );
-      const token2 = tokens.find(
-        (t: ARC200TokenI) => `${t.tokenId}` === `${pool?.tokB}`
-      );
+    if (!pool) return;
+    getToken(pool.tokA).then((token) => {
       setToken(token);
-      setToken2(token2);
-    }
-  }, [pools, tokens, paramPoolId]);
+    });
+    getToken(pool.tokB).then((token) => {
+      setToken2(token);
+    });
+  }, [pool]);
+
+  console.log({
+    token,
+    token2,
+  });
 
   const [fromAmount, setFromAmount] = React.useState<string>("0");
   const [on, setOn] = useState(false);
@@ -588,11 +577,16 @@ const PoolRemove = () => {
   };
 
   const handleRemoveLiquidity = async () => {
-    //if (!isValid || !token || !token2 || !pool) return;
-    if (!activeAccount || !info) {
+    if (!pool || !tokens || !info) return;
+    if (!activeAccount) {
       toast.info("Please connect your wallet first");
       return;
     }
+    console.log({
+      token,
+      token2,
+    });
+
     try {
       setOn(true);
       const { algodClient, indexerClient } = getAlgorandClients();
@@ -689,9 +683,14 @@ const PoolRemove = () => {
       const { poolId } = pool;
       const tokA = info.tokA;
       const tokB = info.tokB;
+
+      console.log({
+        poolId,
+        tokA,
+        tokB,
+      });
+
       const ci = makeCi(poolId);
-      const ciA = makeCi(tokA);
-      const ciB = makeCi(tokB);
 
       ci.setFee(4000);
 
@@ -722,13 +721,8 @@ const PoolRemove = () => {
 
       const buildN = [];
 
-      const { data } = await axios.get(
-        //"https://mainnet-idx.nautilus.sh/nft-indexer/v1/arc200/tokens?includes=all"
-        "https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/tokens"
-      );
-      const tokens = data.tokens.filter((token: any) =>
-        [tokA, tokB].includes(token.contractId)
-      );
+      const tokenA = tokens?.find((t: any) => t.contractId === tokA);
+      const tokenB = tokens?.find((t: any) => t.contractId === tokB);
 
       //
       // experimental withdraw extra wrapped tokens
@@ -738,78 +732,11 @@ const PoolRemove = () => {
         .lookupAccountAssets(activeAccount.address)
         .do();
 
-      // do {
-      //   for (const tok of [tokA, tokB]) {
-      //     const token = tokens?.find((t: any) => t.contractId === tok);
-      //     if (!token) continue;
-      //     const ciRedeem = new CONTRACT(
-      //       tok,
-      //       algodClient,
-      //       indexerClient,
-      //       {
-      //         name: "",
-      //         description: "",
-      //         methods: [
-      //           {
-      //             name: "arc200_exchange",
-      //             args: [],
-      //             readonly: true,
-      //             returns: {
-      //               type: "(uint64,address)",
-      //             },
-      //             desc: "ARC-200 exchange info (external)",
-      //           },
-      //         ],
-      //         events: [],
-      //       },
-      //       {
-      //         addr: activeAccount.address,
-      //         sk: new Uint8Array(0),
-      //       }
-      //     );
-      //     const exchangeR = await ciRedeem.arc200_exchange();
-      //     if (exchangeR.success) {
-      //       console.log(
-      //         "Token has exchange contract, skipping direct withdrawal"
-      //       );
-      //       continue;
-      //     }
-      //     console.log("Attempting to withdraw extra wrapped token", token);
-      //     const assetId = Number(token?.tokenId || 0);
-      //     if (!assetId && !token) continue;
-      //     const tokBuilder =
-      //       tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
-      //     const tokCi = tok === tokA ? ciA : ciB;
-      //     const arc200_balanceOf = (
-      //       await tokCi.arc200_balanceOf(activeAccount.address)
-      //     ).returnValue;
-      //     if (arc200_balanceOf === BigInt(0)) continue;
-      //     const msg = `Withdraw ${new BigNumber(arc200_balanceOf.toString())
-      //       .dividedBy(new BigNumber(10).pow(6))
-      //       .toFixed(6)} ${token.symbol}`;
-      //     const note = new TextEncoder().encode(msg);
-      //     const condOptin =
-      //       assetId !== 0 &&
-      //       !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
-      //         ? {
-      //             xaid: assetId,
-      //             snd: activeAccount.address,
-      //             arcv: activeAccount.address,
-      //           }
-      //         : {};
-      //     const txnO = (await tokBuilder.withdraw(arc200_balanceOf)).obj;
-      //     buildN.push({
-      //       ...txnO,
-      //       ...condOptin,
-      //       note,
-      //     });
-      //   }
-      // } while (0);
+      console.log({
+        accountAssets,
+      });
 
-      //
-      // remove liquidity
-      //
-
+      // pool remove liquidity
       {
         const txnO = (
           await builder.pool.Provider_withdraw(
@@ -826,83 +753,99 @@ const PoolRemove = () => {
         });
       }
 
-      //
-      // If Provider_withdraw includes wrapped token withdraw
-      //
+      // cond tokeenA withdraw
+      if (
+        tokenA &&
+        (tokenA.assetType === "network" || tokenA.assetType === "asa")
+      ) {
+        const condOptin =
+          tokenA.tokenId !== 0 &&
+          !accountAssets.assets.find(
+            (a: any) => a["asset-id"] === tokenA.tokenId
+          )
+            ? {
+                xaid: tokenA.tokenId,
+                snd: activeAccount.address,
+                arcv: activeAccount.address,
+              }
+            : {};
+        const txnO = (await builder.arc200.tokA.withdraw(withdrawAmount)).obj;
+        buildN.push({
+          ...txnO,
+        });
+      } else if (tokenA && tokenA.assetType === "arc200") {
+        // do nothing
+      } else if (tokenA && tokenA.assetType === "arc200-exchange") {
+        const txnO = (await builder.arc200.tokA.arc200_swapBack(withdrawAmount))
+          .obj;
+        const condOptin =
+          tokenA.tokenId !== 0 &&
+          !accountAssets.assets.find(
+            (a: any) => a["asset-id"] === tokenA.tokenId
+          )
+            ? {
+                xaid: tokenA.tokenId,
+                snd: activeAccount.address,
+                arcv: activeAccount.address,
+              }
+            : {};
+        buildN.push({
+          ...txnO,
+          ...condOptin,
+          note: new TextEncoder().encode("arc200_swapBack"),
+        });
+      } else {
+        throw new Error("Unsupported asset type");
+      }
 
-      do {
-        for (const tok of [tokA, tokB]) {
-          const token = tokens?.find((t: any) => t.contractId === tok);
-          if (!token) continue;
-          const symbol = token.symbol;
-          const decimals = token.decimals;
-          const assetId = Number(token.tokenId);
-          const tokenContract =
-            tok === tokA ? builder.arc200.tokA : builder.arc200.tokB;
-          const withdrawAmount = Provider_withdraw[tok === tokA ? 0 : 1];
-
-          // Check if token has arc200_exchange method
-          // const ciRedeem = new CONTRACT(
-          //   tok,
-          //   algodClient,
-          //   indexerClient,
-          //   {
-          //     name: "",
-          //     description: "",
-          //     methods: [
-          //       {
-          //         name: "arc200_exchange",
-          //         args: [],
-          //         readonly: false,
-          //         returns: {
-          //           type: "(uint64,address)",
-          //         },
-          //         desc: "ARC-200 exchange info (external)",
-          //       },
-          //     ],
-          //     events: [],
-          //   },
-          //   {
-          //     addr: activeAccount.address,
-          //     sk: new Uint8Array(0),
-          //   }
-          // );
-
-          //Try to use arc200_exchange first
-          // const exchangeR = await ciRedeem.arc200_exchange();
-          // if (exchangeR.success) {
-          //   //Token has exchange contract, skip direct withdrawal
-          //   console.log(
-          //     `Token ${symbol} has exchange contract, skipping direct withdrawal`
-          //   );
-          //   continue;
-          // } else {
-          //   console.log(
-          //     `arc200_swapBack failed for ${symbol}, falling back to direct withdrawal`
-          //   );
-            // Fallback to direct withdrawal if arc200_swapBack fails
-            const msg = `Withdraw ${new BigNumber(withdrawAmount.toString())
-              .dividedBy(new BigNumber(10).pow(decimals))
-              .toFixed(decimals)} ${symbol}`;
-            const note = new TextEncoder().encode(msg);
-            const condOptin =
-              assetId !== 0 &&
-              !accountAssets.assets.find((a: any) => a["asset-id"] === assetId)
-                ? {
-                    xaid: assetId,
-                    snd: activeAccount.address,
-                    arcv: activeAccount.address,
-                  }
-                : {};
-            const txnO = (await tokenContract.withdraw(withdrawAmount)).obj;
-            buildN.push({
-              ...txnO,
-              ...condOptin,
-              note,
-            });
-          }
-        // }
-      } while (0);
+      // cond tokeenB withdraw
+      if (
+        tokenB &&
+        (tokenB.assetType === "network" || tokenB.assetType === "asa")
+      ) {
+        const condOptin =
+          tokenB.tokenId !== 0 &&
+          !accountAssets.assets.find(
+            (a: any) => a["asset-id"] === tokenB.tokenId
+          )
+            ? {
+                xaid: tokenB.tokenId,
+                snd: activeAccount.address,
+                arcv: activeAccount.address,
+              }
+            : {};
+        const txnO = (await builder.arc200.tokB.withdraw(withdrawAmount)).obj;
+        buildN.push({
+          ...txnO,
+          ...condOptin,
+          note: new TextEncoder().encode(
+            `Withdraw ${withdrawAmount} ${tokenB.symbol}`
+          ),
+        });
+      } else if (tokenB && tokenB.assetType === "arc200") {
+        // do nothing
+      } else if (tokenB && tokenB.assetType === "arc200-exchange") {
+        const condOptin =
+          tokenB.tokenId !== 0 &&
+          !accountAssets.assets.find(
+            (a: any) => a["asset-id"] === tokenB.tokenId
+          )
+            ? {
+                xaid: tokenB.tokenId,
+                snd: activeAccount.address,
+                arcv: activeAccount.address,
+              }
+            : {};
+        const txnO = (await builder.arc200.tokB.arc200_swapBack(withdrawAmount))
+          .obj;
+        buildN.push({
+          ...txnO,
+          ...condOptin,
+          note: new TextEncoder().encode("arc200_swapBack"),
+        });
+      } else {
+        throw new Error("Unsupported asset type");
+      }
 
       ci.setAccounts([poolAddr]);
       ci.setEnableGroupResourceSharing(true);

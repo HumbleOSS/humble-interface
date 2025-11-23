@@ -16,7 +16,7 @@ export const ARC200_ASSET_ID_MAPPING: Record<number, number> = {
   395614: 302190, // aUSDC
   // wVOI	390001	0
   390001: 0, // VOI
-  // CORN	412682	40266686
+  // CORN	412682	40266686 (arc200-exchange)
   412682: 40266686, // CORN
   // aAlgo	413153	302189
   413153: 302189, // aAlgo
@@ -104,18 +104,18 @@ export const ARC200_ASSET_TYPE_MAPPING: Record<number, string> = {
   395614: "asa",
   // wVOI	390001	0
   390001: "network",
-  // CORN	412682	40266686
-  412682: "arc200-exchange",
+  // CORN	412682	40266686 (arc200-exchange)
+  412682: "arc200", // override to arc200
   // aAlgo	413153	302189
   413153: "asa",
-  // UNIT	420069	40266690
-  420069: "arc200-exchange",
+  // UNIT	420069	40266690 (arc200-exchange)
+  420069: "arc200", // override to arc200
   // CCV	664258	0
   664258: "network",
   // FV	770561	0
   770561: "network",
-  // AMMO	798968	40266675
-  798968: "arc200-exchange",
+  // AMMO	798968	40266675 (arc200-exchange)
+  798968: "arc200", // override to arc200
   // EV	828295	0
   828295: "network",
   // VOTE	859312	797372
