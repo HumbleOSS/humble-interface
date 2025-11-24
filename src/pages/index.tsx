@@ -13,3 +13,4 @@ export { AnalyticsToken } from "./AnalyticsToken";
 export { AnalyticsPair } from "./AnalyticsPair";
 export { Rewards } from "./Rewards";
 export { Prices } from "./Prices";
+export { ArbitrageTriangular } from "./ArbitrageTriangular";

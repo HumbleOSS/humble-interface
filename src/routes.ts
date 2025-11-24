@@ -62,4 +62,8 @@ export const routes = [
     path: "/prices",
     Component: Page.Prices,
   },
+  {
+    path: "/arbitrage/triangular",
+    Component: Page.ArbitrageTriangular,
+  },
 ];
