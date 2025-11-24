@@ -12,3 +12,4 @@ export { Analytics } from "./Analytics";
 export { AnalyticsToken } from "./AnalyticsToken";
 export { AnalyticsPair } from "./AnalyticsPair";
 export { Rewards } from "./Rewards";
+export { Prices } from "./Prices";

@@ -17,6 +17,7 @@ import { ARC200TokenI, PoolI } from "../../types";
 import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import { tokenSymbol } from "../../utils/dex";
+import { TOKEN_WVOI1 } from "../../constants/tokens";
 import DiscreteSlider from "../DiscreteSlider";
 import { getToken, getTokens } from "../../store/tokenSlice";
 import { UnknownAction } from "@reduxjs/toolkit";
@@ -700,12 +701,15 @@ const PoolRemove = () => {
       if (!arc200_balanceOfR.success) return new Error("Balance failed");
       const poolShare = arc200_balanceOfR.returnValue;
 
-      const withdrawAmount = BigInt(
-        new BigNumber(poolShare.toString())
-          .dividedBy(100)
-          .multipliedBy(fromAmount)
-          .toFixed(0)
-      );
+      const withdrawAmount =
+        fromAmount === "100"
+          ? poolShare
+          : BigInt(
+              new BigNumber(poolShare.toString())
+                .dividedBy(100)
+                .multipliedBy(fromAmount)
+                .toFixed(0)
+            );
 
       const Provider_withdrawR = await ci.Provider_withdraw(
         1,
@@ -715,6 +719,34 @@ const PoolRemove = () => {
       if (!Provider_withdrawR.success)
         return new Error("Add liquidity simulation failed");
       const Provider_withdraw = Provider_withdrawR.returnValue;
+
+      console.log({
+        fromAmount,
+        poolShare,
+        withdrawAmount,
+      });
+
+      const [outA, outB] = Provider_withdraw;
+
+      const outAN = new BigNumber(outA.toString())
+        .dividedBy(
+          new BigNumber(10).pow(
+            Number(
+              tokens?.find((t: any) => t.contractId === tokA)?.decimals || 0
+            )
+          )
+        )
+        .toString();
+
+      const outBN = new BigNumber(outB.toString())
+        .dividedBy(
+          new BigNumber(10).pow(
+            Number(
+              tokens?.find((t: any) => t.contractId === tokB)?.decimals || 0
+            )
+          )
+        )
+        .toString();
 
       const builder = makeBuilder(poolId, tokA, tokB);
       const poolAddr = algosdk.getApplicationAddress(poolId);
@@ -734,6 +766,10 @@ const PoolRemove = () => {
 
       console.log({
         accountAssets,
+      });
+
+      console.log({
+        withdrawAmount,
       });
 
       // pool remove liquidity
@@ -769,15 +805,16 @@ const PoolRemove = () => {
                 arcv: activeAccount.address,
               }
             : {};
-        const txnO = (await builder.arc200.tokA.withdraw(withdrawAmount)).obj;
+        const txnO = (await builder.arc200.tokA.withdraw(outA)).obj;
         buildN.push({
           ...txnO,
+          ...condOptin,
+          note: new TextEncoder().encode(`Withdraw ${outAN} ${tokenA.symbol}`),
         });
       } else if (tokenA && tokenA.assetType === "arc200") {
         // do nothing
       } else if (tokenA && tokenA.assetType === "arc200-exchange") {
-        const txnO = (await builder.arc200.tokA.arc200_swapBack(withdrawAmount))
-          .obj;
+        const txnO = (await builder.arc200.tokA.arc200_swapBack(outA)).obj;
         const condOptin =
           tokenA.tokenId !== 0 &&
           !accountAssets.assets.find(
@@ -814,13 +851,11 @@ const PoolRemove = () => {
                 arcv: activeAccount.address,
               }
             : {};
-        const txnO = (await builder.arc200.tokB.withdraw(withdrawAmount)).obj;
+        const txnO = (await builder.arc200.tokB.withdraw(outB)).obj;
         buildN.push({
           ...txnO,
           ...condOptin,
-          note: new TextEncoder().encode(
-            `Withdraw ${withdrawAmount} ${tokenB.symbol}`
-          ),
+          note: new TextEncoder().encode(`Withdraw ${outBN} ${tokenB.symbol}`),
         });
       } else if (tokenB && tokenB.assetType === "arc200") {
         // do nothing
@@ -836,8 +871,7 @@ const PoolRemove = () => {
                 arcv: activeAccount.address,
               }
             : {};
-        const txnO = (await builder.arc200.tokB.arc200_swapBack(withdrawAmount))
-          .obj;
+        const txnO = (await builder.arc200.tokB.arc200_swapBack(outB)).obj;
         buildN.push({
           ...txnO,
           ...condOptin,
@@ -981,61 +1015,82 @@ const PoolRemove = () => {
           >
             You will receive: <br />
             <br />
-            <AmountDisplay>
-              <TokenIcon
-                src={getTokenIconUrl(
-                  tokens?.find((t) => t.tokenId === info?.tokA)?.tokenId || 0
-                )}
-                alt={
-                  tokens?.find((t) => t.tokenId || 0 === info?.tokA)?.symbol ||
-                  ""
-                }
-                onError={(e) => {
-                  // Fallback if image fails to load
-                  (e.target as HTMLImageElement).src =
-                    "/default-token-icon.png";
-                }}
-              />
-              {expectedOutcome
-                ? `${(
-                    Number(expectedOutcome?.[0]) /
-                    10 **
-                      (tokens.find((t: any) => t.tokenId === info?.tokA)
-                        ?.decimals || 0)
-                  ).toFixed(6)} ${
-                    tokens.find((t: any) => t.tokenId === info?.tokA)?.symbol ||
-                    ""
-                  }`
-                : "-"}
-            </AmountDisplay>
-            <AmountDisplay>
-              <TokenIcon
-                src={getTokenIconUrl(
-                  tokens?.find((t: any) => t.tokenId === info?.tokB)?.tokenId ||
-                    0
-                )}
-                alt={
-                  tokens.find((t: any) => t.tokenId === info?.tokB)?.symbol ||
-                  ""
-                }
-                onError={(e) => {
-                  // Fallback if image fails to load
-                  (e.target as HTMLImageElement).src =
-                    "/default-token-icon.png";
-                }}
-              />
-              {expectedOutcome
-                ? `${(
-                    Number(expectedOutcome?.[1]) /
-                    10 **
-                      (tokens.find((t: any) => t.tokenId === info?.tokB)
-                        ?.decimals || 0)
-                  ).toFixed(6)} ${
-                    tokens.find((t: any) => t.tokenId === info?.tokB)?.symbol ||
-                    ""
-                  }`
-                : "-"}
-            </AmountDisplay>
+            {(() => {
+              const tokenA = tokens?.find(
+                (t: any) => t.contractId === info?.tokA
+              );
+              const isVOIA =
+                !tokenA ||
+                tokenA.tokenId === 0 ||
+                tokenA.contractId === TOKEN_WVOI1 ||
+                info?.tokA === 0 ||
+                info?.tokA === TOKEN_WVOI1;
+              // Use contractId for icon URL (with 390001 -> 0 conversion)
+              const iconIdA =
+                tokenA?.contractId === TOKEN_WVOI1
+                  ? 0
+                  : tokenA?.contractId ?? tokenA?.tokenId ?? 0;
+              const symbolA =
+                tokenSymbol(convertToARC200Token(tokenA), true) || "VOI";
+
+              return (
+                <AmountDisplay>
+                  <TokenIcon
+                    src={`https://asset-verification.nautilus.sh/icons/${iconIdA}.png`}
+                    alt={symbolA}
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      (e.target as HTMLImageElement).src =
+                        "/default-token-icon.png";
+                    }}
+                  />
+                  {expectedOutcome
+                    ? `${(
+                        Number(expectedOutcome?.[0]) /
+                        10 ** (tokenA?.decimals || 0)
+                      ).toFixed(6)} ${symbolA}`
+                    : "-"}
+                </AmountDisplay>
+              );
+            })()}
+            {(() => {
+              const tokenB = tokens?.find(
+                (t: any) => t.contractId === info?.tokB
+              );
+              const isVOIB =
+                !tokenB ||
+                tokenB.tokenId === 0 ||
+                tokenB.contractId === TOKEN_WVOI1 ||
+                info?.tokB === 0 ||
+                info?.tokB === TOKEN_WVOI1;
+              // Use contractId for icon URL (with 390001 -> 0 conversion)
+              const iconIdB =
+                tokenB?.contractId === TOKEN_WVOI1
+                  ? 0
+                  : tokenB?.contractId ?? tokenB?.tokenId ?? 0;
+              const symbolB =
+                tokenSymbol(convertToARC200Token(tokenB), true) || "VOI";
+
+              return (
+                <AmountDisplay>
+                  <TokenIcon
+                    src={`https://asset-verification.nautilus.sh/icons/${iconIdB}.png`}
+                    alt={symbolB}
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      (e.target as HTMLImageElement).src =
+                        "/default-token-icon.png";
+                    }}
+                  />
+                  {expectedOutcome
+                    ? `${(
+                        Number(expectedOutcome?.[1]) /
+                        10 ** (tokenB?.decimals || 0)
+                      ).toFixed(6)} ${symbolB}`
+                    : "-"}
+                </AmountDisplay>
+              );
+            })()}
           </div>
           <Button className="active" onClick={handleRemoveLiquidity}>
             {!on ? (

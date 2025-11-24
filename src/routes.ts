@@ -58,4 +58,8 @@ export const routes = [
     path: "/rewards",
     Component: Page.Rewards,
   },
+  {
+    path: "/prices",
+    Component: Page.Prices,
+  },
 ];

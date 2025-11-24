@@ -1600,7 +1600,7 @@ const Swap = () => {
           const available = amount - minBalance;
           setBalance2((available / 10 ** token2.decimals).toLocaleString());
         });
-    } else if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+    } else if (token2.assetType === "asa") {
       algodClient
         .accountAssetInformation(activeAccount.address, wrappedTokenId)
         .do()
@@ -1609,12 +1609,9 @@ const Swap = () => {
             .lookupAssetByID(wrappedTokenId)
             .do()
             .then((assetInfo: any) => {
+              // set balance in case off arc200 tokens that manage standard assets like new unit
               const decimals = assetInfo.asset.params.decimals;
-              const balance1Bi = BigInt(
-                new BigNumber(accAssetInfo["asset-holding"].amount)
-                  .dividedBy(new BigNumber(10).pow(decimals))
-                  .toFixed(0)
-              );
+              const balance1Bi = BigInt(accAssetInfo["asset-holding"].amount);
               const ci = new arc200(tokenIdToUse, algodClient, indexerClient);
               ci.arc200_balanceOf(activeAccount.address).then((r: any) => {
                 if (r.success) {
