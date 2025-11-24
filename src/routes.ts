@@ -66,4 +66,8 @@ export const routes = [
     path: "/arbitrage/triangular",
     Component: Page.ArbitrageTriangular,
   },
+  {
+    path: "/router",
+    Component: Page.Router,
+  },
 ];
