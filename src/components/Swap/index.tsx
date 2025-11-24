@@ -1016,36 +1016,57 @@ const Swap = () => {
     setTokenOptions(tokenOptions);
   }, [token2, tokens, pools]);
 
-  const eligiblePools = useMemo(() => {
-    if (!token || !token2 || !pools || pools.length === 0) return [];
+  const [eligiblePools, setEligiblePools] = useState<any[]>([]);
+  useEffect(() => {
+    async function fetchEligiblePools() {
+      if (!token || !token2 || !pools || pools.length === 0) return;
+      // Get token IDs to match - handle VOI (0 or 390001)
+      const tokenAId = tokenId(token);
+      const tokenBId = tokenId(token2);
+      // Also check contractId for tokens with mappings
+      const tokenAContractId = token.contractId;
+      const tokenBContractId = token2.contractId;
 
-    // Get token IDs to match - handle VOI (0 or 390001)
-    const tokenAId = tokenId(token);
-    const tokenBId = tokenId(token2);
-    // Also check contractId for tokens with mappings
-    const tokenAContractId = token.contractId;
-    const tokenBContractId = token2.contractId;
-
-    const filteredPools = pools.filter((p: PoolI) => {
-      // Check if pool contains both tokens (handling VOI as both 0 and 390001)
-      const hasTokenA =
-        [p.tokA, p.tokB].includes(tokenAId) ||
-        (tokenAContractId !== undefined &&
-          [p.tokA, p.tokB].includes(tokenAContractId)) ||
-        (token.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
-        (token.contractId === TOKEN_WVOI1 &&
-          [p.tokA, p.tokB].includes(TOKEN_WVOI1));
-      const hasTokenB =
-        [p.tokA, p.tokB].includes(tokenBId) ||
-        (tokenBContractId !== undefined &&
-          [p.tokA, p.tokB].includes(tokenBContractId)) ||
-        (token2.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
-        (token2.contractId === TOKEN_WVOI1 &&
-          [p.tokA, p.tokB].includes(TOKEN_WVOI1));
-      return hasTokenA && hasTokenB && p.tokA !== p.tokB;
-    });
-    filteredPools.sort((a, b) => b.poolId - a.poolId);
-    return filteredPools.slice(-1);
+      const filteredPools = pools.filter((p: PoolI) => {
+        // Check if pool contains both tokens (handling VOI as both 0 and 390001)
+        const hasTokenA =
+          [p.tokA, p.tokB].includes(tokenAId) ||
+          (tokenAContractId !== undefined &&
+            [p.tokA, p.tokB].includes(tokenAContractId)) ||
+          (token.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
+          (token.contractId === TOKEN_WVOI1 &&
+            [p.tokA, p.tokB].includes(TOKEN_WVOI1));
+        const hasTokenB =
+          [p.tokA, p.tokB].includes(tokenBId) ||
+          (tokenBContractId !== undefined &&
+            [p.tokA, p.tokB].includes(tokenBContractId)) ||
+          (token2.tokenId === 0 && [p.tokA, p.tokB].includes(0)) ||
+          (token2.contractId === TOKEN_WVOI1 &&
+            [p.tokA, p.tokB].includes(TOKEN_WVOI1));
+        return hasTokenA && hasTokenB && p.tokA !== p.tokB;
+      });
+      // find pool with highest minted lpt
+      let maxPool;
+      let maxMintedLpt = BigInt(0);
+      for await (const pool of filteredPools) {
+        const { algodClient, indexerClient } = getAlgorandClients();
+        const ci = new swap(pool.poolId, algodClient, indexerClient);
+        const info = await ci.Info();
+        console.log("info", info);
+        if (info.success) {
+          const {
+            lptBals: { lpMinted },
+          } = info.returnValue;
+          if (lpMinted > maxMintedLpt) {
+            maxMintedLpt = lpMinted;
+            maxPool = pool;
+          }
+        }
+      }
+      console.log("maxPool", maxPool);
+      setEligiblePools([maxPool]);
+    }
+    fetchEligiblePools();
   }, [pools, token, token2]);
 
   console.log("eligiblePools", eligiblePools);
@@ -1054,7 +1075,7 @@ const Swap = () => {
   useEffect(() => {
     // Don't reset if we're coming from a pool page (paramPoolId exists)
     // Only reset if token is set but no eligible pools found
-    if (eligiblePools.length === 0 && token && !paramPoolId) {
+    if ((eligiblePools as PoolI[]).length === 0 && token && !paramPoolId) {
       setToken2(undefined);
       setBalance2("");
     }
@@ -1749,6 +1770,8 @@ const Swap = () => {
 
       const status = await algodClient.status().do();
       const { ["last-round"]: lastRound } = status;
+
+      console.log({ eligiblePools });
 
       const pool = eligiblePools.slice(-1)[0];
       const { poolId } = pool;
