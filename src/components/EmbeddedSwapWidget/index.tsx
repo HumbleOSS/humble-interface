@@ -150,12 +150,12 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
       } else if (defaultToken.tokenId === 0 || defaultToken.contractId === TOKEN_WVOI1) {
         // For VOI, create a proper token object if not found
         const voiToken = {
+          ...defaultToken,
           tokenId: 0,
           contractId: TOKEN_WVOI1,
           name: "Voi",
           symbol: "VOI",
           decimals: 6,
-          ...defaultToken,
         };
         setToken(voiToken as ARC200TokenI);
       } else if (defaultToken) {
@@ -165,12 +165,12 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
       // If tokens haven't loaded yet, still set the token but ensure VOI has proper properties
       if (defaultToken.tokenId === 0 || defaultToken.contractId === TOKEN_WVOI1) {
         const voiToken = {
+          ...defaultToken,
           tokenId: 0,
           contractId: TOKEN_WVOI1,
           name: "Voi",
           symbol: "VOI",
           decimals: 6,
-          ...defaultToken,
         };
         setToken(voiToken as ARC200TokenI);
       } else {
@@ -308,7 +308,8 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
               .toFixed(6)
           );
         } else if (token.contractId) {
-          const ci = new arc200(token.contractId, indexerClient);
+          const { algodClient } = getAlgorandClients();
+          const ci = new arc200(token.contractId, algodClient, indexerClient);
           const balance = await ci.arc200_balanceOf(activeAccount.address);
           if (balance.success) {
             setBalance(
@@ -355,7 +356,8 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
               .toFixed(6)
           );
         } else if (token2.contractId) {
-          const ci = new arc200(token2.contractId, indexerClient);
+          const { algodClient } = getAlgorandClients();
+          const ci = new arc200(token2.contractId, algodClient, indexerClient);
           const balance = await ci.arc200_balanceOf(activeAccount.address);
           if (balance.success) {
             setBalance2(
