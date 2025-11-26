@@ -8,14 +8,21 @@ import { Box, ButtonGroup, Fade, Stack, Tooltip } from "@mui/material";
 import { stringToColorCode } from "../../utils/string";
 import algosdk from "algosdk";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import useDefiRewards from "@/hooks/useDefiRewards";
-import { useCopyToClipboard } from "usehooks-ts";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { toast } from "react-toastify";
 
 const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
+const formatUSD = (value: number) =>
+  new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value || 0);
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -48,6 +55,7 @@ const PoolCardRow = styled.div`
   flex-direction: column;
   @media screen and (min-width: 600px) {
     flex-direction: row;
+    align-items: center;
   }
 `;
 
@@ -376,52 +384,56 @@ const Col3 = styled(Box)<{ isDarkTheme: boolean }>`
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
-    justify-content: start;
+    justify-content: center;
+    align-items: center;
     width: fit-content;
     border-bottom: none;
+    padding: 0px;
   }
 `;
 
 const Col4 = styled(Box)<{ isDarkTheme: boolean }>`
   display: flex;
   padding: var(--Spacing-600, 12px) 0px var(--Spacing-400, 8px) 0px;
-  justify-content: center;
+  justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  justify-content: space-between;
   width: 100%;
   border-bottom: 1px solid
     ${({ isDarkTheme }) => (isDarkTheme ? "#ffffff5c" : "#D8D8E1")};
 
   @media screen and (min-width: 600px) {
     flex-direction: column;
-    justify-content: start;
+    justify-content: center;
+    align-items: center;
     width: fit-content;
     border-bottom: none;
+    padding: 0px;
   }
 `;
 
 const APRLabelContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   cursor: help;
+  width: 100%;
+  
+  @media screen and (min-width: 600px) {
+    justify-content: center;
+  }
 `;
 
 const Col5 = styled(Box)`
-  gap: var(--Spacing-200, 4px);
-  padding-top: var(--Spacing-400, 1rem);
-  justify-content: space-between;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  padding-top: var(--Spacing-400, 1rem);
 
   @media screen and (min-width: 600px) {
-    display: flex;
     padding: 0px;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: start;
     width: fit-content;
   }
 `;
@@ -430,56 +442,36 @@ const Button = styled.div`
   cursor: pointer;
 `;
 
-const AddButton = styled(Button)`
+const IconButton = styled(Button)<{ variant?: "add" | "remove" }>`
   display: flex;
-  padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  gap: 10px;
-  align-self: stretch;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: var(--Radius-300, 8px);
   border: 1px solid
-    var(--Color-Accent-Secondary-Stroke-Base, rgba(255, 255, 255, 0.7));
-  background: var(--Color-Accent-Secondary-Background-Default, #141010);
-`;
-
-const ButtonLabelContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-`;
-
-const AddButtonLabel = styled.div`
-  color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 120%; /* 18px */
-`;
-
-const SwapButton = styled(Button)`
-  display: flex;
-  padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  border-radius: var(--Radius-300, 8px);
-  background: var(--Color-Accent-CTA-Background-Default, #2958ff);
-`;
-
-const SwapButtonLabel = styled.div`
-  color: var(--Color-Brand-White, #fff);
-  font-feature-settings: "clig" off, "liga" off;
-  font-family: "Plus Jakarta Sans";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 120%; /* 16.8px */
+    ${(props) =>
+      props.variant === "add"
+        ? "var(--Color-Accent-CTA-Background-Default, #2958ff)"
+        : "var(--Color-Accent-Secondary-Stroke-Base, rgba(255, 255, 255, 0.7))"};
+  background: ${(props) =>
+    props.variant === "add"
+      ? "var(--Color-Accent-CTA-Background-Default, #2958ff)"
+      : "var(--Color-Accent-Secondary-Background-Default, #141010)"};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  
+  svg {
+    color: ${(props) =>
+      props.variant === "add"
+        ? "var(--Color-Brand-White, #fff)"
+        : "var(--Color-Neutral-Element-Secondary, #f6f6f8)"};
+    font-size: 18px;
+  }
 `;
 
 const PairIconContainer = styled.div`
@@ -696,8 +688,6 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     );
   };
 
-  const [copiedText, copyToClipboard] = useCopyToClipboard();
-
   return (
     <Fade in={true} timeout={1500}>
       <PoolCardRoot className={isDarkTheme ? "dark" : "light"}>
@@ -747,47 +737,7 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                       <FieldValue>{displayTokBId}</FieldValue>
                     </Field>
                   </PairIds>
-                ) : (
-                  <Field>
-                    <FieldLabel>ID:</FieldLabel>
-                    <FieldValue>{pool.contractId}</FieldValue>
-                    <ContentCopyIcon
-                      fontSize="small"
-                      sx={{ cursor: "pointer", height: "20px" }}
-                      onClick={() => {
-                        copyToClipboard(`${pool.contractId}`)
-                          .then(() => {
-                            toast.success(
-                              `Copied pool ID:${pool.contractId} to clipboard.`
-                            );
-                          })
-                          .catch(() => {
-                            toast.error("Failed to copy pool ID to clipboard");
-                          });
-                      }}
-                    />
-                  </Field>
-                )}
-                {!balance ? (
-                  <></>
-                ) : (
-                  <Stack
-                    direction="row"
-                    gap={1}
-                    sx={{ display: { xs: "flex", md: "none" } }}
-                  >
-                    <APRLabel
-                      style={{
-                        textAlign: "right",
-                      }}
-                    >
-                      {balance || ""}
-                    </APRLabel>
-                    <APRLabel>
-                      {pool.value ? `≈${pool.formattedValue} VOI` : null}
-                    </APRLabel>
-                  </Stack>
-                )}
+                ) : null}
               </PairInfoContainer>
             </Col1Row1>
           </>
@@ -806,37 +756,18 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 isDarkTheme={isDarkTheme}
                 sx={{ display: { xs: "none", md: "block" } }}
               >
-                <APRLabelContainer>
-                  <APRLabel
-                    style={{
-                      textAlign: "right",
-                    }}
-                  >
-                    {balance || ""}
-                    <br />
-                    {pool.value ? `≈${pool.formattedValue} VOI` : null}
-                  </APRLabel>
-                </APRLabelContainer>
+                {/* Position value hidden */}
               </Col4>
               <Col5>
-                <StyledLink
-                  to={`/pool/add?poolId=${pool.contractId}`}
-                  style={{
-                    width: "100%",
-                  }}
-                >
-                  <AddButton>
-                    <ButtonLabelContainer>
-                      <AddButtonLabel>Add</AddButtonLabel>
-                    </ButtonLabelContainer>
-                  </AddButton>
-                </StyledLink>
                 <StyledLink to={`/pool/remove?poolId=${pool.contractId}`}>
-                  <SwapButton>
-                    <ButtonLabelContainer>
-                      <SwapButtonLabel>Remove</SwapButtonLabel>
-                    </ButtonLabelContainer>
-                  </SwapButton>
+                  <IconButton variant="remove">
+                    <RemoveIcon />
+                  </IconButton>
+                </StyledLink>
+                <StyledLink to={`/pool/add?poolId=${pool.contractId}`}>
+                  <IconButton variant="add">
+                    <AddIcon />
+                  </IconButton>
                 </StyledLink>
               </Col5>
             </>
@@ -850,9 +781,9 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 <TVLLabel>
                   {pool.tvl 
                     ? typeof pool.tvl === 'number' 
-                      ? formatter.format(pool.tvl) 
-                      : pool.tvl
-                    : "0"} VOI
+                      ? `$${formatter.format(pool.tvl)}` 
+                      : `$${pool.tvl}`
+                    : "$0"}
                 </TVLLabel>
               </Col3>
               <Col3 isDarkTheme={isDarkTheme}>
@@ -860,7 +791,13 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   <Label>Volume</Label>
                   <InfoCircleIcon />
                 </LabelWrapper>
-                <VolumeLabel>{pool?.vol || "0"} VOI</VolumeLabel>
+                <VolumeLabel>
+                  {pool?.vol 
+                    ? typeof pool.vol === 'number' 
+                      ? `$${formatter.format(pool.vol)}` 
+                      : `$${pool.vol}`
+                    : "$0"}
+                </VolumeLabel>
               </Col3>
               <Col4 isDarkTheme={isDarkTheme}>
                 <LabelWrapper>
@@ -884,24 +821,15 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                 </Tooltip>
               </Col4>
               <Col5>
-                <StyledLink
-                  to={`/pool/add?poolId=${pool.contractId}`}
-                  style={{
-                    width: "100%",
-                  }}
-                >
-                  <AddButton>
-                    <ButtonLabelContainer>
-                      <AddButtonLabel>Add</AddButtonLabel>
-                    </ButtonLabelContainer>
-                  </AddButton>
-                </StyledLink>
                 <StyledLink to={`/swap?poolId=${pool.contractId}`}>
-                  <SwapButton>
-                    <ButtonLabelContainer>
-                      <SwapButtonLabel>Swap</SwapButtonLabel>
-                    </ButtonLabelContainer>
-                  </SwapButton>
+                  <IconButton variant="remove">
+                    <RemoveIcon />
+                  </IconButton>
+                </StyledLink>
+                <StyledLink to={`/pool/add?poolId=${pool.contractId}`}>
+                  <IconButton variant="add">
+                    <AddIcon />
+                  </IconButton>
                 </StyledLink>
               </Col5>
             </>

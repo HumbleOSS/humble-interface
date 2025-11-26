@@ -36,13 +36,15 @@ const MaxButtonLabel = styled.div`
   color: var(--Color-Brand-Pure-Black, #000);
 `;
 
-const SwapTokenContainer = styled.div`
+const SwapTokenContainer = styled.div<{ compact?: boolean }>`
   display: flex;
-  padding: var(--Spacing-800, 24px) var(--Spacing-900, 32px);
+  padding: ${(props) => (props.compact ? "16px" : "var(--Spacing-800, 24px) var(--Spacing-900, 32px)")};
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--Spacing-700, 16px);
+  gap: ${(props) => (props.compact ? "12px" : "var(--Spacing-700, 16px)")};
   border-radius: var(--Radius-800, 24px);
+  width: 100%;
+  box-sizing: border-box;
   &.light {
     background: var(--Color-Brand-Background-Primary-30, #f1eafc);
   }
@@ -70,15 +72,163 @@ const SwapTokenLabel = styled.div`
   }
 `;
 
-const Row = styled.div`
+const CombinedInputContainer = styled.div<{ compact?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: ${(props) => (props.compact ? "12px" : "16px")};
+  border-radius: var(--Radius-300, 8px);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  &.light {
+    border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+    background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+  }
+  &.dark {
+    border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, rgba(255, 255, 255, 0.5));
+    background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+  }
+  &.has-value.light {
+    border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+    background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+  }
+  &.has-value.dark {
+    border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, rgba(255, 255, 255, 0.5));
+    background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+  }
+  &:focus-within {
+    &.light {
+      border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, #7e7e9a);
+      background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+    }
+    &.dark {
+      border: 1.5px solid var(--Color-Neutral-Stroke-Primary-Static-Contrast, rgba(255, 255, 255, 0.5));
+      background: var(--Color-Comp-Input-Background-Default, rgba(255, 255, 255, 0));
+    }
+  }
+`;
+
+const TokenSelectorSection = styled.div<{ compact?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${(props) => (props.compact ? "8px" : "12px")};
+  min-width: 0;
+  flex: 0 0 auto;
+  ${(props) =>
+    props.compact &&
+    `
+    min-width: 120px;
+    max-width: 50%;
+  `}
+`;
+
+const TokenSelectWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 0;
+`;
+
+const TokenInfoRow = styled.div<{ compact?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  ${(props) =>
+    props.compact &&
+    `
+    font-size: 0.75rem;
+  `}
+`;
+
+const AmountInputSection = styled.div<{ compact?: boolean }>`
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  ${(props) =>
+    props.compact &&
+    `
+    min-width: 80px;
+  `}
+`;
+
+const CombinedInput = styled.input<{ compact?: boolean }>`
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: right;
+  font-feature-settings: "clig" off, "liga" off;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Plus Jakarta Sans";
+  font-size: ${(props) => (props.compact ? "16px" : "18px")};
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  &.light {
+    color: var(--Color-Neutral-Element-Secondary, #56566e);
+    &::placeholder {
+      color: var(--Color-Neutral-Element-Secondary, #56566e);
+    }
+    &:focus {
+      color: var(--Color-Neutral-Element-Secondary, #56566e);
+      background: transparent;
+    }
+  }
+  &.dark {
+    color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+    &::placeholder {
+      color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+    }
+    &:focus {
+      color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+      background: transparent;
+    }
+  }
+  &.has-value.light {
+    color: var(--Color-Neutral-Element-Secondary, #56566e);
+  }
+  &.has-value.dark {
+    color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+  }
+`;
+
+const Row = styled.div<{ compact?: boolean }>`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   align-self: stretch;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  ${(props) =>
+    props.compact &&
+    `
+    gap: 8px;
+    & > * {
+      min-width: 0;
+    }
+  `}
 `;
 
-const Row1 = styled(Row)`
+const Row1 = styled(Row)<{ compact?: boolean }>`
   padding-bottom: 6px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   &.light {
     border-bottom: 1px solid var(--Color-Neutral-Stroke-Primary, #d8d8e1);
   }
@@ -90,18 +240,39 @@ const Row1 = styled(Row)`
     flex-direction: column;
     gap: 8px;
   }
+  ${(props) =>
+    props.compact &&
+    `
+    flex-wrap: nowrap;
+    gap: 8px;
+    & > * {
+      min-width: 0;
+      flex-shrink: 1;
+      overflow: hidden;
+    }
+  `}
 `;
 
 const Row2 = styled(Row)`
   align-items: center;
 `;
 
-const TokenContainer = styled.div`
+const TokenContainer = styled.div<{ compact?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
   width: 100%;
+  min-width: 0;
+  flex: ${(props) => (props.compact ? "1 1 0" : "0 0 auto")};
+  max-width: ${(props) => (props.compact ? "50%" : "100%")};
+  overflow: hidden;
+  ${(props) =>
+    props.compact &&
+    `
+    min-width: 100px;
+    flex-shrink: 1;
+  `}
 `;
 
 const TokenRow = styled.div`
@@ -137,6 +308,8 @@ const TokenButtonContainer = styled.div`
   align-items: flex-start;
   gap: 6px;
   width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
 `;
 
 const TokenButtonWrapper = styled.div`
@@ -145,6 +318,8 @@ const TokenButtonWrapper = styled.div`
   align-items: flex-start;
   gap: 2px;
   width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
 `;
 
 const TokenLabel = styled.div`
@@ -171,14 +346,15 @@ const TokenIdContainer = styled.div`
   align-items: flex-start;
 `;
 
-const TokenIdLabel = styled.div`
+const TokenIdLabel = styled.div<{ compact?: boolean }>`
   font-feature-settings: "clig" off, "liga" off;
   /* Body/P medium */
   font-family: "IBM Plex Sans Condensed";
-  font-size: 12px;
+  font-size: ${(props) => (props.compact ? "10px" : "12px")};
   font-style: normal;
   font-weight: 500;
   line-height: 120%; /* 14.4px */
+  white-space: nowrap;
   &.light {
     color: var(--Brand-Black, #000);
   }
@@ -187,21 +363,35 @@ const TokenIdLabel = styled.div`
   }
 `;
 
-const TokenInputGroup = styled.div`
+const TokenInputGroup = styled.div<{ compact?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  min-width: 0;
+  flex: ${(props) => (props.compact ? "0 1 auto" : "0 0 auto")};
+  max-width: ${(props) => (props.compact ? "50%" : "100%")};
+  ${(props) =>
+    props.compact &&
+    `
+    min-width: 80px;
+    flex-shrink: 1;
+  `}
 `;
 
-const TokenInput = styled.div`
+const TokenInput = styled.div<{ compact?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--Spacing-400, 8px);
-  width: 318px;
+  width: ${(props) => (props.compact ? "100%" : "318px")};
+  min-width: 0;
+  max-width: 100%;
+  flex: ${(props) => (props.compact ? "1 1 0" : "0 0 auto")};
+  box-sizing: border-box;
+  overflow: hidden;
   @media screen and (max-width: 400px) {
-    width: 280px;
+    width: ${(props) => (props.compact ? "100%" : "280px")};
   }
 `;
 
@@ -211,6 +401,12 @@ const TokenInputContainer = styled.div`
   align-items: center;
   gap: var(--Spacing-400, 8px);
   align-self: stretch;
+  min-width: 0;
+  flex: 1 1 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   border-radius: var(--Radius-300, 8px);
   background: var(
     --Color-Comp-Input-Background-Default,
@@ -229,6 +425,8 @@ const TokenInputContainer = styled.div`
   }
   & input {
     color: var(--Color-Neutral-Element-Secondary, #f6f6f8);
+    min-width: 0;
+    flex: 1 1 0;
   }
   &.has-value.dark {
     border: 2px solid var(--Color-Neutral-Stroke-Black, #fff);
@@ -239,26 +437,31 @@ const TokenInputContainer = styled.div`
   &.has-value {
     background: var(--Color-Neutral-Background-Base-Static-Contrast, #fff);
     & input {
-      color: var(--Color-Neutral-Element-Secondary-Static-Contrast, #565e6e);
+      color: var(--Color-Neutral-Element-Secondary-Static-Contrast, #56566e);
     }
   }
 `;
 
-const Input = styled.input`
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  flex: 1 0 0;
+const Input = styled.input<{ compact?: boolean }>`
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   text-align: right;
   font-feature-settings: "clig" off, "liga" off;
   text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: "Plus Jakarta Sans";
-  font-size: 18px;
+  font-size: ${(props) => (props.compact ? "16px" : "18px")};
   font-style: normal;
   font-weight: 700;
-  line-height: 120%; /* 21.6px */
-  width: 100%;
+  line-height: 120%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  outline: none;
   &.light {
     color: var(--Color-Neutral-Element-Secondary, #56566e);
     &::placeholder {
@@ -386,6 +589,7 @@ interface SwapProps {
   displayId?: number;
   tokInfo?: any;
   voiPrice?: number;
+  compact?: boolean;
 }
 const Swap: FC<SwapProps> = ({
   label,
@@ -397,6 +601,7 @@ const Swap: FC<SwapProps> = ({
   options,
   balance,
   onFocus,
+  compact = false,
   showInput = true,
   displayId,
   tokInfo,
@@ -586,52 +791,48 @@ const Swap: FC<SwapProps> = ({
   };
 
   return (
-    <SwapTokenContainer className={isDarkTheme ? "dark" : "light"}>
+    <SwapTokenContainer compact={compact} className={isDarkTheme ? "dark" : "light"}>
       <SwapTokenLabel className={isDarkTheme ? "dark" : "light"}>
         {label}
       </SwapTokenLabel>
-      <Row1 className={isDarkTheme ? "dark" : "light"}>
-        <TokenContainer>
-          <TokenRow>
-            {icon}
-            <TokenButtonContainer>
-              <TokenButtonWrapper>
-                <TokenSelect
-                  token={token}
-                  options={options}
-                  onSelect={setToken}
-                />
-                <Stack sx={{ alignItems: "end" }} direction="row" spacing={1}>
-                  <Stack>
-                    <TokenLabel className={isDarkTheme ? "dark" : "light"}>
-                      {tokenSymbol(token)}
-                    </TokenLabel>
-                    <TokenIdContainer>
-                      <TokenIdLabel>
-                        ID: {displayId || token?.contractId || token?.tokenId || 0}
-                      </TokenIdLabel>
-                    </TokenIdContainer>
-                  </Stack>
-                  <div>{badge}</div>
-                </Stack>
-              </TokenButtonWrapper>
-            </TokenButtonContainer>
-          </TokenRow>
-        </TokenContainer>
+      <CombinedInputContainer
+        compact={compact}
+        className={[
+          isDarkTheme ? "dark" : "light",
+          amount !== "" ? "has-value" : "has-placeholder",
+        ].join(" ")}
+      >
+        <TokenSelectorSection compact={compact}>
+          {icon}
+          <TokenSelectWrapper>
+            <TokenSelect
+              token={token}
+              options={options}
+              onSelect={setToken}
+              compact={compact}
+            />
+            <TokenInfoRow compact={compact}>
+              <TokenLabel className={isDarkTheme ? "dark" : "light"}>
+                {tokenSymbol(token)}
+              </TokenLabel>
+              <TokenIdLabel compact={compact}>
+                ID: {displayId || token?.contractId || token?.tokenId || 0}
+              </TokenIdLabel>
+              {badge}
+            </TokenInfoRow>
+          </TokenSelectWrapper>
+        </TokenSelectorSection>
         <Fade in={showInput} timeout={500}>
-          <TokenInputGroup>
-            <TokenInput>
-              <TokenInputContainer
-                className={[
-                  isDarkTheme ? "dark" : "light",
-                  amount !== "" ? "has-value" : "has-placeholder",
-                ].join(" ")}
-              >
-                <Input
-                  className={isDarkTheme ? "dark" : "light"}
-                  placeholder="0.00"
-                  onKeyDown={() => onFocus()}
-                  onChange={(e) => {
+          <AmountInputSection compact={compact}>
+            <CombinedInput
+              compact={compact}
+              className={[
+                isDarkTheme ? "dark" : "light",
+                amount !== "" ? "has-value" : "",
+              ].join(" ")}
+              placeholder="0.00"
+              onKeyDown={() => onFocus()}
+              onChange={(e) => {
                     let value = e.target.value;
 
                     // Allow empty input
@@ -683,11 +884,9 @@ const Swap: FC<SwapProps> = ({
                   }}
                   value={amount}
                 />
-              </TokenInputContainer>
-            </TokenInput>
-          </TokenInputGroup>
+          </AmountInputSection>
         </Fade>
-      </Row1>
+      </CombinedInputContainer>
       <Row2>
         <BalanceContainer>
           <WalletIcon />

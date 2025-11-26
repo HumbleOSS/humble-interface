@@ -204,6 +204,7 @@ export interface IndexerPoolI {
   volB: string;
   apr: string;
   supply: string;
+  unitValue?: string; // USD value per LP token unit
   value: number;
   formattedValue: string;
   vol: number; // derived

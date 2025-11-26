@@ -26,22 +26,22 @@ import {
 } from "../../constants/tokens";
 import Skeleton from "@mui/material/Skeleton";
 
-const Wrapper = styled.div`
-  width: 86%;
+const Wrapper = styled.div<{ compact?: boolean }>`
+  width: ${(props) => (props.compact ? "100%" : "86%")};
   @media screen and (min-width: 640px) {
-    width: fit-content;
+    width: ${(props) => (props.compact ? "100%" : "fit-content")};
   }
 `;
 
-const TokenButton = styled.div`
+const TokenButton = styled.div<{ compact?: boolean }>`
   display: flex;
-  padding: var(--Spacing-400, 8px) var(--Spacing-600, 12px);
-  flex-direction: column;
+  padding: ${(props) => (props.compact ? "4px 8px" : "var(--Spacing-400, 8px) var(--Spacing-600, 12px)")};
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: ${(props) => (props.compact ? "4px" : "10px")};
   width: 100%;
-  border-radius: var(--Radius-600, 13px);
+  border-radius: ${(props) => (props.compact ? "8px" : "var(--Radius-600, 13px)")};
   &.light {
     background: var(--Color-Accent-Primary-Background-Default, #41137e);
   }
@@ -53,24 +53,25 @@ const TokenButton = styled.div`
   }
 `;
 
-const TokenButtonGroup = styled.div`
+const TokenButtonGroup = styled.div<{ compact?: boolean }>`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: ${(props) => (props.compact ? "4px" : "8px")};
   width: 100%;
   cursor: pointer;
 `;
 
-const TokenButtonLabel = styled.div`
+const TokenButtonLabel = styled.div<{ compact?: boolean }>`
   font-feature-settings: "clig" off, "liga" off;
   font-family: "Plus Jakarta Sans";
-  font-size: 14px;
+  font-size: ${(props) => (props.compact ? "12px" : "14px")};
   font-style: normal;
   font-weight: 600;
-  line-height: 120%; /* 16.8px */
-  min-width: 63px;
+  line-height: 120%;
+  min-width: ${(props) => (props.compact ? "auto" : "63px")};
   text-align: center;
+  white-space: nowrap;
   &.light {
     color: var(--Color-Neutral-Element-Inverse, #fff);
   }
@@ -160,15 +161,16 @@ const options = [
 
 const ITEM_HEIGHT = 48;
 
-const ArrowDownwardIcon = () => {
+const ArrowDownwardIcon: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
+  const size = compact ? "16" : "24";
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
     >
@@ -255,6 +257,7 @@ interface LongMenuProps {
   onSelect: (token: ARC200TokenI) => void;
   options?: ARC200TokenI[];
   token?: ARC200TokenI;
+  compact?: boolean;
 }
 
 const ModalBox = styled(Box)`
@@ -899,7 +902,7 @@ const ToggleButton = styled.button<{ active: boolean }>`
   }
 `;
 
-const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
+const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect, compact = false }) => {
   const { activeAccount } = useWallet();
   console.log("token", token);
   console.log("options", options);
@@ -1479,16 +1482,17 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect }) => {
   };
 
   return (
-    <Wrapper>
+    <Wrapper compact={compact}>
       <TokenButton
+        compact={compact}
         className={isDarkTheme ? "dark" : "light"}
         onClick={handleClick}
       >
-        <TokenButtonGroup>
-          <TokenButtonLabel className={isDarkTheme ? "dark" : "light"}>
+        <TokenButtonGroup compact={compact}>
+          <TokenButtonLabel compact={compact} className={isDarkTheme ? "dark" : "light"}>
             {tokenSymbol(token)}
           </TokenButtonLabel>
-          <ArrowDownwardIcon />
+          <ArrowDownwardIcon compact={compact} />
         </TokenButtonGroup>
       </TokenButton>
       <Modal

@@ -39,8 +39,12 @@ export const routes = [
   },
   */
   {
-    path: "/token",
-    Component: Page.Token,
+    path: "/explore/tokens",
+    Component: Page.Tokens,
+  },
+  {
+    path: "/explore/tokens/:id",
+    Component: Page.TokenDetail,
   },
   {
     path: "/analytics",
@@ -61,6 +65,18 @@ export const routes = [
   {
     path: "/prices",
     Component: Page.Prices,
+  },
+  {
+    path: "/tickers",
+    Component: Page.Tickers,
+  },
+  {
+    path: "/explore/pools",
+    Component: Page.PoolStats,
+  },
+  {
+    path: "/tokens/stats",
+    Component: Page.Tokens,
   },
   {
     path: "/arbitrage/triangular",

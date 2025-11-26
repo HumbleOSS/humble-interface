@@ -15,22 +15,28 @@ const SearchRoot = styled.div<{ isDarkTheme: boolean }>`
 
 const InputContainer = styled.div<{ isDarkTheme: boolean }>`
   display: flex;
-  padding: var(--Spacing-700, 16px) var(--Spacing-600, 12px);
+  padding: var(--Spacing-600, 12px) var(--Spacing-600, 12px);
   align-items: center;
   gap: var(--Spacing-400, 8px);
   align-self: stretch;
-  /* style */
   border-radius: var(--Radius-300, 8px);
-  border: 1.5px solid
+  border: 1px solid
     ${(props) =>
       props.isDarkTheme
-        ? `var(--Color-Neutral-Stroke-Primary-Static-Contrast,rgba(255, 255, 255, 0.5))`
-        : "#7E7E9A"};
+        ? `rgba(255, 255, 255, 0.15)`
+        : `rgba(41, 88, 255, 0.15)`};
+  background: ${(props) =>
+    props.isDarkTheme ? `rgba(255, 255, 255, 0.03)` : `rgba(41, 88, 255, 0.03)`};
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 
-  background: var(
-    --Color-Comp-Input-Background-Default,
-    rgba(255, 255, 255, 0)
-  );
+  &:focus-within {
+    border-color: ${(props) =>
+      props.isDarkTheme
+        ? `rgba(255, 255, 255, 0.25)`
+        : `rgba(41, 88, 255, 0.25)`};
+    background: ${(props) =>
+      props.isDarkTheme ? `rgba(255, 255, 255, 0.05)` : `rgba(41, 88, 255, 0.05)`};
+  }
 `;
 
 const PlaceholderContainer = styled.div`
