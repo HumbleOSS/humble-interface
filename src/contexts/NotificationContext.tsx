@@ -11,6 +11,10 @@ interface Notification {
   title: string;
   link: string;
   date: string;
+  type?: "announcement" | "reward";
+  rewardAmount?: string;
+  rewardToken?: string;
+  rewardTxId?: string;
 }
 
 interface NotificationContextType {
@@ -21,6 +25,12 @@ interface NotificationContextType {
   handleDismissAll: () => void;
   handleRestoreNotification: (id: number) => void;
   handleRestoreAll: () => void;
+  addRewardNotification: (reward: {
+    amount: string;
+    token: string;
+    txId?: string;
+    timestamp?: number;
+  }) => void;
   notificationCount: number;
   showPastNotifications: boolean;
   setShowPastNotifications: (show: boolean) => void;
@@ -219,6 +229,50 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
   };
 
+  // Handler to add reward notifications
+  const addRewardNotification = (reward: {
+    amount: string;
+    token: string;
+    txId?: string;
+    timestamp?: number;
+  }) => {
+    // Generate a unique ID based on timestamp and txId
+    const rewardId = reward.txId 
+      ? parseInt(reward.txId.slice(-8), 16) || Date.now()
+      : Date.now();
+    
+    // Check if this reward notification already exists
+    const existingNotification = notifications.find(
+      (n) => n.type === "reward" && n.rewardTxId === reward.txId
+    );
+    
+    if (existingNotification) {
+      // Don't add duplicate reward notifications
+      return;
+    }
+
+    const now = new Date();
+    const dateString = now.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+    
+    const rewardNotification: Notification = {
+      id: rewardId,
+      title: `🎉 You received ${reward.amount} ${reward.token} in rewards!`,
+      link: reward.txId 
+        ? `https://voiager.xyz/transaction/${reward.txId}/`
+        : "#",
+      date: dateString,
+      type: "reward",
+      rewardAmount: reward.amount,
+      rewardToken: reward.token,
+      rewardTxId: reward.txId,
+    };
+
+    // Add to notifications and sort by ID descending (newer first)
+    setNotifications((prev) =>
+      [...prev, rewardNotification].sort((a, b) => b.id - a.id)
+    );
+  };
+
   // Handle automatic expiration of notifications
   useEffect(() => {
     // Check for expired notifications every hour
@@ -336,6 +390,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     handleDismissAll,
     handleRestoreNotification,
     handleRestoreAll,
+    addRewardNotification,
     notificationCount,
     showPastNotifications,
     setShowPastNotifications,

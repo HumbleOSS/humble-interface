@@ -9,6 +9,7 @@ import poolBalsReducer, { PoolBalsState } from "./poolBalsSlice";
 import farmReducer, { FarmState } from "./farmSlice";
 import stakeReducer, { StakeState } from "./stakeSlice";
 import volumeReducer, { VolumeState } from "./volumeSlice";
+import rewardsReducer, { RewardsState } from "./rewardsSlice";
 
 const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ const store = configureStore({
     stake: stakeReducer,
     tokens: tokenReducer,
     volumes: volumeReducer,
+    rewards: rewardsReducer,
     //
     collections: collectionReducer,
     sales: saleReducer,
@@ -34,6 +36,7 @@ export type RootState = {
   stake: StakeState;
   tokens: TokensState;
   volumes: VolumeState;
+  rewards: RewardsState;
   //
   collections: CollectionsState;
   sales: SalesState;

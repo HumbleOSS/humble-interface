@@ -635,6 +635,16 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                       <NotificationTitle $isDarkTheme={isDarkTheme}>
                         {notification.title}
                       </NotificationTitle>
+                      {notification.type === "reward" && notification.rewardAmount && (
+                        <div style={{ 
+                          marginTop: "8px", 
+                          fontSize: "16px", 
+                          fontWeight: 600,
+                          color: isDarkTheme ? "#FFBE1D" : "#4F46E5"
+                        }}>
+                          Amount: {notification.rewardAmount} {notification.rewardToken}
+                        </div>
+                      )}
                       <NotificationDate $isDarkTheme={isDarkTheme}>
                         {formatNotificationDate(notification.date)}
                       </NotificationDate>
@@ -645,7 +655,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                         rel="noreferrer"
                         onClick={handleClose}
                       >
-                        Learn more →
+                        {notification.type === "reward" ? "View Transaction →" : "Learn more →"}
                       </NotificationLink>
                     </NotificationBody>
                     <DismissButton
@@ -691,6 +701,16 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                       <NotificationTitle $isDarkTheme={isDarkTheme}>
                         {notification.title}
                       </NotificationTitle>
+                      {notification.type === "reward" && notification.rewardAmount && (
+                        <div style={{ 
+                          marginTop: "8px", 
+                          fontSize: "16px", 
+                          fontWeight: 600,
+                          color: isDarkTheme ? "#FFBE1D" : "#4F46E5"
+                        }}>
+                          Amount: {notification.rewardAmount} {notification.rewardToken}
+                        </div>
+                      )}
                       <NotificationDate $isDarkTheme={isDarkTheme}>
                         {formatNotificationDate(notification.date)}
                       </NotificationDate>
@@ -701,7 +721,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                         rel="noreferrer"
                         onClick={handleClose}
                       >
-                        Learn more →
+                        {notification.type === "reward" ? "View Transaction →" : "Learn more →"}
                       </NotificationLink>
                     </NotificationBody>
                     <RestoreButton

@@ -63,6 +63,10 @@ export const routes = [
     Component: Page.Rewards,
   },
   {
+    path: "/rewards/:address",
+    Component: Page.RewardsAddress,
+  },
+  {
     path: "/prices",
     Component: Page.Prices,
   },

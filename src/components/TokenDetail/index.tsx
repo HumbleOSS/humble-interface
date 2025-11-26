@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store/store";
 import styled from "styled-components";
 import { CircularProgress } from "@mui/material";
@@ -623,6 +623,7 @@ const TokenDetail: React.FC = () => {
   );
   const tokens = useSelector(selectTokens);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { activeAccount } = useWallet();
   const [tokenData, setTokenData] = useState<TokenStatData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -718,6 +719,7 @@ const TokenDetail: React.FC = () => {
 
     fetchPools();
   }, [id, activeTab]);
+
 
   // Generate mock chart data (replace with real API call)
   useEffect(() => {
@@ -1099,7 +1101,7 @@ const TokenDetail: React.FC = () => {
                   </tr>
                 </tbody>
               </Table>
-            ) : (
+            ) : activeTab === "pools" ? (
               <Table isDarkTheme={isDarkTheme}>
                 <thead>
                   <tr>
@@ -1216,7 +1218,7 @@ const TokenDetail: React.FC = () => {
                   )}
                 </tbody>
               </Table>
-            )}
+            ) : null}
             {activeTab === "pools" && poolsData.length > 0 && poolsTotalPages > 1 && (
               <PaginationContainer isDarkTheme={isDarkTheme}>
                 <PaginationButton

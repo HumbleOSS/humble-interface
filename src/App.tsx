@@ -16,6 +16,7 @@ import {
 } from "@txnlab/use-wallet-react";
 import { useTokenRefresh } from "./hooks/useTokenRefresh";
 import { getCurrentNodeEnv } from "./utils/node";
+import RewardsWatcher from "./components/RewardsWatcher";
 //import TokenRefreshStatus from "./components/TokenRefreshStatus";
 
 const BackgroundLayer = styled.div`
@@ -139,6 +140,7 @@ const App: React.FC = () => {
                 </Routes>
               </Layout>
             </Router>
+            <RewardsWatcher />
             {/* <TokenRefreshStatus /> */}
           </AppContainer>
         </NotificationProvider>
