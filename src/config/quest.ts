@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const QUEST_API = "https://humble-quest.nautilus.sh";
+export const QUEST_API = import.meta.env.VITE_HUMBLE_QUEST_API || "https://humble-quest.nautilus.sh";
 
 export enum QUEST_ACTION {
   CONNECT_WALLET = "connect_wallet",

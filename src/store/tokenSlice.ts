@@ -148,9 +148,8 @@ export const getTickers = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >("tokens/getTickers", async (_, { getState, rejectWithValue }) => {
   try {
-    const { data } = await axios.get(
-      "https://api.humble.sh/integrations/coingecko/tickers"
-    );
+    const TICKERS_API = import.meta.env.VITE_HUMBLE_TICKERS_API || "https://api.humble.sh/integrations/coingecko/tickers";
+    const { data } = await axios.get(TICKERS_API);
     return data;
   } catch (error: any) {
     return rejectWithValue(error.message);

@@ -516,7 +516,7 @@ interface ArbitrageResponse {
   type: string;
 }
 
-const API_URL = "https://humble-api.voi.nautilus.sh/arbitrage/triangular";
+const API_URL = `${import.meta.env.VITE_HUMBLE_API_BASE_URL || "https://humble-api.voi.nautilus.sh"}/arbitrage/triangular`;
 
 const LoadingWrapper = styled.div<{ isDarkTheme: boolean }>`
   padding: 2rem;

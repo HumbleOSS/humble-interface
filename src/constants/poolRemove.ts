@@ -181,9 +181,10 @@ export const POOL_CONTRACT_SPEC = {
 };
 
 // API endpoints
+const HUMBLE_API_BASE = import.meta.env.VITE_HUMBLE_API_BASE_URL || "https://humble-api.voi.nautilus.sh";
 export const API_ENDPOINTS = {
-  TOKENS: "https://humble-api.voi.nautilus.sh/tokens",
-  POOLS: "https://humble-api.voi.nautilus.sh/pools",
+  TOKENS: `${HUMBLE_API_BASE}/tokens`,
+  POOLS: `${HUMBLE_API_BASE}/pools`,
 } as const;
 
 // Token configuration
