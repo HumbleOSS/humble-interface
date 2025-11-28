@@ -250,13 +250,16 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
         // For other tokens, we need tokens2
         if (!tokens2) return;
 
+        // Get the contract ID for this token (ARC200 contract ID)
+        const contractId = token.contractId || token.tokenId;
+
         // First try to get ASA ID from config mapping, fallback to tokens2 lookup
-        let wrappedTokenId: number | undefined = getAsaIdFromArc200Contract(token.tokenId);
+        let wrappedTokenId: number | undefined = getAsaIdFromArc200Contract(contractId);
         
         if (wrappedTokenId === undefined) {
           // Fallback to tokens2 lookup if not in config
           wrappedTokenId = Number(
-            tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
+            tokens2.find((t) => t.contractId === contractId)?.tokenId
           );
         }
 
@@ -281,8 +284,8 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
           }
         }
 
-        // Always get ARC200 balance
-        const ci = new arc200(token.tokenId, algodClient, indexerClient);
+        // Always get ARC200 balance (use contractId, which is the ARC200 contract ID)
+        const ci = new arc200(contractId, algodClient, indexerClient);
         const r = await ci.arc200_balanceOf(activeAccount.address);
         if (r.success) {
           const arc200BalanceBi = BigInt(r.returnValue);

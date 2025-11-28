@@ -103,9 +103,13 @@ export const getTokens = createAsyncThunk<
         mintRound: t.lastUpdated || 0,
         verified,
       };
-      
+
       // Debug: Log aUSDC token creation
-      if (Number(t.assetId) === 395614 || t.name === "aUSDC" || t.unitName === "aUSDC") {
+      if (
+        Number(t.assetId) === 395614 ||
+        t.name === "aUSDC" ||
+        t.unitName === "aUSDC"
+      ) {
         console.log("Creating aUSDC token:", {
           assetId: t.assetId,
           hasMapping,
@@ -115,27 +119,34 @@ export const getTokens = createAsyncThunk<
           name: token.name,
         });
       }
-      
+
       return token;
     });
     db.table("tokens").bulkPut(appTokens);
     const tokens = await db.table("tokens").toArray();
-    
+
     // Debug: Check if aUSDC is in the tokens array
     const ausdcInTokens = tokens.find(
-      (t) => t.contractId === 395614 || t.tokenId === 302190 || t.symbol === "aUSDC" || t.name === "aUSDC"
+      (t) =>
+        t.contractId === 395614 ||
+        t.tokenId === 302190 ||
+        t.symbol === "aUSDC" ||
+        t.name === "aUSDC"
     );
     if (ausdcInTokens) {
       console.log("aUSDC found in tokens array from DB:", ausdcInTokens);
     } else {
-      console.log("aUSDC NOT found in tokens array. Total tokens:", tokens.length);
+      console.log(
+        "aUSDC NOT found in tokens array. Total tokens:",
+        tokens.length
+      );
       console.log("Looking for contractId 395614 or tokenId 302190...");
       const byContractId = tokens.find((t) => t.contractId === 395614);
       const byTokenId = tokens.find((t) => t.tokenId === 302190);
       console.log("Token with contractId 395614:", byContractId);
       console.log("Token with tokenId 302190:", byTokenId);
     }
-    
+
     return tokens;
   } catch (error: any) {
     return rejectWithValue(error.message);
@@ -182,9 +193,14 @@ export const getTokensWithTickers = createAsyncThunk<
         .filter((token) => token.tokenId !== undefined)
         .map((token) => {
           const tokenIdStr = token.tokenId!.toString();
-          
+
           // Debug: Log aUSDC token processing
-          if (token.contractId === 395614 || token.tokenId === 302190 || token.symbol === "aUSDC" || token.name === "aUSDC") {
+          if (
+            token.contractId === 395614 ||
+            token.tokenId === 302190 ||
+            token.symbol === "aUSDC" ||
+            token.name === "aUSDC"
+          ) {
             console.log("Processing aUSDC in getTokensWithTickers:", {
               contractId: token.contractId,
               tokenId: token.tokenId,
@@ -227,19 +243,28 @@ export const getTokensWithTickers = createAsyncThunk<
             (t) =>
               t.base_currency_id === tokenIdStr ||
               t.target_currency_id === tokenIdStr ||
-              (contractIdStr && (
-                t.base_currency_id === contractIdStr ||
-                t.target_currency_id === contractIdStr
-              ))
+              (contractIdStr &&
+                (t.base_currency_id === contractIdStr ||
+                  t.target_currency_id === contractIdStr))
           );
-          
+
           // Debug: Log aUSDC ticker matching
-          if (token.contractId === 395614 || token.tokenId === 302190 || token.symbol === "aUSDC" || token.name === "aUSDC") {
+          if (
+            token.contractId === 395614 ||
+            token.tokenId === 302190 ||
+            token.symbol === "aUSDC" ||
+            token.name === "aUSDC"
+          ) {
             console.log("aUSDC ticker matching:", {
               tokenIdStr,
               contractIdStr,
               foundTicker: !!ticker,
-              ticker: ticker ? { base: ticker.base_currency_id, target: ticker.target_currency_id } : null,
+              ticker: ticker
+                ? {
+                    base: ticker.base_currency_id,
+                    target: ticker.target_currency_id,
+                  }
+                : null,
             });
           }
 
