@@ -1084,17 +1084,29 @@ const ArbitrageTriangular: React.FC = () => {
     opportunity: ArbitrageOpportunity,
     index: number
   ) => {
+    console.log("=== ARBITRAGE EXECUTE START ===");
+    console.log("Opportunity Index:", index);
+    console.log("Opportunity Details:", {
+      path: opportunity.path,
+      pools: opportunity.pools,
+      prices: opportunity.prices,
+      profitPercent: opportunity.profitPercent,
+      description: opportunity.description,
+    });
+
     if (!activeAccount) {
       toast.error("Please connect your wallet to execute arbitrage");
       return;
     }
 
     const selectedAmount = selectedAmounts.get(index);
+    console.log("Selected Amount:", selectedAmount);
     if (!selectedAmount) {
       toast.error("Please select an amount to execute");
       return;
     }
 
+    console.log("Active Account:", activeAccount.address);
     setExecutingIndex(index);
     try {
       const { algodClient, indexerClient } = getAlgorandClients();
@@ -1135,12 +1147,19 @@ const ArbitrageTriangular: React.FC = () => {
           t.tokenId?.toString() === sourceTokenId
       );
       const sourceDecimals = sourceToken?.decimals ?? 6;
+      console.log("Source Token Info:", {
+        tokenId: sourceTokenId,
+        token: sourceToken,
+        decimals: sourceDecimals,
+      });
 
       toast.info("Building all transactions...");
 
       // Step 1: Simulate all swaps to get amounts for each step
+      console.log("=== STEP 1: SIMULATING SWAPS ===");
       let currentAmount = selectedAmount;
       const swapAmounts: BigInt[] = [BigInt(currentAmount)];
+      console.log("Initial Amount:", currentAmount);
       const swapInfos: Array<{
         poolId: string;
         inputTokenId: string;
@@ -1152,15 +1171,29 @@ const ArbitrageTriangular: React.FC = () => {
       }> = [];
 
       for (let i = 0; i < opportunity.pools.length; i++) {
+        console.log(`\n--- Simulating Swap ${i + 1}/${opportunity.pools.length} ---`);
         const poolId = opportunity.pools[i];
         const inputTokenId = opportunity.path[i];
         const outputTokenId = opportunity.path[i + 1];
+        console.log("Swap Details:", {
+          poolId,
+          inputTokenId,
+          outputTokenId,
+          currentAmount,
+          expectedPrice: opportunity.prices[i],
+        });
 
         // Fetch pool information
         const poolInfo = await getPool(Number(poolId));
         if (!poolInfo) {
+          console.error(`Pool ${poolId} not found`);
           throw new Error(`Pool ${poolId} not found`);
         }
+        console.log("Pool Info:", {
+          poolId,
+          tokA: poolInfo.tokA,
+          tokB: poolInfo.tokB,
+        });
 
         // Get input token metadata
         const inputToken = tokens.find(
@@ -1168,6 +1201,10 @@ const ArbitrageTriangular: React.FC = () => {
             t.contractId?.toString() === inputTokenId ||
             t.tokenId?.toString() === inputTokenId
         );
+        console.log("Input Token:", {
+          tokenId: inputTokenId,
+          token: inputToken,
+        });
 
         // Determine if input token is token A or token B
         const inputTokenIdNum = Number(inputTokenId);
@@ -1178,7 +1215,21 @@ const ArbitrageTriangular: React.FC = () => {
           poolInfo.tokB === inputTokenIdNum ||
           poolInfo.tokB === Number(inputTokenId);
 
+        console.log("Token Position:", {
+          isInputTokenA,
+          isInputTokenB,
+          poolTokA: poolInfo.tokA,
+          poolTokB: poolInfo.tokB,
+          inputTokenIdNum,
+        });
+
         if (!isInputTokenA && !isInputTokenB) {
+          console.error("Token mismatch:", {
+            inputTokenId,
+            poolId,
+            poolTokA: poolInfo.tokA,
+            poolTokB: poolInfo.tokB,
+          });
           throw new Error(
             `Input token ${inputTokenId} is not in pool ${poolId}`
           );
@@ -1199,15 +1250,38 @@ const ArbitrageTriangular: React.FC = () => {
           BigNumber.ROUND_DOWN
         );
         const amountIn = BigInt(amountInBN.toFixed(0));
+        console.log("Simulation Input:", {
+          amountIn: amountIn.toString(),
+          method: isInputTokenA ? "Trader_swapAForB" : "Trader_swapBForA",
+        });
 
         let swapResult;
-        if (isInputTokenA) {
-          swapResult = await simulateCi.Trader_swapAForB(1, amountIn, BigInt(0));
-        } else {
-          swapResult = await simulateCi.Trader_swapBForA(1, amountIn, BigInt(0));
+        try {
+          if (isInputTokenA) {
+            swapResult = await simulateCi.Trader_swapAForB(1, amountIn, BigInt(0));
+          } else {
+            swapResult = await simulateCi.Trader_swapBForA(1, amountIn, BigInt(0));
+          }
+          console.log("Simulation Result:", {
+            success: swapResult?.success,
+            returnValue: swapResult?.returnValue,
+            error: swapResult?.error,
+          });
+        } catch (simError: any) {
+          console.error("Simulation Exception:", {
+            error: simError,
+            message: simError?.message,
+            stack: simError?.stack,
+          });
+          throw simError;
         }
 
         if (!swapResult?.success) {
+          console.error("Simulation Failed:", {
+            swapIndex: i + 1,
+            error: swapResult?.error,
+            fullResult: swapResult,
+          });
           throw new Error(
             `Simulation failed for swap ${i + 1}: ${swapResult?.error}`
           );
@@ -1218,9 +1292,17 @@ const ArbitrageTriangular: React.FC = () => {
           const outputAmount = isInputTokenA
             ? swapResult.returnValue[1].toString()
             : swapResult.returnValue[0].toString();
+          console.log("Simulation Output:", {
+            outputAmount,
+            returnValue: swapResult.returnValue,
+          });
           currentAmount = outputAmount;
           swapAmounts.push(BigInt(outputAmount));
         } else {
+          console.error("Invalid Return Value:", {
+            returnValue: swapResult.returnValue,
+            swapIndex: i + 1,
+          });
           throw new Error(`Could not determine output amount for swap ${i + 1}`);
         }
 
@@ -1235,7 +1317,18 @@ const ArbitrageTriangular: React.FC = () => {
         });
       }
 
+      console.log("=== SIMULATION COMPLETE ===");
+      console.log("Swap Amounts:", swapAmounts.map(a => a.toString()));
+      console.log("Swap Infos:", swapInfos.map(s => ({
+        poolId: s.poolId,
+        inputTokenId: s.inputTokenId,
+        outputTokenId: s.outputTokenId,
+        amountIn: s.amountIn.toString(),
+        isInputTokenA: s.isInputTokenA,
+      })));
+
       // Step 2: Build all transactions
+      console.log("\n=== STEP 2: BUILDING TRANSACTIONS ===");
       const builderAcc = {
         addr: activeAccount.address,
         sk: new Uint8Array(0),
@@ -1262,8 +1355,17 @@ const ArbitrageTriangular: React.FC = () => {
           finalToken.tokenId === 0 ||
           Number(finalTokenId) === 0);
 
+      console.log("Network Token Checks:", {
+        isFirstTokenNetwork,
+        isFinalTokenNetwork,
+        firstToken: firstInputToken,
+        finalToken,
+        finalTokenId,
+      });
+
       let wVOIBuilder: any = null;
       if (isFirstTokenNetwork || isFinalTokenNetwork) {
+        console.log("Creating wVOI Builder for deposit/withdraw");
         wVOIBuilder = new CONTRACT(
           TOKEN_WVOI1,
           algodClient,
@@ -1338,24 +1440,39 @@ const ArbitrageTriangular: React.FC = () => {
       }
 
       // Step 3: Build all transaction objects
+      console.log("\n=== STEP 3: BUILDING TRANSACTION OBJECTS ===");
       const buildN: any[] = [];
 
       // 1. Deposit if network token (first swap only)
       if (isFirstTokenNetwork && wVOIBuilder) {
         const depositAmount = swapAmounts[0];
-        const depositTxnO = (await wVOIBuilder.deposit(depositAmount)).obj;
-        buildN.push({
-          ...depositTxnO,
-          payment: depositAmount,
-          note: new TextEncoder().encode(
-            `Deposit ${new BigNumber(depositAmount.toString())
-              .dividedBy(new BigNumber(10).pow(6))
-              .toFixed(6)} VOI to wVOI contract`
-          ),
+        console.log("Building deposit transaction:", {
+          amount: depositAmount.toString(),
         });
+        try {
+          const depositTxnO = (await wVOIBuilder.deposit(depositAmount)).obj;
+          buildN.push({
+            ...depositTxnO,
+            payment: depositAmount,
+            note: new TextEncoder().encode(
+              `Deposit ${new BigNumber(depositAmount.toString())
+                .dividedBy(new BigNumber(10).pow(6))
+                .toFixed(6)} VOI to wVOI contract`
+            ),
+          });
+          console.log("Deposit transaction added, total txns:", buildN.length);
+        } catch (depositError: any) {
+          console.error("Deposit transaction build failed:", {
+            error: depositError,
+            message: depositError?.message,
+            stack: depositError?.stack,
+          });
+          throw depositError;
+        }
       }
 
       // 2. Approve all tokens to all pools
+      console.log("Building approval transactions...");
       for (let i = 0; i < swapInfos.length; i++) {
         const swapInfo = swapInfos[i];
         const poolAddr = algosdk.getApplicationAddress(Number(swapInfo.poolId));
@@ -1367,38 +1484,87 @@ const ArbitrageTriangular: React.FC = () => {
           swapInfo.inputToken.contractId !== 0 &&
           !(i === 0 && isFirstTokenNetwork);
 
+        console.log(`Approval Check ${i + 1}:`, {
+          swapIndex: i,
+          needsApproval,
+          inputToken: swapInfo.inputToken,
+          isFirstTokenNetwork: i === 0 && isFirstTokenNetwork,
+        });
+
         if (needsApproval && swapInfo.inputToken?.contractId) {
           const tokenBuilder = tokenBuilders.get(swapInfo.inputToken.contractId);
           if (tokenBuilder) {
             const approvalAmount = BigInt(Number.MAX_SAFE_INTEGER);
-            const approvalTxnO = (
-              await tokenBuilder.arc200_approve(poolAddr, approvalAmount)
-            ).obj;
-            buildN.push({
-              ...approvalTxnO,
-              note: new TextEncoder().encode(
-                `Approve ${swapInfo.inputToken.symbol || "token"} (${
-                  swapInfo.inputToken.contractId
-                }) for pool ${swapInfo.poolId}`
-              ),
+            console.log("Building approval transaction:", {
+              tokenContractId: swapInfo.inputToken.contractId,
+              poolAddr,
+              approvalAmount: approvalAmount.toString(),
             });
+            try {
+              const approvalTxnO = (
+                await tokenBuilder.arc200_approve(poolAddr, approvalAmount)
+              ).obj;
+              buildN.push({
+                ...approvalTxnO,
+                note: new TextEncoder().encode(
+                  `Approve ${swapInfo.inputToken.symbol || "token"} (${
+                    swapInfo.inputToken.contractId
+                  }) for pool ${swapInfo.poolId}`
+                ),
+              });
+              console.log("Approval transaction added, total txns:", buildN.length);
+            } catch (approvalError: any) {
+              console.error("Approval transaction build failed:", {
+                error: approvalError,
+                message: approvalError?.message,
+                stack: approvalError?.stack,
+                tokenContractId: swapInfo.inputToken.contractId,
+                poolAddr,
+              });
+              throw approvalError;
+            }
+          } else {
+            console.warn("Token builder not found for contract:", swapInfo.inputToken.contractId);
           }
         }
       }
 
       // 3. Build all swaps in order
+      console.log("Building swap transactions...");
       for (let i = 0; i < swapInfos.length; i++) {
         const swapInfo = swapInfos[i];
         const poolBuilder = poolBuilders[i].pool;
         const amountIn = swapAmounts[i];
 
+        console.log(`Building swap ${i + 1}/${swapInfos.length}:`, {
+          poolId: swapInfo.poolId,
+          inputTokenId: swapInfo.inputTokenId,
+          outputTokenId: swapInfo.outputTokenId,
+          amountIn: amountIn.toString(),
+          isInputTokenA: swapInfo.isInputTokenA,
+          method: swapInfo.isInputTokenA ? "Trader_swapAForB" : "Trader_swapBForA",
+        });
+
         let swapTxnO;
-        if (swapInfo.isInputTokenA) {
-          swapTxnO = (await poolBuilder.Trader_swapAForB(0, amountIn, BigInt(0)))
-            .obj;
-        } else {
-          swapTxnO = (await poolBuilder.Trader_swapBForA(0, amountIn, BigInt(0)))
-            .obj;
+        try {
+          if (swapInfo.isInputTokenA) {
+            swapTxnO = (await poolBuilder.Trader_swapAForB(0, amountIn, BigInt(0)))
+              .obj;
+          } else {
+            swapTxnO = (await poolBuilder.Trader_swapBForA(0, amountIn, BigInt(0)))
+              .obj;
+          }
+          console.log("Swap transaction built successfully");
+        } catch (swapError: any) {
+          console.error("Swap transaction build failed:", {
+            swapIndex: i + 1,
+            error: swapError,
+            message: swapError?.message,
+            stack: swapError?.stack,
+            poolId: swapInfo.poolId,
+            amountIn: amountIn.toString(),
+          });
+          throw swapError;
         }
 
         buildN.push({
@@ -1407,25 +1573,51 @@ const ArbitrageTriangular: React.FC = () => {
             `Swap ${i + 1}/${swapInfos.length}: ${swapInfo.inputTokenId} -> ${swapInfo.outputTokenId}`
           ),
         });
+        console.log("Swap transaction added, total txns:", buildN.length);
       }
 
       // 4. Withdraw if final destination token is network token
       if (isFinalTokenNetwork && wVOIBuilder) {
         // The final amount is the last element in swapAmounts
         const finalAmount = swapAmounts[swapAmounts.length - 1];
-        const withdrawTxnO = (await wVOIBuilder.withdraw(finalAmount)).obj;
-        buildN.push({
-          ...withdrawTxnO,
-          note: new TextEncoder().encode(
-            `Withdraw ${new BigNumber(finalAmount.toString())
-              .dividedBy(new BigNumber(10).pow(6))
-              .toFixed(6)} VOI from wVOI contract`
-          ),
+        console.log("Building withdraw transaction:", {
+          amount: finalAmount.toString(),
         });
+        try {
+          const withdrawTxnO = (await wVOIBuilder.withdraw(finalAmount)).obj;
+          buildN.push({
+            ...withdrawTxnO,
+            note: new TextEncoder().encode(
+              `Withdraw ${new BigNumber(finalAmount.toString())
+                .dividedBy(new BigNumber(10).pow(6))
+                .toFixed(6)} VOI from wVOI contract`
+            ),
+          });
+          console.log("Withdraw transaction added, total txns:", buildN.length);
+        } catch (withdrawError: any) {
+          console.error("Withdraw transaction build failed:", {
+            error: withdrawError,
+            message: withdrawError?.message,
+            stack: withdrawError?.stack,
+          });
+          throw withdrawError;
+        }
       }
 
+      console.log("=== TRANSACTION BUILDING COMPLETE ===");
+      console.log("Total transactions built:", buildN.length);
+      console.log("Transaction breakdown:", {
+        deposits: isFirstTokenNetwork ? 1 : 0,
+        approvals: buildN.filter(t => t.note?.toString().includes("Approve")).length,
+        swaps: swapInfos.length,
+        withdrawals: isFinalTokenNetwork ? 1 : 0,
+      });
+
       // Step 4: Combine all transactions into single group using first pool
+      console.log("\n=== STEP 4: GROUPING TRANSACTIONS ===");
       const firstPoolId = Number(opportunity.pools[0]);
+      console.log("First Pool ID:", firstPoolId);
+      console.log("Pool Addresses:", poolAddrs);
       const ci = new CONTRACT(
         firstPoolId,
         algodClient,
@@ -1441,29 +1633,62 @@ const ArbitrageTriangular: React.FC = () => {
       toast.info("Signing all transactions...");
 
       // Build the transaction group
-      const customR = await ci.custom();
-
-      console.log({ customR });
+      console.log("Building transaction group...");
+      let customR;
+      try {
+        customR = await ci.custom();
+        console.log("Transaction group build result:", {
+          success: customR.success,
+          txnsCount: customR.txns?.length,
+          error: customR.error,
+        });
+      } catch (groupError: any) {
+        console.error("Transaction group build exception:", {
+          error: groupError,
+          message: groupError?.message,
+          stack: groupError?.stack,
+        });
+        throw groupError;
+      }
 
       if (!customR.success) {
+        console.error("Transaction group build failed:", {
+          error: customR.error,
+          fullResult: customR,
+        });
         throw new Error(
           customR.error || "Transaction group build failed"
         );
       }
 
       if (!customR.txns || customR.txns.length === 0) {
+        console.error("No transactions returned from group build:", customR);
         throw new Error("No transactions returned");
       }
 
+      console.log("Transaction group built successfully:", {
+        transactionCount: customR.txns.length,
+      });
+
       // Step 5: Sign once
+      console.log("\n=== STEP 5: SIGNING TRANSACTIONS ===");
       const unsignedTxns = customR.txns.map(
         (t: string) => new Uint8Array(Buffer.from(t, "base64"))
       );
+      console.log("Prepared", unsignedTxns.length, "unsigned transactions for signing");
 
       let signedTxns;
       try {
         signedTxns = await signTransactions(unsignedTxns);
+        console.log("Transactions signed successfully:", {
+          signedCount: signedTxns?.length,
+        });
       } catch (e: any) {
+        console.error("Signing failed:", {
+          error: e,
+          message: e?.message,
+          stack: e?.stack,
+        });
         if (
           e.message?.includes("User rejected") ||
           e.message?.includes("cancelled")
@@ -1475,20 +1700,49 @@ const ArbitrageTriangular: React.FC = () => {
       }
 
       if (!signedTxns) {
+        console.warn("No signed transactions returned (user cancelled)");
         toast.info("Transaction cancelled by user");
         return;
       }
 
       // Step 6: Send once
+      console.log("\n=== STEP 6: SENDING TRANSACTIONS ===");
       toast.info("Sending transaction group...");
-      const res = await algodClient
-        .sendRawTransaction(signedTxns as Uint8Array[])
-        .do();
+      let res;
+      try {
+        res = await algodClient
+          .sendRawTransaction(signedTxns as Uint8Array[])
+          .do();
+        console.log("Transaction group sent:", {
+          txId: res.txId,
+        });
+      } catch (sendError: any) {
+        console.error("Transaction send failed:", {
+          error: sendError,
+          message: sendError?.message,
+          stack: sendError?.stack,
+          response: sendError?.response,
+        });
+        throw sendError;
+      }
 
       // Wait for confirmation
       toast.info("Waiting for confirmation...");
-      await algosdk.waitForConfirmation(algodClient, res.txId, 10);
+      console.log("Waiting for confirmation of tx:", res.txId);
+      try {
+        await algosdk.waitForConfirmation(algodClient, res.txId, 10);
+        console.log("Transaction confirmed:", res.txId);
+      } catch (confirmError: any) {
+        console.error("Confirmation failed:", {
+          error: confirmError,
+          message: confirmError?.message,
+          stack: confirmError?.stack,
+          txId: res.txId,
+        });
+        throw confirmError;
+      }
 
+      console.log("=== ARBITRAGE EXECUTE SUCCESS ===");
       toast.success(
         `Arbitrage executed successfully! Transaction ID: ${res.txId}`
       );
@@ -1500,12 +1754,31 @@ const ArbitrageTriangular: React.FC = () => {
         return newMap;
       });
     } catch (error: any) {
-      console.error("Execute arbitrage error:", error);
+      console.error("\n=== ARBITRAGE EXECUTE ERROR ===");
+      console.error("Error Details:", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        cause: error?.cause,
+        fullError: error,
+      });
+      console.error("Opportunity that failed:", {
+        index,
+        path: opportunity.path,
+        pools: opportunity.pools,
+        prices: opportunity.prices,
+        profitPercent: opportunity.profitPercent,
+      });
+      console.error("Execution State:", {
+        selectedAmount,
+        activeAccount: activeAccount?.address,
+      });
       toast.error(
         `Arbitrage execution failed: ${error.message || "Unknown error"}`
       );
     } finally {
       setExecutingIndex(null);
+      console.log("=== ARBITRAGE EXECUTE END ===\n");
     }
   };
 

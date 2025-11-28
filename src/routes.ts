@@ -28,6 +28,10 @@ export const routes = [
     path: "/pool/create",
     Component: Page.PoolCreate,
   },
+  {
+    path: "/pool/:id",
+    Component: Page.PoolDetail,
+  },
   /*
   {
     path: "/farm",

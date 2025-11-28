@@ -4,6 +4,7 @@ export { Pool } from "./Pool";
 export { PoolCreate } from "./PoolCreate";
 export { PoolAdd } from "./PoolAdd";
 export { PoolRemove } from "./PoolRemove";
+export { PoolDetail } from "./PoolDetail";
 export { Farm } from "./Farm";
 export { FarmCreate } from "./FarmCreate";
 export { Token } from "./Token";
