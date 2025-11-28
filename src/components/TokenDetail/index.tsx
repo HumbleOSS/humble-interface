@@ -7,7 +7,7 @@ import { selectTokens } from "../../store/tokenSlice";
 import { tokenSymbol, getIconId } from "../../utils/dex";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import { API_BASE_URL } from "../../constants/api";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -618,6 +618,7 @@ const PaginationButton = styled.button<{ isDarkTheme: boolean; active?: boolean 
 
 const TokenDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
@@ -835,6 +836,13 @@ const TokenDetail: React.FC = () => {
   const tokenInStore = useMemo(() => {
     return getTokenInfo(id || "0");
   }, [id, tokens]);
+
+  // Find swapTo token from query parameter
+  const swapToTokenId = searchParams.get("swapTo");
+  const swapToToken = useMemo(() => {
+    if (!swapToTokenId) return undefined;
+    return getTokenInfo(swapToTokenId);
+  }, [swapToTokenId, tokens]);
 
   if (loading) {
     return (
@@ -1257,7 +1265,10 @@ const TokenDetail: React.FC = () => {
 
         <RightColumn>
           <SwapPanel isDarkTheme={isDarkTheme}>
-            <EmbeddedSwapWidget defaultToken={tokenInStore || undefined} />
+            <EmbeddedSwapWidget 
+              defaultToken={tokenInStore || undefined}
+              defaultToken2={swapToToken || undefined}
+            />
           </SwapPanel>
 
           <InfoSection isDarkTheme={isDarkTheme}>

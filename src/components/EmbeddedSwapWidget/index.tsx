@@ -92,10 +92,12 @@ const SwapButton = styled.button<{ isDarkTheme: boolean; disabled?: boolean }>`
 
 interface EmbeddedSwapWidgetProps {
   defaultToken?: ARC200TokenI;
+  defaultToken2?: ARC200TokenI;
 }
 
 const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
   defaultToken,
+  defaultToken2,
 }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -188,9 +190,34 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
     setBalance2(undefined);
   }, [token2]);
 
-  // Set default token2 to VOI if defaultToken is set
+  // Set default token2 - prioritize defaultToken2, otherwise VOI if defaultToken is set
   useEffect(() => {
-    if (defaultToken && !token2 && tokens.length > 0) {
+    if (defaultToken2 && tokens.length > 0) {
+      // Try to find a more complete token from the tokens array
+      const foundToken = tokens.find(
+        (t) =>
+          (t.tokenId !== undefined && defaultToken2.tokenId !== undefined && t.tokenId === defaultToken2.tokenId) ||
+          (t.contractId !== undefined && defaultToken2.contractId !== undefined && t.contractId === defaultToken2.contractId) ||
+          (defaultToken2.tokenId === 0 && (t.tokenId === 0 || t.contractId === TOKEN_WVOI1)) ||
+          (defaultToken2.contractId === TOKEN_WVOI1 && (t.tokenId === 0 || t.contractId === TOKEN_WVOI1))
+      );
+      if (foundToken) {
+        setToken2(foundToken);
+      } else if (defaultToken2.tokenId === 0 || defaultToken2.contractId === TOKEN_WVOI1) {
+        // For VOI, create a proper token object if not found
+        const voiToken = {
+          ...defaultToken2,
+          tokenId: 0,
+          contractId: TOKEN_WVOI1,
+          name: "Voi",
+          symbol: "VOI",
+          decimals: 6,
+        };
+        setToken2(voiToken as ARC200TokenI);
+      } else if (defaultToken2) {
+        setToken2(defaultToken2);
+      }
+    } else if (defaultToken && !token2 && tokens.length > 0) {
       const voiToken = tokens.find(
         (t) => t.tokenId === 0 || t.contractId === TOKEN_WVOI1
       ) || {
@@ -199,7 +226,7 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
       };
       setToken2(voiToken as ARC200TokenI);
     }
-  }, [defaultToken, token2, tokens]);
+  }, [defaultToken, defaultToken2, token2, tokens]);
 
   // Set token options
   useEffect(() => {

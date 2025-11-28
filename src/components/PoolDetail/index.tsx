@@ -1098,7 +1098,16 @@ const PoolDetail: React.FC = () => {
           <ActionButtons>
             <SwapButton
               isDarkTheme={isDarkTheme}
-              onClick={() => navigate("/swap")}
+              onClick={() => {
+                // Navigate to tokenA detail page with tokenB as swapTo parameter
+                const tokenAId = tokAId || poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+                const tokenBId = tokBId || poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+                if (tokenAId) {
+                  navigate(`/explore/tokens/${tokenAId}${tokenBId ? `?swapTo=${tokenBId}` : ""}`);
+                } else {
+                  navigate(`/swap?poolId=${id}`);
+                }
+              }}
             >
               SWAP
             </SwapButton>
@@ -1143,7 +1152,10 @@ const PoolDetail: React.FC = () => {
           </ExternalLinks>*/}
 
           <SwapPanel isDarkTheme={isDarkTheme}>
-            <EmbeddedSwapWidget defaultToken={tokenAInStore || undefined} />
+            <EmbeddedSwapWidget 
+              defaultToken={tokenAInStore || undefined}
+              defaultToken2={tokenBInStore || undefined}
+            />
           </SwapPanel>
 
           {activeAccount && (
