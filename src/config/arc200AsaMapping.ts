@@ -94,6 +94,8 @@ export const ARC200_ASSET_ID_MAPPING: Record<number, number> = {
   46023346: 0, // eVOI
   // WAD 47138068 47155831
   47138068: 47138068,
+  // INDEX 41403352 41242358
+  41403352: 41242358,
 };
 
 export const ARC200_ASSET_TYPE_MAPPING: Record<number, string> = {
@@ -182,6 +184,8 @@ export const ARC200_ASSET_TYPE_MAPPING: Record<number, string> = {
   46023346: "network",
   // WAD 47138068 47155831
   47138068: "arc200",
+  // INDEX 41403352 41242358
+  41403352: "asa",
 };
 
 /**
