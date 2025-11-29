@@ -132,12 +132,14 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
   const [token2, setToken2] = useState<ARC200TokenI>();
   const [tokenOptions, setTokenOptions] = useState<ARC200TokenI[]>([]);
   const [tokenOptions2, setTokenOptions2] = useState<ARC200TokenI[]>([]);
+  const [defaultsCleared, setDefaultsCleared] = useState(false);
 
   const [balance, setBalance] = useState<string>();
   const [balance2, setBalance2] = useState<string>();
 
   // Update token when defaultToken changes or tokens load
   useEffect(() => {
+    if (defaultsCleared) return; // Don't re-apply defaults if user has cleared them
     if (defaultToken && tokens.length > 0) {
       // Try to find a more complete token from the tokens array
       const foundToken = tokens.find(
@@ -192,6 +194,7 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
 
   // Set default token2 - prioritize defaultToken2, otherwise VOI if defaultToken is set
   useEffect(() => {
+    if (defaultsCleared) return; // Don't re-apply defaults if user has cleared them
     if (defaultToken2 && tokens.length > 0) {
       // Try to find a more complete token from the tokens array
       const foundToken = tokens.find(
@@ -825,12 +828,36 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
         />
         <SwapIconButton
           onClick={() => {
+            // Only swap if both tokens are defined
+            if (!token || !token2) return;
+            
+            // Swap tokens and amounts when switching direction
+            setDefaultsCleared(true);
             const newToken = token;
-            const newAmount = fromAmount;
-            setToken(token2);
+            const newToken2 = token2;
+            const newFromAmount = fromAmount;
+            const newToAmount = toAmount;
+            const newBalance = balance;
+            const newBalance2 = balance2;
+            
+            // Swap tokens
+            setToken(newToken2);
             setToken2(newToken);
-            setToAmount(newAmount);
-            setFromAmount(toAmount);
+            
+            // Swap amounts
+            setFromAmount(newToAmount);
+            setToAmount(newFromAmount);
+            
+            // Swap balances
+            setBalance(newBalance2);
+            setBalance2(newBalance);
+            
+            // Swap focus if needed
+            if (focus === "from") {
+              setFocus("to");
+            } else if (focus === "to") {
+              setFocus("from");
+            }
           }}
           src={on ? ActiveSwapIcon : SwapIcon}
           alt="swap"
