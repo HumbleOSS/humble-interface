@@ -250,17 +250,35 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
         // For other tokens, we need tokens2
         if (!tokens2) return;
 
-        // First try to get ASA ID from config mapping, fallback to tokens2 lookup
-        let wrappedTokenId: number | undefined = getAsaIdFromArc200Contract(token.tokenId);
+        // Use contractId if available (for ARC200 tokens), otherwise use tokenId
+        const contractId = token.contractId ?? token.tokenId;
         
+        // Determine if this is an ASA token
+        const isASA = token.assetType === "asa";
+        
+        // Get ASA asset ID for fetching asset balance
+        // Priority: 1) Config mapping using contractId, 2) tokenId (if already ASA ID), 3) tokens2 lookup
+        let wrappedTokenId: number | undefined;
+        
+        // First, try to get ASA ID from config mapping using contractId (for tokens with ARC200 contract)
+        if (token.contractId) {
+          wrappedTokenId = getAsaIdFromArc200Contract(token.contractId);
+        }
+        
+        // If no mapping found, try tokens2 lookup
         if (wrappedTokenId === undefined) {
-          // Fallback to tokens2 lookup if not in config
-          wrappedTokenId = Number(
-            tokens2.find((t) => t.contractId === token.tokenId)?.tokenId
-          );
+          const foundToken = tokens2.find((t) => t.contractId === contractId);
+          if (foundToken?.tokenId) {
+            wrappedTokenId = Number(foundToken.tokenId);
+          }
+        }
+        
+        // If still no ASA ID found, and this is an ASA token, tokenId might already be the ASA ID
+        if (wrappedTokenId === undefined && isASA) {
+          wrappedTokenId = Number(token.tokenId);
         }
 
-        // For tokens with tokenId !== 0, always check both asset balance and ARC200 balance
+        // For tokens with tokenId !== 0, check both asset balance and ARC200 balance
         let assetBalanceBi = BigInt(0);
         let decimals = token.decimals;
 
@@ -281,15 +299,32 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
           }
         }
 
-        // Always get ARC200 balance
-        const ci = new arc200(token.tokenId, algodClient, indexerClient);
-        const r = await ci.arc200_balanceOf(activeAccount.address);
-        if (r.success) {
-          const arc200BalanceBi = BigInt(r.returnValue);
-          // Add asset balance and ARC200 balance together
-          const totalBalance = new BigNumber(
-            (assetBalanceBi + arc200BalanceBi).toString()
-          ).dividedBy(new BigNumber(10).pow(decimals));
+        // For pure ASAs (no contractId), only return asset balance
+        if (isASA && !token.contractId) {
+          const totalBalance = new BigNumber(assetBalanceBi.toString())
+            .dividedBy(new BigNumber(10).pow(decimals));
+          return totalBalance.toFixed(decimals);
+        }
+
+        // For tokens with ARC200 contract, also get ARC200 balance
+        // Use contractId if available, otherwise tokenId
+        const arc200ContractId = token.contractId ?? token.tokenId;
+        try {
+          const ci = new arc200(arc200ContractId, algodClient, indexerClient);
+          const r = await ci.arc200_balanceOf(activeAccount.address);
+          if (r.success) {
+            const arc200BalanceBi = BigInt(r.returnValue);
+            // Add asset balance and ARC200 balance together
+            const totalBalance = new BigNumber(
+              (assetBalanceBi + arc200BalanceBi).toString()
+            ).dividedBy(new BigNumber(10).pow(decimals));
+            return totalBalance.toFixed(decimals);
+          }
+        } catch (error) {
+          // If ARC200 call fails (e.g., for pure ASAs), just return asset balance
+          console.log(`No ARC200 balance for token ${token.tokenId}, using asset balance only`);
+          const totalBalance = new BigNumber(assetBalanceBi.toString())
+            .dividedBy(new BigNumber(10).pow(decimals));
           return totalBalance.toFixed(decimals);
         }
       } catch (error) {
