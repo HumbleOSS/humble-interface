@@ -1295,6 +1295,38 @@ const Swap = () => {
   console.log("actualOutcome", actualOutcome);
   console.log("toAmount", toAmount);
 
+  // Calculate effective rate based on actual outcome (accounts for slippage)
+  const effectiveRate = useMemo(() => {
+    // First, try to use actualOutcome if available (most accurate)
+    if (actualOutcome && fromAmount && focus === "from") {
+      const fromAmountNum = Number(fromAmount.replace(/,/g, ""));
+      const actualOutcomeNum = Number(actualOutcome.replace(/,/g, ""));
+      if (!isNaN(fromAmountNum) && !isNaN(actualOutcomeNum) && fromAmountNum > 0) {
+        // Effective rate = actual output / input (accounts for slippage)
+        return actualOutcomeNum / fromAmountNum;
+      }
+    }
+    
+    // Fallback: use toAmount and fromAmount if both are available
+    if (toAmount && fromAmount) {
+      const fromAmountNum = Number(fromAmount.replace(/,/g, ""));
+      const toAmountNum = Number(toAmount.replace(/,/g, ""));
+      if (!isNaN(fromAmountNum) && !isNaN(toAmountNum) && fromAmountNum > 0) {
+        // Effective rate = output / input (accounts for slippage)
+        return toAmountNum / fromAmountNum;
+      }
+    }
+    
+    // Fall back to spot rate if we don't have actual amounts
+    return rate;
+  }, [actualOutcome, fromAmount, toAmount, rate, focus]);
+
+  const effectiveInvRate = useMemo(() => {
+    if (!effectiveRate || effectiveRate === 0) return undefined;
+    const inv = 1 / effectiveRate;
+    return isFinite(inv) ? inv : undefined;
+  }, [effectiveRate]);
+
   // EFFECT: on toAmount change update fromAmount and actual outcome
   useEffect(() => {
     if (!token || !token2 || !toAmount || focus !== "to") {
@@ -2220,13 +2252,13 @@ const Swap = () => {
                     {window.innerWidth > 600 && (
                       <RateMain className={isDarkTheme ? "dark" : "light"}>
                         1 {tokenSymbol(token)} ={" "}
-                        {rate && rate > 0 ? rate.toFixed(6) : "0.000000"}{" "}
+                        {effectiveRate && effectiveRate > 0 ? effectiveRate.toFixed(6) : "0.000000"}{" "}
                         {tokenSymbol(token2)}
                       </RateMain>
                     )}
                     <RateSub>
                       1 {tokenSymbol(token2)} ={" "}
-                      {invRate && invRate > 0 ? invRate.toFixed(6) : "0.000000"}{" "}
+                      {effectiveInvRate && effectiveInvRate > 0 ? effectiveInvRate.toFixed(6) : "0.000000"}{" "}
                       {tokenSymbol(token)}
                     </RateSub>
                   </RateValue>

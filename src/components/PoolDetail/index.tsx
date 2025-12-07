@@ -753,15 +753,30 @@ const PoolDetail: React.FC = () => {
     const balB = parseFloat(poolBals.B || "0");
 
     if (balA === 0 || balB === 0) return "0";
-    const rate = balB / balA;
-    return rate.toFixed(6);
+    // Determine which balance corresponds to which token after potential swap
+    const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+    const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+    const shouldSwap = Number(originalTokAId) > Number(originalTokBId);
+    
+    // If swapped, the display order is reversed, so we need to invert the rate
+    if (shouldSwap) {
+      const rate = balA / balB;
+      return rate.toFixed(6);
+    } else {
+      const rate = balB / balA;
+      return rate.toFixed(6);
+    }
   };
 
   // Find tokens in Redux store for Swap component
+  // Use display order (lower contractId on left)
   const tokenAInStore = useMemo(() => {
     if (!poolData) return null;
-    const tokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
-    const assetIdNum = Number(tokAId);
+    const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+    const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+    const shouldSwap = Number(originalTokAId) > Number(originalTokBId);
+    const displayTokAId = shouldSwap ? originalTokBId : originalTokAId;
+    const assetIdNum = Number(displayTokAId);
     if (!isNaN(assetIdNum)) {
       return tokens.find(
         (t) => t.tokenId === assetIdNum || t.contractId === assetIdNum
@@ -772,8 +787,11 @@ const PoolDetail: React.FC = () => {
 
   const tokenBInStore = useMemo(() => {
     if (!poolData) return null;
-    const tokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
-    const assetIdNum = Number(tokBId);
+    const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+    const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+    const shouldSwap = Number(originalTokAId) > Number(originalTokBId);
+    const displayTokBId = shouldSwap ? originalTokAId : originalTokBId;
+    const assetIdNum = Number(displayTokBId);
     if (!isNaN(assetIdNum)) {
       return tokens.find(
         (t) => t.tokenId === assetIdNum || t.contractId === assetIdNum
@@ -804,13 +822,23 @@ const PoolDetail: React.FC = () => {
   const tokenB = poolData.tokens?.tokenB || {};
   const tokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
   const tokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+  
+  // Order pair so asset with lower contractId is on left
+  const tokAIdNum = Number(tokAId);
+  const tokBIdNum = Number(tokBId);
+  const shouldSwap = tokAIdNum > tokBIdNum;
+  const displayTokAId = shouldSwap ? tokBId : tokAId;
+  const displayTokBId = shouldSwap ? tokAId : tokBId;
+  const displayTokenA = shouldSwap ? tokenB : tokenA;
+  const displayTokenB = shouldSwap ? tokenA : tokenB;
+  
   const symbolA = normalizeSymbol(
-    tokenA.unitName || tokenA.symbol || "",
-    tokAId
+    displayTokenA.unitName || displayTokenA.symbol || "",
+    displayTokAId
   );
   const symbolB = normalizeSymbol(
-    tokenB.unitName || tokenB.symbol || "",
-    tokBId
+    displayTokenB.unitName || displayTokenB.symbol || "",
+    displayTokBId
   );
 
   const tvl = poolData.tvl?.usd || "0";
@@ -840,7 +868,10 @@ const PoolDetail: React.FC = () => {
   };
 
   // Check for VOI pairs - VOI can be represented as 0 or 390001 (TOKEN_WVOI1)
-  const tokAValues = [Number(tokAId), Number(tokBId)];
+  // Use original tokAId/tokBId for VOI pair detection (before swap)
+  const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+  const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+  const tokAValues = [Number(originalTokAId), Number(originalTokBId)];
   const isVOIPair =
     tokAValues.includes(0) || tokAValues.includes(TOKEN_WVOI1);
 
@@ -865,22 +896,42 @@ const PoolDetail: React.FC = () => {
     totalApr,
   };
 
-  const iconAUrl = getTokenIconUrl(tokAId);
-  const iconBUrl = getTokenIconUrl(tokBId);
+  const iconAUrl = getTokenIconUrl(displayTokAId);
+  const iconBUrl = getTokenIconUrl(displayTokBId);
 
   // Calculate normalized amounts for locked assets
-  const tokenADecimals = Number(tokenA.decimals || "6");
-  const tokenBDecimals = Number(tokenB.decimals || "6");
-  const lockedAmountA = tvlA.amount
-    ? new BigNumber(tvlA.amount)
-        .dividedBy(new BigNumber(10).pow(tokenADecimals))
-        .toNumber()
-    : 0;
-  const lockedAmountB = tvlB.amount
-    ? new BigNumber(tvlB.amount)
-        .dividedBy(new BigNumber(10).pow(tokenBDecimals))
-        .toNumber()
-    : 0;
+  // Use original token data for calculations, but display in swapped order
+  const originalTokenA = poolData.tokens?.tokenA || {};
+  const originalTokenB = poolData.tokens?.tokenB || {};
+  const originalTvlA = poolData.tvl?.tokenA || {};
+  const originalTvlB = poolData.tvl?.tokenB || {};
+  
+  const tokenADecimals = Number(displayTokenA.decimals || "6");
+  const tokenBDecimals = Number(displayTokenB.decimals || "6");
+  
+  // Get locked amounts - if swapped, use the opposite TVL values
+  const lockedAmountA = shouldSwap
+    ? (originalTvlB.amount
+        ? new BigNumber(originalTvlB.amount)
+            .dividedBy(new BigNumber(10).pow(tokenADecimals))
+            .toNumber()
+        : 0)
+    : (originalTvlA.amount
+        ? new BigNumber(originalTvlA.amount)
+            .dividedBy(new BigNumber(10).pow(tokenADecimals))
+            .toNumber()
+        : 0);
+  const lockedAmountB = shouldSwap
+    ? (originalTvlA.amount
+        ? new BigNumber(originalTvlA.amount)
+            .dividedBy(new BigNumber(10).pow(tokenBDecimals))
+            .toNumber()
+        : 0)
+    : (originalTvlB.amount
+        ? new BigNumber(originalTvlB.amount)
+            .dividedBy(new BigNumber(10).pow(tokenBDecimals))
+            .toNumber()
+        : 0);
 
   return (
     <Container>
@@ -1100,8 +1151,9 @@ const PoolDetail: React.FC = () => {
               isDarkTheme={isDarkTheme}
               onClick={() => {
                 // Navigate to tokenA detail page with tokenB as swapTo parameter
-                const tokenAId = tokAId || poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
-                const tokenBId = tokBId || poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+                // Use display order for navigation
+                const tokenAId = displayTokAId || poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
+                const tokenBId = displayTokBId || poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
                 if (tokenAId) {
                   navigate(`/explore/tokens/${tokenAId}${tokenBId ? `?swapTo=${tokenBId}` : ""}`);
                 } else {

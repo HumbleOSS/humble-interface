@@ -31,6 +31,11 @@ import SwapSuccessfulModal from "../modals/SwapSuccessfulModal";
 import ProgressBar from "../ProgressBar";
 import algosdk from "algosdk";
 import { getAsaIdFromArc200Contract } from "../../config/arc200AsaMapping";
+import { getDefaultPool, setDefaultPool, clearDefaultPool, findDefaultPoolsForToken, cleanupDuplicateDefaultPools } from "../../utils/poolSettings";
+import SettingsIcon from "@mui/icons-material/Settings";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
+import Tooltip from "@mui/material/Tooltip";
 
 const SwapContainer = styled.div<{ gap?: number }>`
   display: flex;
@@ -90,6 +95,55 @@ const SwapButton = styled.button<{ isDarkTheme: boolean; disabled?: boolean }>`
   }
 `;
 
+const PoolInfoContainer = styled.div<{ isDarkTheme: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: ${(props) =>
+    props.isDarkTheme ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)"};
+  margin-top: 4px;
+  font-size: 12px;
+  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+`;
+
+const PoolInfoText = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const DefaultPoolButton = styled.button<{ isDarkTheme: boolean; isDefault: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: ${(props) =>
+    props.isDefault
+      ? props.isDarkTheme
+        ? "#FFBE1D"
+        : "#9933FF"
+      : props.isDarkTheme
+      ? "#9CA3AF"
+      : "#6B7280"};
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${(props) =>
+      props.isDarkTheme ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"};
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
 interface EmbeddedSwapWidgetProps {
   defaultToken?: ARC200TokenI;
   defaultToken2?: ARC200TokenI;
@@ -110,6 +164,9 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
   useEffect(() => {
     dispatch(getTokensWithTickers() as unknown as UnknownAction);
     dispatch(getPools() as unknown as UnknownAction);
+    
+    // Clean up duplicate default pool entries on component mount
+    cleanupDuplicateDefaultPools();
   }, [dispatch]);
 
   const [on, setOn] = useState(false);
@@ -221,15 +278,82 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
         setToken2(defaultToken2);
       }
     } else if (defaultToken && !token2 && tokens.length > 0) {
-      const voiToken = tokens.find(
-        (t) => t.tokenId === 0 || t.contractId === TOKEN_WVOI1
-      ) || {
-        ...NETWORK_TOKEN.VOI,
-        contractId: TOKEN_WVOI1,
-      };
-      setToken2(voiToken as ARC200TokenI);
+      // Check if there's a default pool set for this token - if so, use the paired token from that default
+      const defaultPoolsForToken = findDefaultPoolsForToken(
+        defaultToken.tokenId,
+        defaultToken.contractId
+      );
+      
+      if (defaultPoolsForToken.length > 0) {
+        // Use the first default pool's paired token
+        const defaultPool = defaultPoolsForToken[0];
+        const pairedToken = tokens.find(
+          (t) => {
+            const normalizeId = (id: number | undefined, cId: number | undefined) => {
+              if (id === 0 || cId === 390001 || id === 390001) return 0;
+              return id ?? cId ?? 0;
+            };
+            const tNormalized = normalizeId(t.tokenId, t.contractId);
+            return tNormalized === defaultPool.otherTokenId;
+          }
+        );
+        
+        if (pairedToken) {
+          console.log("Using token2 from default pool:", {
+            defaultToken: { id: defaultToken.tokenId, contractId: defaultToken.contractId },
+            defaultPool,
+            pairedToken: { id: pairedToken.tokenId, contractId: pairedToken.contractId },
+          });
+          setToken2(pairedToken);
+          return; // Don't continue with other logic
+        }
+      }
+      
+      // Don't default to VOI if defaultToken is already VOI (would show "Voi to Voi")
+      const isDefaultTokenVOI = 
+        defaultToken.tokenId === 0 || 
+        defaultToken.contractId === TOKEN_WVOI1 ||
+        defaultToken.tokenId === TOKEN_WVOI1;
+      
+      if (!isDefaultTokenVOI) {
+        // Default to VOI only if defaultToken is not VOI
+        const voiToken = tokens.find(
+          (t) => t.tokenId === 0 || t.contractId === TOKEN_WVOI1
+        ) || {
+          ...NETWORK_TOKEN.VOI,
+          contractId: TOKEN_WVOI1,
+        };
+        setToken2(voiToken as ARC200TokenI);
+      } else if (isDefaultTokenVOI && pools.length > 0) {
+        // If defaultToken is VOI, find a token that pairs with VOI in pools
+        const voiTokenId = 0;
+        const voiContractId = TOKEN_WVOI1;
+        
+        // Find a pool that contains VOI
+        const voiPool = pools.find(
+          (p) => p.tokA === voiTokenId || p.tokB === voiTokenId || 
+                 p.tokA === voiContractId || p.tokB === voiContractId
+        );
+        
+        if (voiPool) {
+          // Get the other token from the pool (not VOI)
+          const otherTokenId = voiPool.tokA === voiTokenId || voiPool.tokA === voiContractId 
+            ? voiPool.tokB 
+            : voiPool.tokA;
+          
+          // Find the token in the tokens array
+          const pairedToken = tokens.find(
+            (t) => t.tokenId === otherTokenId || t.contractId === otherTokenId
+          );
+          
+          if (pairedToken) {
+            setToken2(pairedToken);
+          }
+        }
+        // If no pool found, leave token2 undefined so user can select
+      }
     }
-  }, [defaultToken, defaultToken2, token2, tokens]);
+  }, [defaultToken, defaultToken2, token2, tokens, pools]);
 
   // Set token options
   useEffect(() => {
@@ -409,15 +533,35 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
     fetchBalance();
   }, [activeAccount, token2]);
 
+  // Track if current pool is set as default
+  const [isDefaultPool, setIsDefaultPool] = useState(false);
+
   // Find eligible pools
   const [eligiblePools, setEligiblePools] = useState<PoolI[]>([]);
   useEffect(() => {
     async function fetchEligiblePools() {
-      if (!token || !token2 || !pools || pools.length === 0) return;
+      console.log("fetchEligiblePools called:", {
+        hasToken: !!token,
+        hasToken2: !!token2,
+        poolsCount: pools?.length || 0,
+        token: token ? { id: token.tokenId, contractId: token.contractId, symbol: token.symbol } : null,
+        token2: token2 ? { id: token2.tokenId, contractId: token2.contractId, symbol: token2.symbol } : null,
+      });
+      
+      if (!token || !token2 || !pools || pools.length === 0) {
+        console.log("fetchEligiblePools: Early return - missing requirements");
+        return;
+      }
+      // Get token IDs - use tokenId() for pool matching, but also keep original values for default pool lookup
       const tokenAId = tokenId(token);
       const tokenBId = tokenId(token2);
       const tokenAContractId = token.contractId;
       const tokenBContractId = token2.contractId;
+      
+      // For default pool lookup, we need to use the actual tokenId and contractId values
+      // not the processed tokenId() which might convert 0 to 390001
+      const tokenAIdForLookup = token.tokenId;
+      const tokenBIdForLookup = token2.tokenId;
 
       const filteredPools = pools.filter((p: PoolI) => {
         const hasTokenA =
@@ -437,37 +581,226 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
         return hasTokenA && hasTokenB && p.tokA !== p.tokB;
       });
 
-      let maxPool;
-      let maxMintedLpt = BigInt(0);
-      for await (const pool of filteredPools) {
-        const { algodClient, indexerClient } = getAlgorandClients();
-        const ci = new swap(pool.poolId, algodClient, indexerClient);
-        const info = await ci.Info();
-        if (info.success) {
-          const {
-            lptBals: { lpMinted },
-          } = info.returnValue;
-          if (lpMinted > maxMintedLpt) {
-            maxMintedLpt = lpMinted;
-            maxPool = pool;
+      // Check for default pool setting first
+      // Use original tokenId values, not processed ones, for consistent lookup
+      const defaultPoolId = getDefaultPool(
+        tokenAIdForLookup,
+        tokenAContractId,
+        tokenBIdForLookup,
+        tokenBContractId
+      );
+      
+      console.log("Pool selection - tokens:", {
+        tokenA: { 
+          id: tokenAId, 
+          idForLookup: tokenAIdForLookup,
+          contractId: tokenAContractId, 
+          symbol: token?.symbol,
+          fullToken: token,
+        },
+        tokenB: { 
+          id: tokenBId, 
+          idForLookup: tokenBIdForLookup,
+          contractId: tokenBContractId, 
+          symbol: token2?.symbol,
+          fullToken: token2,
+        },
+        defaultPoolId,
+        filteredPoolsCount: filteredPools.length,
+      });
+
+      let selectedPool: PoolI | undefined;
+
+      if (defaultPoolId) {
+        console.log("Default pool ID found:", defaultPoolId, "for tokens:", {
+          tokenAId: tokenAIdForLookup,
+          tokenAContractId,
+          tokenBId: tokenBIdForLookup,
+          tokenBContractId,
+        });
+        
+        // Try to find the default pool in filtered pools first
+        const defaultPool = filteredPools.find((p) => p.poolId === defaultPoolId);
+        if (defaultPool) {
+          console.log("Default pool found in filtered pools:", defaultPool.poolId);
+          // Use the pool immediately if it's in filtered pools (it's already validated by being in the list)
+          // Verify asynchronously but don't block on it
+          selectedPool = defaultPool;
+          console.log("Using default pool:", defaultPool.poolId);
+          
+          // Verify the pool is still valid asynchronously (for future reference)
+          (async () => {
+            try {
+              const { algodClient, indexerClient } = getAlgorandClients();
+              const ci = new swap(defaultPool.poolId, algodClient, indexerClient);
+              const info = await ci.Info();
+              if (!info.success) {
+                console.warn("Default pool verification failed, but pool is still being used");
+              }
+            } catch (error) {
+              console.warn("Default pool verification error (non-blocking):", error);
+            }
+          })();
+        } else {
+          console.log("Default pool not found in filtered pools, checking all pools...");
+          // Default pool not in filtered pools - check if it exists in all pools
+          const allPoolsDefaultPool = pools.find((p) => p.poolId === defaultPoolId);
+          if (allPoolsDefaultPool) {
+            // Check if this pool actually matches the token pair
+            const poolHasTokenA =
+              [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(tokenAId) ||
+              (tokenAContractId !== undefined &&
+                [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(tokenAContractId)) ||
+              (token.tokenId === 0 && [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(0)) ||
+              (token.contractId === TOKEN_WVOI1 &&
+                [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(TOKEN_WVOI1));
+            const poolHasTokenB =
+              [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(tokenBId) ||
+              (tokenBContractId !== undefined &&
+                [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(tokenBContractId)) ||
+              (token2.tokenId === 0 && [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(0)) ||
+              (token2.contractId === TOKEN_WVOI1 &&
+                [allPoolsDefaultPool.tokA, allPoolsDefaultPool.tokB].includes(TOKEN_WVOI1));
+            
+            if (poolHasTokenA && poolHasTokenB) {
+              // Pool matches the token pair, verify it's valid
+              try {
+                const { algodClient, indexerClient } = getAlgorandClients();
+                const ci = new swap(allPoolsDefaultPool.poolId, algodClient, indexerClient);
+                const info = await ci.Info();
+                if (info.success) {
+                  selectedPool = allPoolsDefaultPool;
+                  console.log("Using default pool (found in all pools):", allPoolsDefaultPool.poolId);
+                }
+              } catch (error) {
+                console.warn("Default pool verification error, falling back to auto negotiation:", error);
+              }
+            } else {
+              console.warn("Default pool doesn't match token pair, clearing default and using auto negotiation");
+              // Clear invalid default pool
+              clearDefaultPool(
+                tokenAIdForLookup,
+                tokenAContractId,
+                tokenBIdForLookup,
+                tokenBContractId
+              );
+            }
+          } else {
+            console.warn("Default pool not found in any pools, clearing default and using auto negotiation");
+            // Clear invalid default pool
+            clearDefaultPool(
+              tokenAIdForLookup,
+              tokenAContractId,
+              tokenBIdForLookup,
+              tokenBContractId
+            );
           }
         }
       }
-      setEligiblePools(maxPool ? [maxPool] : []);
+
+      // If no default pool or default pool not available, use auto negotiation
+      if (!selectedPool) {
+        let maxPool;
+        let maxMintedLpt = BigInt(0);
+        for await (const pool of filteredPools) {
+          const { algodClient, indexerClient } = getAlgorandClients();
+          const ci = new swap(pool.poolId, algodClient, indexerClient);
+          const info = await ci.Info();
+          if (info.success) {
+            const {
+              lptBals: { lpMinted },
+            } = info.returnValue;
+            if (lpMinted > maxMintedLpt) {
+              maxMintedLpt = lpMinted;
+              maxPool = pool;
+            }
+          }
+        }
+        selectedPool = maxPool;
+        if (selectedPool) {
+          console.log("Using auto-negotiated pool (highest liquidity):", selectedPool.poolId);
+        }
+      }
+
+      if (selectedPool) {
+        setEligiblePools([selectedPool]);
+        console.log("fetchEligiblePools: Final selected pool:", selectedPool.poolId, {
+          isDefault: !!defaultPoolId && selectedPool.poolId === defaultPoolId,
+          defaultPoolId,
+          selectedPoolId: selectedPool.poolId,
+          willTriggerPoolInfoFetch: true,
+        });
+      } else {
+        setEligiblePools([]);
+        console.log("fetchEligiblePools: No pool selected");
+      }
     }
-    fetchEligiblePools();
+    
+    // Only run if we have all required data
+    if (token && token2 && pools && pools.length > 0) {
+      console.log("fetchEligiblePools: All requirements met, running fetch...");
+      fetchEligiblePools();
+    } else {
+      console.log("fetchEligiblePools: Waiting for requirements:", {
+        hasToken: !!token,
+        hasToken2: !!token2,
+        hasPools: !!(pools && pools.length > 0),
+      });
+    }
   }, [pools, token, token2]);
+
+  // Check if current pool is set as default
+  useEffect(() => {
+    if (!token || !token2 || eligiblePools.length === 0) {
+      setIsDefaultPool(false);
+      return;
+    }
+
+    // Use original tokenId values for consistent lookup
+    const tokenAIdForLookup = token.tokenId;
+    const tokenBIdForLookup = token2.tokenId;
+    const tokenAContractId = token.contractId;
+    const tokenBContractId = token2.contractId;
+
+    const defaultPoolId = getDefaultPool(
+      tokenAIdForLookup,
+      tokenAContractId,
+      tokenBIdForLookup,
+      tokenBContractId
+    );
+
+    const currentPoolId = eligiblePools[0]?.poolId;
+    setIsDefaultPool(defaultPoolId === currentPoolId);
+  }, [token, token2, eligiblePools]);
 
   // Get pool info and calculate rate
   const [info, setInfo] = useState<any>();
   useEffect(() => {
-    if (!token || !token2 || !eligiblePools || eligiblePools.length === 0)
+    if (!token || !token2 || !eligiblePools || eligiblePools.length === 0) {
+      setInfo(undefined); // Clear info when pools are cleared
       return;
+    }
+    
+    const poolId = eligiblePools[0]?.poolId;
+    if (!poolId) return;
+    
+    console.log("Fetching pool info for pool:", poolId);
+    
     const { algodClient, indexerClient } = getAlgorandClients();
-    new swap(eligiblePools[0]?.poolId || 0, algodClient, indexerClient)
+    new swap(poolId, algodClient, indexerClient)
       .Info()
       .then((info: any) => {
-        setInfo(info.returnValue);
+        if (info.success) {
+          console.log("Pool info fetched successfully for pool:", poolId);
+          setInfo(info.returnValue);
+        } else {
+          console.warn("Pool info fetch failed for pool:", poolId, info);
+          setInfo(undefined);
+        }
+      })
+      .catch((error: any) => {
+        console.error("Error fetching pool info for pool:", poolId, error);
+        setInfo(undefined);
       });
   }, [eligiblePools, token, token2]);
 
@@ -876,6 +1209,71 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
           tokInfo={tokBInfo}
           compact={true}
         />
+
+        {/* Pool Info and Default Pool Setting */}
+        {token && token2 && eligiblePools.length > 0 && (
+          <PoolInfoContainer isDarkTheme={isDarkTheme}>
+            <PoolInfoText>
+              Pool: {eligiblePools[0]?.poolId}
+              {isDefaultPool && (
+                <Tooltip title="Using default pool for this token pair">
+                  <StarIcon sx={{ fontSize: 14, color: isDarkTheme ? "#FFBE1D" : "#9933FF" }} />
+                </Tooltip>
+              )}
+            </PoolInfoText>
+            <DefaultPoolButton
+              isDarkTheme={isDarkTheme}
+              isDefault={isDefaultPool}
+              onClick={() => {
+                if (!token || !token2 || eligiblePools.length === 0) return;
+
+                // Use original tokenId values for consistent storage/retrieval
+                const tokenAIdForStorage = token.tokenId;
+                const tokenBIdForStorage = token2.tokenId;
+                const tokenAContractId = token.contractId;
+                const tokenBContractId = token2.contractId;
+                const currentPoolId = eligiblePools[0]?.poolId;
+
+                if (isDefaultPool) {
+                  // Clear default pool
+                  clearDefaultPool(
+                    tokenAIdForStorage,
+                    tokenAContractId,
+                    tokenBIdForStorage,
+                    tokenBContractId
+                  );
+                  setIsDefaultPool(false);
+                  toast.info("Default pool cleared. Using auto negotiation.");
+                } else {
+                  // Set as default pool
+                  if (currentPoolId) {
+                    setDefaultPool(
+                      tokenAIdForStorage,
+                      tokenAContractId,
+                      tokenBIdForStorage,
+                      tokenBContractId,
+                      currentPoolId
+                    );
+                    setIsDefaultPool(true);
+                    toast.success("Pool set as default for this token pair.");
+                  }
+                }
+              }}
+            >
+              {isDefaultPool ? (
+                <>
+                  <StarIcon sx={{ fontSize: 16 }} />
+                  Default
+                </>
+              ) : (
+                <>
+                  <StarBorderIcon sx={{ fontSize: 16 }} />
+                  Set as default
+                </>
+              )}
+            </DefaultPoolButton>
+          </PoolInfoContainer>
+        )}
 
         <SwapButton
           isDarkTheme={isDarkTheme}

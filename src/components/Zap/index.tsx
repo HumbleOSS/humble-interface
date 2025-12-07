@@ -316,7 +316,15 @@ const TokenInputPanel: React.FC<{
             endAdornment: currency && (
               <InputAdornment position="end">
                 <Typography variant="caption" color="text.secondary">
-                  {currency.symbol}
+                  {(() => {
+                    // Override wVOI (390001) to display as Voi
+                    const tokenId = currency.tokenId ?? 0;
+                    const contractId = currency.contractId ?? tokenId;
+                    if (tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1) {
+                      return "Voi";
+                    }
+                    return currency.symbol;
+                  })()}
                 </Typography>
               </InputAdornment>
             ),
@@ -326,7 +334,15 @@ const TokenInputPanel: React.FC<{
       {currency && (
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography variant="caption" color="text.secondary">
-            {currency.name}
+            {(() => {
+              // Override wVOI (390001) to display as Voi
+              const tokenId = currency.tokenId ?? 0;
+              const contractId = currency.contractId ?? tokenId;
+              if (tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1) {
+                return "Voi";
+              }
+              return currency.name;
+            })()}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Decimals: {currency.decimals}
@@ -362,8 +378,14 @@ const TokenInputPanel: React.FC<{
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
               Balance: {(() => {
+                // Override wVOI (390001) to display as Voi
+                const tokenId = currency.tokenId ?? 0;
+                const contractId = currency.contractId ?? tokenId;
+                const isVOI = tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1;
+                const displaySymbol = isVOI ? "Voi" : currency.symbol;
+                
                 let balance = null;
-                if (currency.symbol === "VOI") {
+                if (isVOI || currency.symbol === "VOI") {
                   balance = tokenBalances[0];
                 } else {
                   balance = tokenBalances[currency.tokenId];
@@ -371,7 +393,7 @@ const TokenInputPanel: React.FC<{
                     balance = tokenBalances[currency.contractId];
                   }
                 }
-                return `${balance} ${currency.symbol}`;
+                return `${balance} ${displaySymbol}`;
               })()}
             </Typography>
             {(() => {

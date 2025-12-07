@@ -584,6 +584,26 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
   
   const tokA = findToken(pool.tokAId);
   const tokB = findToken(pool.tokBId);
+  
+  // Order pair so asset with lower contractId is on left
+  const getContractId = (token: any, tokenIdStr: string): number => {
+    if (token) {
+      return Number(token.contractId ?? token.tokenId ?? 0);
+    }
+    // Fallback to parsing the tokenId string
+    const parsed = Number(tokenIdStr);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+  const tokAContractId = getContractId(tokA, pool.tokAId);
+  const tokBContractId = getContractId(tokB, pool.tokBId);
+  const shouldSwap = tokAContractId > tokBContractId;
+  
+  // Create display versions (swapped if needed)
+  const displayTokA = shouldSwap ? tokB : tokA;
+  const displayTokB = shouldSwap ? tokA : tokB;
+  const displayTokAId = shouldSwap ? pool.tokBId : pool.tokAId;
+  const displayTokBId = shouldSwap ? pool.tokAId : pool.tokBId;
+  
   const isWVOIf = (token: any) => {
     if (!token) return false;
     const tokenId = token.tokenId || 0;
@@ -591,66 +611,66 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     // Handle both VOI (0) and wVOI (390001)
     return tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1;
   };
-  const tokAIcon = isWVOIf(tokA) ? (
+  const tokAIcon = isWVOIf(displayTokA) ? (
     <PairIconImage
       src={`https://asset-verification.nautilus.sh/icons/0.png`}
       alt={`VOI icon`}
     />
-  ) : !!tokA?.verified ? (
+  ) : !!displayTokA?.verified ? (
     <PairIconImage
-      src={`https://asset-verification.nautilus.sh/icons/${tokA?.contractId === 390001 ? 0 : tokA?.contractId}.png`}
-      alt={`${tokA?.symbol} icon`}
+      src={`https://asset-verification.nautilus.sh/icons/${displayTokA?.contractId === 390001 ? 0 : displayTokA?.contractId}.png`}
+      alt={`${displayTokA?.symbol} icon`}
     />
   ) : (
     <CryptoIconPlaceholder2
       color={stringToColorCode(
-        algosdk.getApplicationAddress(tokA?.contractId || 0)
+        algosdk.getApplicationAddress(displayTokA?.contractId || 0)
       )}
     />
   );
-  const tokBIcon = isWVOIf(tokB) ? (
+  const tokBIcon = isWVOIf(displayTokB) ? (
     <PairIconImage
       src={`https://asset-verification.nautilus.sh/icons/0.png`}
       alt={`VOI icon`}
     />
-  ) : !!tokB?.verified ? (
+  ) : !!displayTokB?.verified ? (
     <PairIconImage
-      src={`https://asset-verification.nautilus.sh/icons/${tokB?.contractId === 390001 ? 0 : tokB?.contractId}.png`}
-      alt={`${tokB?.symbol} icon`}
+      src={`https://asset-verification.nautilus.sh/icons/${displayTokB?.contractId === 390001 ? 0 : displayTokB?.contractId}.png`}
+      alt={`${displayTokB?.symbol} icon`}
     />
   ) : (
     <CryptoIconPlaceholder2
       color={stringToColorCode(
-        algosdk.getApplicationAddress(tokB?.contractId || 0)
+        algosdk.getApplicationAddress(displayTokB?.contractId || 0)
       )}
     />
   );
-  const tokABadge = isWVOIf(tokA) ? (
+  const tokABadge = isWVOIf(displayTokA) ? (
     <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
       <VerifiedUserIcon fontSize="small" style={{ color: "gold" }} />
     </Tooltip>
-  ) : !!tokA?.verified ? (
+  ) : !!displayTokA?.verified ? (
     <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
       <VerifiedUserIcon fontSize="small" />
     </Tooltip>
   ) : (
     ""
   );
-  const tokBBadge = isWVOIf(tokB) ? (
+  const tokBBadge = isWVOIf(displayTokB) ? (
     <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
       <VerifiedUserIcon fontSize="small" style={{ color: "gold" }} />
     </Tooltip>
-  ) : !!tokB?.verified ? (
+  ) : !!displayTokB?.verified ? (
     <Tooltip title="Verified by Nautilus" placement="top-end" arrow>
       <VerifiedUserIcon fontSize="small" />
     </Tooltip>
   ) : (
     ""
   );
-  const displayTokAId =
-    `${pool.tokAId}` === `${TOKEN_WVOI1}` ? "0" : `${pool.tokAId}`;
-  const displayTokBId =
-    `${pool.tokBId}` === `${TOKEN_WVOI1}` ? "0" : `${pool.tokBId}`;
+  const displayTokAIdFormatted =
+    `${displayTokAId}` === `${TOKEN_WVOI1}` ? "0" : `${displayTokAId}`;
+  const displayTokBIdFormatted =
+    `${displayTokBId}` === `${TOKEN_WVOI1}` ? "0" : `${displayTokBId}`;
   console.log({ pool, balance, tokens, tokA, tokB });
 
   const aprTooltipContent = () => {
@@ -705,10 +725,10 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                     <PairTokenLabel>
                       {(() => {
                         // Display "VOI" for both tokenId 0 and 390001 (wVOI)
-                        if (!tokA) return `ID: ${pool.tokAId}`;
-                        const id = tokA.tokenId || tokA.contractId || 0;
+                        if (!displayTokA) return `ID: ${displayTokAId}`;
+                        const id = displayTokA.tokenId || displayTokA.contractId || 0;
                         if (id === 0 || id === TOKEN_WVOI1) return "VOI";
-                        return tokA.symbol || `ID: ${pool.tokAId}`;
+                        return displayTokA.symbol || `ID: ${displayTokAId}`;
                       })()}
                     </PairTokenLabel>
                     {tokABadge}
@@ -716,10 +736,10 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                     <PairTokenLabel>/
                       {(() => {
                         // Display "VOI" for both tokenId 0 and 390001 (wVOI)
-                        if (!tokB) return ` ID: ${pool.tokBId}`;
-                        const id = tokB.tokenId || tokB.contractId || 0;
+                        if (!displayTokB) return ` ID: ${displayTokBId}`;
+                        const id = displayTokB.tokenId || displayTokB.contractId || 0;
                         if (id === 0 || id === TOKEN_WVOI1) return " VOI";
-                        return ` ${tokB.symbol || `ID: ${pool.tokBId}`}`;
+                        return ` ${displayTokB.symbol || `ID: ${displayTokBId}`}`;
                       })()}
                     </PairTokenLabel>
                     {tokBBadge}
@@ -730,11 +750,11 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
                   <PairIds>
                     <Field>
                       <FieldLabel>ID:</FieldLabel>
-                      <FieldValue>{displayTokAId}</FieldValue>
+                      <FieldValue>{displayTokAIdFormatted}</FieldValue>
                     </Field>
                     <Field>
                       <FieldLabel>ID:</FieldLabel>
-                      <FieldValue>{displayTokBId}</FieldValue>
+                      <FieldValue>{displayTokBIdFormatted}</FieldValue>
                     </Field>
                   </PairIds>
                 ) : null}

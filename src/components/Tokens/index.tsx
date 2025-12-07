@@ -115,6 +115,7 @@ const PanelSurface = styled.div<{ isDarkTheme: boolean }>`
     props.isDarkTheme ? "#050507" : "#ffffff"};
   color: ${(props) =>
     props.isDarkTheme ? "#fff" : "#0c0c10"};
+  box-sizing: border-box;
 `;
 
 const PanelHeaderRow = styled.div`
@@ -399,6 +400,98 @@ const SortButton = styled.button<{ isDarkTheme: boolean; active: boolean }>`
   }
 `;
 
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+`;
+
+const PaginationButton = styled.button<{ isDarkTheme: boolean; disabled?: boolean }>`
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid
+    ${(props) =>
+      props.disabled
+        ? props.isDarkTheme
+          ? "#1F2937"
+          : "#E5E7EB"
+        : props.isDarkTheme
+        ? "#374151"
+        : "#D1D5DB"};
+  background-color: ${(props) =>
+    props.disabled
+      ? props.isDarkTheme
+        ? "#1F2937"
+        : "#F3F4F6"
+      : props.isDarkTheme
+      ? "#1F2937"
+      : "white"};
+  color: ${(props) =>
+    props.disabled
+      ? props.isDarkTheme
+        ? "#4B5563"
+        : "#9CA3AF"
+      : props.isDarkTheme
+      ? "#9CA3AF"
+      : "#4B5563"};
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  transition: all 0.2s;
+  min-width: 40px;
+
+  &:hover:not(:disabled) {
+    background-color: ${(props) =>
+      props.isDarkTheme ? "#374151" : "#F3F4F6"};
+  }
+`;
+
+const PageInfo = styled.div<{ isDarkTheme: boolean }>`
+  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+  font-size: 0.875rem;
+  padding: 0 0.5rem;
+`;
+
+const SearchContainer = styled.div`
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+const SearchInput = styled.input<{ isDarkTheme: boolean }>`
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid
+    ${(props) =>
+      props.isDarkTheme
+        ? "rgba(255, 255, 255, 0.15)"
+        : "rgba(41, 88, 255, 0.15)"};
+  background-color: ${(props) =>
+    props.isDarkTheme ? "rgba(255, 255, 255, 0.05)" : "#ffffff"};
+  color: ${(props) => (props.isDarkTheme ? "#F3F4F6" : "#0c0c10")};
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  margin: 0;
+
+  &:focus {
+    outline: none;
+    border-color: ${(props) =>
+      props.isDarkTheme ? "#6366F1" : "#4F46E5"};
+    background-color: ${(props) =>
+      props.isDarkTheme ? "rgba(255, 255, 255, 0.08)" : "#ffffff"};
+  }
+
+  &::placeholder {
+    color: ${(props) => (props.isDarkTheme ? "#6B7280" : "#9CA3AF")};
+  }
+`;
+
 const Tokens: React.FC = () => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
@@ -409,8 +502,11 @@ const Tokens: React.FC = () => {
   const [protocolStats, setProtocolStats] = useState<ProtocolStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>("marketCap");
+  const [sortBy, setSortBy] = useState<string>("tvl");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const itemsPerPage = 20;
 
   useEffect(() => {
     const fetchTokenStats = async () => {
@@ -578,21 +674,12 @@ const Tokens: React.FC = () => {
       return sum + parseFloat(String(marketCap));
     }, 0);
 
-    const totalVolume24h = tokensList.reduce((sum: number, token: TokenStatData) => {
-      const volume = token.volume?.["24h"]?.usdVolume || token.volume?.["24h"] || "0";
-      return sum + parseFloat(String(volume));
-    }, 0);
-
-    const totalTVL = tokensList.reduce((sum: number, token: TokenStatData) => {
-      // Use liquidity.totalUSD (primary) or fallback to tvl.usd
-      const tvl = token.liquidity?.totalUSD || token.tvl?.usd || token.tvl || "0";
-      return sum + parseFloat(String(tvl));
-    }, 0);
+    // Note: We don't calculate totalTVL or totalVolume24h here by summing token values because that would double-count
+    // each pool (since each pool has 2 tokens, and each token's TVL/volume includes the full pool TVL/volume).
+    // Instead, we use the protocolStats.tvl and protocolStats.volume from the API which provide the correct aggregate values.
 
     return {
       totalMarketCap,
-      totalVolume24h,
-      totalTVL,
       tokenCount: tokensList.length,
     };
   }, [tokensList]);
@@ -649,8 +736,52 @@ const Tokens: React.FC = () => {
     return sorted;
   }, [tokensList, sortBy]);
 
+  // Filter tokens by search query
+  const filteredTokens = React.useMemo(() => {
+    if (!searchQuery.trim()) {
+      return sortedTokens;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return sortedTokens.filter((token) => {
+      const assetId = token.assetId || token.tokenId || "0";
+      let tokenName = token.token?.name || token.name || "Unknown";
+      let tokenSymbol = token.token?.unitName || token.symbol || token.unitName || "N/A";
+      
+      // Override wVOI (390001) to display as Voi/VOI
+      if (assetId === "390001" || assetId === "0" || assetId === 390001 || assetId === 0) {
+        tokenName = "Voi";
+        tokenSymbol = "VOI";
+      }
+
+      return (
+        tokenName.toLowerCase().includes(query) ||
+        tokenSymbol.toLowerCase().includes(query) ||
+        String(assetId).includes(query)
+      );
+    });
+  }, [sortedTokens, searchQuery]);
+
   const handleTokenClick = (assetId: string) => {
     navigate(`/explore/tokens/${assetId}`);
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTokens.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
+
+  // Reset to page 1 when sort or search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy, searchQuery]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   if (loading) {
@@ -699,11 +830,19 @@ const Tokens: React.FC = () => {
                 isDarkTheme={isDarkTheme}
               />
             )}
-            <StatsCard
-              title="24h Volume"
-              value={formatCurrency(aggregateStats.totalVolume24h)}
-              isDarkTheme={isDarkTheme}
-            />
+            {protocolStats && (protocolStats.volume?.["24h"]?.usdVolume || protocolStats.volume?.["24h"]?.total || protocolStats.totalVolume || protocolStats.total_volume) && (
+              <StatsCard
+                title="24h Volume"
+                value={formatCurrency(
+                  protocolStats.volume?.["24h"]?.usdVolume || 
+                  protocolStats.volume?.["24h"]?.total || 
+                  protocolStats.totalVolume || 
+                  protocolStats.total_volume || 
+                  "0"
+                )}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
           </StatsGrid>
         )}
       </PanelSurface>
@@ -736,10 +875,22 @@ const Tokens: React.FC = () => {
           </SortControls>
         </PanelHeaderRow>
 
+        <SearchContainer>
+          <SearchInput
+            isDarkTheme={isDarkTheme}
+            type="text"
+            placeholder="Search by token name, symbol, or asset ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </SearchContainer>
+
         <TableWrapper isTransitioning={isTransitioning}>
-          {sortedTokens.length === 0 ? (
+          {filteredTokens.length === 0 ? (
             <EmptyMessage isDarkTheme={isDarkTheme}>
-              No token statistics available
+              {searchQuery.trim()
+                ? "No tokens found matching your search"
+                : "No token statistics available"}
             </EmptyMessage>
           ) : (
             <Table isDarkTheme={isDarkTheme}>
@@ -752,16 +903,17 @@ const Tokens: React.FC = () => {
                 </tr>
               </TableHead>
               <TableBody isDarkTheme={isDarkTheme}>
-                {sortedTokens.map((token) => {
+                {paginatedTokens.map((token) => {
                   const assetId = token.assetId || token.tokenId || "0";
                   // Use nested token object if available, otherwise fallback to direct fields
                   let tokenName = token.token?.name || token.name || "Unknown";
                   let tokenSymbol = token.token?.unitName || token.symbol || token.unitName || "N/A";
                   
-                  // Override wVOI (390001) to display as Voi/VOI
-                  if (assetId === "390001" || assetId === "0" || assetId === 390001 || assetId === 0) {
+                  // Override wVOI (390001) to display as Voi - special case: show only "Voi" instead of name and symbol
+                  const isVOI = assetId === "390001" || assetId === "0" || assetId === 390001 || assetId === 0;
+                  if (isVOI) {
                     tokenName = "Voi";
-                    tokenSymbol = "VOI";
+                    tokenSymbol = "Voi"; // Use "Voi" for symbol too
                   }
                   const price: string = typeof token.price === "object" && token.price !== null ? (token.price?.usd || "0") : (typeof token.price === "string" ? token.price : "0");
                   // Use new priceChange.24h.percent structure, with fallbacks
@@ -793,11 +945,13 @@ const Tokens: React.FC = () => {
                           />
                           <TokenInfo>
                             <TokenName isDarkTheme={isDarkTheme}>
-                              {tokenName}
+                              {isVOI ? "Voi" : tokenName}
                             </TokenName>
-                            <TokenSymbol isDarkTheme={isDarkTheme}>
-                              {tokenSymbol}
-                            </TokenSymbol>
+                            {!isVOI && (
+                              <TokenSymbol isDarkTheme={isDarkTheme}>
+                                {tokenSymbol}
+                              </TokenSymbol>
+                            )}
                           </TokenInfo>
                         </TokenCell>
                       </TableCell>
@@ -823,6 +977,71 @@ const Tokens: React.FC = () => {
             </Table>
           )}
         </TableWrapper>
+
+        {filteredTokens.length > itemsPerPage && (
+          <PaginationContainer>
+            <PaginationButton
+              isDarkTheme={isDarkTheme}
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              Previous
+            </PaginationButton>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last page, current page, and pages around current
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationButton
+                    key={page}
+                    isDarkTheme={isDarkTheme}
+                    disabled={page === currentPage}
+                    onClick={() => handlePageChange(page)}
+                    style={{
+                      backgroundColor:
+                        page === currentPage
+                          ? isDarkTheme
+                            ? "#4F46E5"
+                            : "#6366F1"
+                          : undefined,
+                      color: page === currentPage ? "#FFFFFF" : undefined,
+                      borderColor:
+                        page === currentPage
+                          ? isDarkTheme
+                            ? "#6366F1"
+                            : "#4F46E5"
+                          : undefined,
+                    }}
+                  >
+                    {page}
+                  </PaginationButton>
+                );
+              } else if (
+                page === currentPage - 2 ||
+                page === currentPage + 2
+              ) {
+                return (
+                  <PageInfo key={page} isDarkTheme={isDarkTheme}>
+                    ...
+                  </PageInfo>
+                );
+              }
+              return null;
+            })}
+
+            <PaginationButton
+              isDarkTheme={isDarkTheme}
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              Next
+            </PaginationButton>
+          </PaginationContainer>
+        )}
       </PanelSurface>
     </Container>
   );

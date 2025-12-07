@@ -283,7 +283,7 @@ const useTokenBalances = (tokens2: any[] | undefined, activeAccount: any) => {
         let decimals = token.decimals;
 
         // Try to get asset balance if the token has an asset ID
-        if (wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
+        if (wrappedTokenId !== undefined && wrappedTokenId !== 0 && !isNaN(wrappedTokenId)) {
           try {
             const accAssetInfo = await algodClient
               .accountAssetInformation(activeAccount.address, wrappedTokenId)

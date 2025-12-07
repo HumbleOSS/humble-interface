@@ -587,29 +587,46 @@ const Tickers: React.FC = () => {
                 ? tokenSymbol(targetToken)
                 : ticker.target_currency;
 
+              // Order pair so asset with lower contractId is on left
+              const getContractId = (token: any, currency: string): number => {
+                if (token) {
+                  return Number(token.contractId ?? token.tokenId ?? 0);
+                }
+                // Try to parse currency as number (contractId)
+                const parsed = Number(currency);
+                return isNaN(parsed) ? 0 : parsed;
+              };
+              const baseContractId = getContractId(baseToken, ticker.base_currency);
+              const targetContractId = getContractId(targetToken, ticker.target_currency);
+              const shouldSwap = baseContractId > targetContractId;
+              const displayBaseSymbol = shouldSwap ? targetSymbol : baseSymbol;
+              const displayTargetSymbol = shouldSwap ? baseSymbol : targetSymbol;
+              const displayBaseCurrency = shouldSwap ? ticker.target_currency : ticker.base_currency;
+              const displayTargetCurrency = shouldSwap ? ticker.base_currency : ticker.target_currency;
+
               return (
                 <tr key={ticker.ticker_id}>
                   <TableCell isDarkTheme={isDarkTheme} data-label="Pair">
                     <PairCell>
                       <TokenIcon
-                        src={getTokenIconUrl(ticker.base_currency)}
-                        alt={baseSymbol}
+                        src={getTokenIconUrl(displayBaseCurrency)}
+                        alt={displayBaseSymbol}
                         onError={(e) => {
                           e.currentTarget.src =
                             "https://asset-verification.nautilus.sh/icons/0.png";
                         }}
                       />
-                      <span style={{ fontWeight: 500 }}>{baseSymbol}</span>
+                      <span style={{ fontWeight: 500 }}>{displayBaseSymbol}</span>
                       <span>/</span>
                       <TokenIcon
-                        src={getTokenIconUrl(ticker.target_currency)}
-                        alt={targetSymbol}
+                        src={getTokenIconUrl(displayTargetCurrency)}
+                        alt={displayTargetSymbol}
                         onError={(e) => {
                           e.currentTarget.src =
                             "https://asset-verification.nautilus.sh/icons/0.png";
                         }}
                       />
-                      <span style={{ fontWeight: 500 }}>{targetSymbol}</span>
+                      <span style={{ fontWeight: 500 }}>{displayTargetSymbol}</span>
                     </PairCell>
                   </TableCell>
                   <TableCell isDarkTheme={isDarkTheme} data-label="Last Price">

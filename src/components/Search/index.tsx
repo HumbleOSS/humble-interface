@@ -109,9 +109,10 @@ const IconContainer = styled.div`
 
 interface SearchProps {
   onChange: (input: string) => void;
+  placeholder?: string;
 }
 
-const Search: React.FC<SearchProps> = ({ onChange }) => {
+const Search: React.FC<SearchProps> = ({ onChange, placeholder = "Search by token ID, name, or Symbol" }) => {
   const isDarkTheme = useSelector(
     (state: RootState) => state.theme.isDarkTheme
   );
@@ -123,7 +124,7 @@ const Search: React.FC<SearchProps> = ({ onChange }) => {
         </IconContainer>
         <PlaceholderContainer>
           <Placeholder
-          placeholder="Search by token ID, name, or Symbol"
+            placeholder={placeholder}
             isDarkTheme={isDarkTheme}
             onChange={(e) => {
               onChange(e.target.value);

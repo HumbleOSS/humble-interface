@@ -994,7 +994,17 @@ export const PairsTable: React.FC<{
             </tr>
           </TableHead>
           <TableBody isDarkTheme={isDarkTheme}>
-            {paginatedTickers.map((ticker) => (
+            {paginatedTickers.map((ticker) => {
+              // Order pair so asset with lower contractId is on left
+              const baseContractId = Number(ticker.base_currency_id);
+              const targetContractId = Number(ticker.target_currency_id);
+              const shouldSwap = baseContractId > targetContractId;
+              const displayBaseCurrency = shouldSwap ? ticker.target_currency : ticker.base_currency;
+              const displayTargetCurrency = shouldSwap ? ticker.base_currency : ticker.target_currency;
+              const displayBaseCurrencyId = shouldSwap ? ticker.target_currency_id : ticker.base_currency_id;
+              const displayTargetCurrencyId = shouldSwap ? ticker.base_currency_id : ticker.target_currency_id;
+
+              return (
               <TableRow
                 key={ticker.ticker_id}
                 isDarkTheme={isDarkTheme}
@@ -1007,24 +1017,28 @@ export const PairsTable: React.FC<{
                 <TableCell isDarkTheme={isDarkTheme} data-label="Trading Pair">
                   <CurrencyPairCell>
                     <CurrencyIcon
-                      src={`https://asset-verification.nautilus.sh/icons/${ticker.base_currency_id}.png`}
-                      alt={ticker.base_currency}
+                      src={`https://asset-verification.nautilus.sh/icons/${displayBaseCurrencyId}.png`}
+                      alt={displayBaseCurrency}
                     />
                     <CurrencyIcon
-                      src={`https://asset-verification.nautilus.sh/icons/${ticker.target_currency_id}.png`}
-                      alt={ticker.target_currency}
+                      src={`https://asset-verification.nautilus.sh/icons/${displayTargetCurrencyId}.png`}
+                      alt={displayTargetCurrency}
                     />
 
                     <CurrencyPair isDarkTheme={isDarkTheme}>
-                      {ticker.base_currency}/{ticker.target_currency}
+                      {displayBaseCurrency}/{displayTargetCurrency}
                     </CurrencyPair>
                   </CurrencyPairCell>
                 </TableCell>
                 <TableCell isDarkTheme={isDarkTheme} data-label="Rate">
                   <PriceCell isDarkTheme={isDarkTheme}>
-                    {(1 / parseFloat(ticker.last_price)).toFixed(6)}
+                    {shouldSwap
+                      ? parseFloat(ticker.last_price).toFixed(6)
+                      : (1 / parseFloat(ticker.last_price)).toFixed(6)}
                     <InverseRate isDarkTheme={isDarkTheme}>
-                      {parseFloat(ticker.last_price).toFixed(6)}
+                      {shouldSwap
+                        ? (1 / parseFloat(ticker.last_price)).toFixed(6)
+                        : parseFloat(ticker.last_price).toFixed(6)}
                     </InverseRate>
                   </PriceCell>
                 </TableCell>
@@ -1052,7 +1066,8 @@ export const PairsTable: React.FC<{
                   </InverseRate>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </TableWrapper>

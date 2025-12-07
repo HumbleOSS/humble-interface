@@ -2164,7 +2164,13 @@ const TokenSelect: React.FC<LongMenuProps> = ({ token, options, onSelect, compac
                             </TokenIcon>
                             <TokenDetails>
                               <TokenName>
-                                {tokenSymbol(t)}
+                                {(() => {
+                                  // Override wVOI (390001) to display as Voi - special case: show only "Voi" instead of name and symbol
+                                  const tokenId = t.tokenId ?? 0;
+                                  const contractId = t.contractId ?? tokenId;
+                                  const isVOI = tokenId === 0 || contractId === TOKEN_WVOI1 || tokenId === TOKEN_WVOI1;
+                                  return isVOI ? "Voi" : tokenSymbol(t);
+                                })()}
                                 {getTokenUsdPrice(t) > 0 && (
                                   <TooltipContainer data-tooltip="Has DEX price data">
                                     <TickerIndicator>$</TickerIndicator>

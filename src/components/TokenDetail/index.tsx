@@ -862,12 +862,22 @@ const TokenDetail: React.FC = () => {
     );
   }
 
-  const tokenName = tokenData.token?.name || tokenData.name || "Unknown";
-  const tokenSymbolValue =
+  // Override wVOI (390001) to display as Voi - special case: show only "Voi" instead of name and symbol
+  const assetId = tokenData.assetId || tokenData.token?.assetId || id || "0";
+  const assetIdNum = Number(assetId);
+  const isVOI = assetIdNum === 390001 || assetIdNum === 0 || assetId === "390001" || assetId === "0";
+  
+  let tokenName = tokenData.token?.name || tokenData.name || "Unknown";
+  let tokenSymbolValue =
     tokenData.token?.unitName ||
     tokenData.symbol ||
     tokenData.unitName ||
     "N/A";
+  
+  if (isVOI) {
+    tokenName = "Voi";
+    tokenSymbolValue = "Voi"; // Use "Voi" for symbol too, so it shows just "Voi" instead of "Voi VOI"
+  }
   const price = tokenData.price?.usd || "0";
   const priceChangePercent =
     tokenData.priceChange?.["24h"]?.percent ||
@@ -934,7 +944,7 @@ const TokenDetail: React.FC = () => {
         </BreadcrumbLink>
         <BreadcrumbSeparator isDarkTheme={isDarkTheme}>/</BreadcrumbSeparator>
         <BreadcrumbCurrent isDarkTheme={isDarkTheme}>
-          {tokenSymbolValue}
+          {isVOI ? "Voi" : tokenSymbolValue}
         </BreadcrumbCurrent>
       </BreadcrumbContainer>
 
@@ -949,7 +959,7 @@ const TokenDetail: React.FC = () => {
         />
         <TokenInfo>
           <TokenName isDarkTheme={isDarkTheme}>
-            {tokenName} {tokenSymbolValue}
+            {isVOI ? "Voi" : `${tokenName} ${tokenSymbolValue}`}
           </TokenName>
           <PriceContainer>
             <Price isDarkTheme={isDarkTheme}>{formatPrice(price)}</Price>
@@ -1141,13 +1151,23 @@ const TokenDetail: React.FC = () => {
                       const poolInfo = pool.pool || pool.poolInfo || {};
                       const tokAId = poolInfo.tokA || tokenA.assetId || "";
                       const tokBId = poolInfo.tokB || tokenB.assetId || "";
+                      
+                      // Order pair so asset with lower contractId is on left
+                      const tokAIdNum = Number(tokAId);
+                      const tokBIdNum = Number(tokBId);
+                      const shouldSwap = tokAIdNum > tokBIdNum;
+                      const displayTokAId = shouldSwap ? tokBId : tokAId;
+                      const displayTokBId = shouldSwap ? tokAId : tokBId;
+                      const displayTokenA = shouldSwap ? tokenB : tokenA;
+                      const displayTokenB = shouldSwap ? tokenA : tokenB;
+                      
                       const symbolA = normalizeSymbol(
-                        tokenA.unitName || tokenA.symbol || "",
-                        tokAId
+                        displayTokenA.unitName || displayTokenA.symbol || "",
+                        displayTokAId
                       );
                       const symbolB = normalizeSymbol(
-                        tokenB.unitName || tokenB.symbol || "",
-                        tokBId
+                        displayTokenB.unitName || displayTokenB.symbol || "",
+                        displayTokBId
                       );
                       const tvl = pool.tvl?.usd || pool.tvl || "0";
                       const volume =
@@ -1158,13 +1178,13 @@ const TokenDetail: React.FC = () => {
 
                       // Get icon URLs for both tokens
                       const iconAId =
-                        tokAId === "0" || tokAId === TOKEN_WVOI1.toString()
+                        displayTokAId === "0" || displayTokAId === TOKEN_WVOI1.toString()
                           ? 0
-                          : getIconId(Number(tokAId));
+                          : getIconId(Number(displayTokAId));
                       const iconBId =
-                        tokBId === "0" || tokBId === TOKEN_WVOI1.toString()
+                        displayTokBId === "0" || displayTokBId === TOKEN_WVOI1.toString()
                           ? 0
-                          : getIconId(Number(tokBId));
+                          : getIconId(Number(displayTokBId));
                       const iconAUrl = `https://asset-verification.nautilus.sh/icons/${iconAId}.png`;
                       const iconBUrl = `https://asset-verification.nautilus.sh/icons/${iconBId}.png`;
 
@@ -1292,8 +1312,8 @@ const TokenDetail: React.FC = () => {
               </InfoLink>
             </InfoLinks>
             <InfoDescription isDarkTheme={isDarkTheme}>
-              {tokenName} ({tokenSymbolValue}) is a token on the Voi network.
-              {tokenData.token?.name &&
+              {isVOI ? "Voi is a token on the Voi network." : `${tokenName} (${tokenSymbolValue}) is a token on the Voi network.`}
+              {!isVOI && tokenData.token?.name &&
                 ` ${tokenData.token.name} provides various utilities within the ecosystem.`}
             </InfoDescription>
           </InfoSection>

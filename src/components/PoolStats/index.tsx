@@ -15,6 +15,7 @@ import { getAlgorandClients } from "../../wallets";
 import algosdk from "algosdk";
 import { toast } from "react-toastify";
 import PoolPosition from "../PoolPosition";
+import Search from "../Search";
 import axios from "axios";
 import BigNumber from "bignumber.js";
 import { BalanceI, IndexerPoolI } from "../../types";
@@ -1285,6 +1286,7 @@ const PoolStats: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("tvl");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Positions state
   const [balances, setBalances] = useState<BalanceI[]>([]);
@@ -2006,13 +2008,62 @@ const PoolStats: React.FC = () => {
     });
   };
 
-  // Memoize valid stats with client-side sorting - must be before conditional returns
+  // Memoize valid stats with client-side sorting and filtering - must be before conditional returns
   const validStats = useMemo(() => {
     if (!statsData || !statsData.stats || !Array.isArray(statsData.stats)) {
       return [];
     }
 
-    const filtered = statsData.stats.filter((s) => parseFloat(s.tvl.usd) > 0);
+    let filtered = statsData.stats.filter((s) => parseFloat(s.tvl.usd) > 0);
+
+    // Apply search filter if search query exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toUpperCase();
+      filtered = filtered.filter((stat) => {
+        // Search by pool ID
+        if (stat.poolId && String(stat.poolId).toUpperCase().includes(query)) {
+          return true;
+        }
+
+        // Get token info for search
+        const tokenA = getTokenInfo(stat.poolInfo.tokA);
+        const tokenB = getTokenInfo(stat.poolInfo.tokB);
+        const tokenASymbol = tokenA
+          ? tokenSymbol(tokenA)
+          : stat.tokens.tokenA.unitName || stat.tokens.tokenA.name || "";
+        const tokenBSymbol = tokenB
+          ? tokenSymbol(tokenB)
+          : stat.tokens.tokenB.unitName || stat.tokens.tokenB.name || "";
+
+        // Search by token symbols
+        if (
+          tokenASymbol.toUpperCase().includes(query) ||
+          tokenBSymbol.toUpperCase().includes(query)
+        ) {
+          return true;
+        }
+
+        // Search by token names
+        if (
+          (stat.tokens.tokenA.name &&
+            stat.tokens.tokenA.name.toUpperCase().includes(query)) ||
+          (stat.tokens.tokenB.name &&
+            stat.tokens.tokenB.name.toUpperCase().includes(query))
+        ) {
+          return true;
+        }
+
+        // Search by token IDs
+        if (
+          String(stat.poolInfo.tokA).includes(query) ||
+          String(stat.poolInfo.tokB).includes(query)
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+    }
 
     // Client-side sorting for smoother transitions
     const sorted = [...filtered].sort((a, b) => {
@@ -2037,7 +2088,7 @@ const PoolStats: React.FC = () => {
     });
 
     return sorted;
-  }, [statsData, sortBy, calculateTotalAprForStat]);
+  }, [statsData, sortBy, searchQuery, calculateTotalAprForStat]);
 
   if (loading) {
     return (
@@ -2327,8 +2378,14 @@ const PoolStats: React.FC = () => {
                       isDarkTheme={isDarkTheme}
                     >
                       <SimpleListLabel>
-                        {normalizeSymbol(pool.symbolA, pool.tokAId)}/
-                        {normalizeSymbol(pool.symbolB, pool.tokBId)}
+                        {(() => {
+                          const tokAId = Number(pool.tokAId);
+                          const tokBId = Number(pool.tokBId);
+                          const shouldSwap = tokAId > tokBId;
+                          return shouldSwap
+                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                        })()}
                       </SimpleListLabel>
                       <SimpleListValue>
                         {formatAPR(pool.totalApr)}
@@ -2356,14 +2413,20 @@ const PoolStats: React.FC = () => {
               </PanelHeader>
               <SimpleList>
                 {topPoolsByTVL.map((pool) => (
-                  <SimpleListRow
-                    key={`tvl-${pool.contractId}`}
-                    isDarkTheme={isDarkTheme}
-                  >
-                    <SimpleListLabel>
-                      {normalizeSymbol(pool.symbolA, pool.tokAId)}/
-                      {normalizeSymbol(pool.symbolB, pool.tokBId)}
-                    </SimpleListLabel>
+                    <SimpleListRow
+                      key={`tvl-${pool.contractId}`}
+                      isDarkTheme={isDarkTheme}
+                    >
+                      <SimpleListLabel>
+                        {(() => {
+                          const tokAId = Number(pool.tokAId);
+                          const tokBId = Number(pool.tokBId);
+                          const shouldSwap = tokAId > tokBId;
+                          return shouldSwap
+                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                        })()}
+                      </SimpleListLabel>
                     <SimpleListValue>
                       {formatUSD(Number(pool.tvl))}
                     </SimpleListValue>
@@ -2385,14 +2448,20 @@ const PoolStats: React.FC = () => {
               </PanelHeader>
               <SimpleList>
                 {topPoolsByVolume.map((pool) => (
-                  <SimpleListRow
-                    key={`volume-${pool.contractId}`}
-                    isDarkTheme={isDarkTheme}
-                  >
-                    <SimpleListLabel>
-                      {normalizeSymbol(pool.symbolA, pool.tokAId)}/
-                      {normalizeSymbol(pool.symbolB, pool.tokBId)}
-                    </SimpleListLabel>
+                    <SimpleListRow
+                      key={`volume-${pool.contractId}`}
+                      isDarkTheme={isDarkTheme}
+                    >
+                      <SimpleListLabel>
+                        {(() => {
+                          const tokAId = Number(pool.tokAId);
+                          const tokBId = Number(pool.tokBId);
+                          const shouldSwap = tokAId > tokBId;
+                          return shouldSwap
+                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                        })()}
+                      </SimpleListLabel>
                     <SimpleListValue>
                       {formatUSD(Number(pool.vol))}
                     </SimpleListValue>
@@ -2439,6 +2508,13 @@ const PoolStats: React.FC = () => {
           </SortControls>
         </PanelHeaderRow>
 
+        <div style={{ marginBottom: "16px" }}>
+          <Search
+            onChange={(value) => setSearchQuery(value)}
+            placeholder="Search by pool ID, token symbol, or token name"
+          />
+        </div>
+
         <StatsGrid>
           <StatsCard
             title="Total Pools"
@@ -2483,6 +2559,17 @@ const PoolStats: React.FC = () => {
                   ? tokenSymbol(tokenB)
                   : stat.tokens.tokenB.unitName || stat.tokens.tokenB.name;
 
+                // Order pair so asset with lower contractId is on left
+                const tokAId = Number(stat.poolInfo.tokA);
+                const tokBId = Number(stat.poolInfo.tokB);
+                const shouldSwap = tokAId > tokBId;
+                const displayTokenA = shouldSwap ? tokenB : tokenA;
+                const displayTokenB = shouldSwap ? tokenA : tokenB;
+                const displayTokenASymbol = shouldSwap ? tokenBSymbol : tokenASymbol;
+                const displayTokenBSymbol = shouldSwap ? tokenASymbol : tokenBSymbol;
+                const displayTokAId = shouldSwap ? tokBId : tokAId;
+                const displayTokBId = shouldSwap ? tokAId : tokBId;
+
                 const isExpanded = expandedRows.has(stat.poolId);
                 const hasDebugInfo = false; // Debug info feature removed
 
@@ -2511,27 +2598,27 @@ const PoolStats: React.FC = () => {
                             </ExpandIcon>
                           )}
                           <TokenIcon
-                            src={getTokenIconUrl(stat.poolInfo.tokA)}
-                            alt={tokenASymbol}
+                            src={getTokenIconUrl(displayTokAId)}
+                            alt={displayTokenASymbol}
                             onError={(e) => {
                               e.currentTarget.src =
                                 "https://asset-verification.nautilus.sh/icons/0.png";
                             }}
                           />
                           <span style={{ fontWeight: 500 }}>
-                            {tokenASymbol}
+                            {displayTokenASymbol}
                           </span>
                           <span>/</span>
                           <TokenIcon
-                            src={getTokenIconUrl(stat.poolInfo.tokB)}
-                            alt={tokenBSymbol}
+                            src={getTokenIconUrl(displayTokBId)}
+                            alt={displayTokenBSymbol}
                             onError={(e) => {
                               e.currentTarget.src =
                                 "https://asset-verification.nautilus.sh/icons/0.png";
                             }}
                           />
                           <span style={{ fontWeight: 500 }}>
-                            {tokenBSymbol}
+                            {displayTokenBSymbol}
                           </span>
                         </PairCell>
                       </TableCell>
