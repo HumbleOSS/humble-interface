@@ -168,6 +168,18 @@ const PoolNameCell = styled.div`
   gap: 8px;
 `;
 
+const PoolNameText = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const PoolIdText = styled.span<{ isDarkTheme: boolean }>`
+  color: ${(props) => (props.isDarkTheme ? "#9CA3AF" : "#6B7280")};
+  font-size: 0.875rem;
+  font-weight: 400;
+`;
+
 const TokenInfo = styled.div`
   display: flex;
   flex-direction: column;
@@ -632,13 +644,13 @@ const TokenDetail: React.FC = () => {
     "1D"
   );
   const [activeTab, setActiveTab] = useState<"transactions" | "pools">(
-    "transactions"
+    "pools"
   );
   const [chartData, setChartData] = useState<any[]>([]);
   const [poolsData, setPoolsData] = useState<any[]>([]);
   const [poolsLoading, setPoolsLoading] = useState(false);
   const [poolsPage, setPoolsPage] = useState<number>(1);
-  const poolsPerPage = 25;
+  const poolsPerPage = 10;
   const [showIBuyVOIWidget, setShowIBuyVOIWidget] = useState<boolean>(false);
 
   useEffect(() => {
@@ -1216,9 +1228,16 @@ const TokenDetail: React.FC = () => {
                                   }}
                                 />
                               </PoolIconsWrapper>
-                              <span>
-                                {symbolA}/{symbolB}
-                              </span>
+                              <PoolNameText>
+                                <span>
+                                  {symbolA}/{symbolB}
+                                </span>
+                                {poolId && (
+                                  <PoolIdText isDarkTheme={isDarkTheme}>
+                                    {poolId}
+                                  </PoolIdText>
+                                )}
+                              </PoolNameText>
                             </PoolNameCell>
                           </TableCell>
                           <TableCell isDarkTheme={isDarkTheme}>

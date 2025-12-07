@@ -884,10 +884,11 @@ const Swap = () => {
     setTokenOptions(tokenOptions);
   }, [token2, tokens, pools]);
 
-  // EFFECT: get eligible pools
+  // EFFECT: get eligible pools (based on tokens, not pool)
   const eligiblePools = useMemo(() => {
-    if (!pool || !token || !token2) return [];
+    if (!token || !token2) return [];
     if (paramNewPool === "true") {
+      return [];
     } else {
       return pools.filter((p: PoolI) => {
         return (
@@ -897,46 +898,90 @@ const Swap = () => {
         );
       });
     }
-  }, [pools, token, token2, paramNewPool, paramPoolId]);
+  }, [pools, token, token2, paramNewPool]);
 
   console.log("eligiblePools", eligiblePools);
 
-  // EFFECT: set pool
+  // EFFECT: set pool from paramPoolId
   useEffect(() => {
-    if (!paramPoolId || !pools || !eligiblePools) return;
-    if (paramPoolId) {
-      const pool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
-      if (pool) {
-        setPool({ ...pool, poolId: Number(paramPoolId) });
-        setReady(true);
-        if (eligiblePools.length > 1) {
-          const { algodClient, indexerClient } = getAlgorandClients();
-          new swap(0, algodClient, indexerClient)
-            .selectPool(eligiblePools, null, null, "poolId")
-            .then((pool: any) => {
-              if (!pool || `${pool.poolId}` === `${paramPoolId}`) return;
-              navigate(`/pool/add?poolId=${pool.poolId}`);
-            });
+    if (!paramPoolId || !pools) return;
+    
+    // First, try to find the pool in the pools array
+    const foundPool = pools.find((p: PoolI) => `${p.poolId}` === `${paramPoolId}`);
+    if (foundPool) {
+      // Verify the pool matches the tokens if they're set
+      if (token && token2) {
+        const poolMatchesTokens = 
+          [foundPool.tokA, foundPool.tokB].includes(tokenId(token)) &&
+          [foundPool.tokA, foundPool.tokB].includes(tokenId(token2));
+        
+        if (!poolMatchesTokens) {
+          console.warn(`Pool ${paramPoolId} does not match tokens ${tokenId(token)}/${tokenId(token2)}`);
+          // Don't set the pool if it doesn't match - let the token selection logic handle it
+          return;
         }
-      } else {
-        const { algodClient, indexerClient } = getAlgorandClients();
-        new swap(Number(paramPoolId), algodClient, indexerClient)
-          .Info()
-          .then((infoR) => {
-            if (infoR.success) {
-              const info = infoR.returnValue;
-              const pool = {
-                ...infoR.returnValue,
-                poolId: Number(paramPoolId),
-              };
-              setPool(pool);
-              setInfo(infoR.returnValue);
-              setReady(true);
-            }
-          });
       }
+      
+      setPool({ ...foundPool, poolId: Number(paramPoolId) });
+      setReady(true);
+      // Don't call selectPool when paramPoolId is explicitly provided - respect the URL parameter
+    } else {
+      // Pool not in pools array, fetch it directly
+      const { algodClient, indexerClient } = getAlgorandClients();
+      new swap(Number(paramPoolId), algodClient, indexerClient)
+        .Info()
+        .then((infoR) => {
+          if (infoR.success) {
+            const poolInfo = infoR.returnValue;
+            
+            // Verify the pool matches the tokens if they're set
+            if (token && token2) {
+              const poolMatchesTokens = 
+                [poolInfo.tokA, poolInfo.tokB].includes(tokenId(token)) &&
+                [poolInfo.tokA, poolInfo.tokB].includes(tokenId(token2));
+              
+              if (!poolMatchesTokens) {
+                console.warn(`Pool ${paramPoolId} does not match tokens ${tokenId(token)}/${tokenId(token2)}`);
+                return;
+              }
+            }
+            
+            const pool = {
+              ...poolInfo,
+              poolId: Number(paramPoolId),
+            };
+            setPool(pool);
+            setInfo(poolInfo);
+            setReady(true);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching pool info:", error);
+        });
     }
-  }, [pools, paramPoolId, eligiblePools]);
+  }, [pools, paramPoolId, token, token2]);
+
+  // EFFECT: auto-select best pool when no paramPoolId is provided and tokens are set
+  useEffect(() => {
+    // Only auto-select if there's no paramPoolId and we have eligible pools
+    if (paramPoolId || !token || !token2 || eligiblePools.length === 0) return;
+    
+    const { algodClient, indexerClient } = getAlgorandClients();
+    const A = { ...token, tokenId: tokenId(token) };
+    const B = { ...token2, tokenId: tokenId(token2) };
+    
+    new swap(0, algodClient, indexerClient)
+      .selectPool(eligiblePools, A, B, "round")
+      .then((selectedPool: any) => {
+        if (selectedPool && selectedPool.poolId) {
+          // Navigate to the selected pool
+          navigate(`/pool/add?poolId=${selectedPool.poolId}`, { replace: true });
+        }
+      })
+      .catch((error) => {
+        console.error("Error selecting pool:", error);
+      });
+  }, [eligiblePools, token, token2, paramPoolId, navigate]);
 
   const [info, setInfo] = useState<any>();
 
