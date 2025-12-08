@@ -978,7 +978,7 @@ const Swap = () => {
           navigate(`/pool/add?poolId=${selectedPool.poolId}`, { replace: true });
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error("Error selecting pool:", error);
       });
   }, [eligiblePools, token, token2, paramPoolId, navigate]);
