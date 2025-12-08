@@ -1158,6 +1158,14 @@ const Zap: React.FC = () => {
         ? -2
         : -1;
 
+      // Override degen mode to true if from token (inputCurrency) is 410811 (node)
+      const fromTokenId = inputCurrency?.tokenId;
+      const fromContractId = inputCurrency?.contractId;
+      const effectiveDegenMode = 
+        fromTokenId === 410811 || fromContractId === 410811 
+          ? true 
+          : true; // Already true, but keeping override logic for consistency
+
       const swapR: any = await ci.swap(
         acc.addr,
         Number(pool.contractId),
@@ -1167,7 +1175,7 @@ const Zap: React.FC = () => {
         {
           debug: true,
           slippage: 0.1,
-          degenMode: true,
+          degenMode: effectiveDegenMode,
           skipWithdraw: true,
         }
       );

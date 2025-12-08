@@ -211,7 +211,7 @@ export function SwapOptionsModal({
 }: SwapOptionsModalProps) {
   const [currentSlippage, setCurrentSlippage] = useState<number>(() => {
     const stored = localStorage.getItem("currentSlippage");
-    return stored ? parseFloat(stored) : 0.5; // Default to 0.5%
+    return stored ? parseFloat(stored) : 5.0; // Default to 5%
   });
 
   const [customSlippage, setCustomSlippage] = useState<string>(() => {

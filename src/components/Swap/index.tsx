@@ -1733,7 +1733,7 @@ const Swap = () => {
     if (saved && !isNaN(Number(saved)) && Number(saved) >= 0) {
       return saved;
     }
-    return "0.5"; // Default to 0.5%
+    return "5.0"; // Default to 5%
   });
 
   const minRecieved = useMemo(() => {
@@ -1863,10 +1863,18 @@ const Swap = () => {
 
       console.log({ A, B });
 
+      // Override degen mode to true if from token is 410811 (node)
+      const fromTokenId = token?.tokenId;
+      const fromContractId = token?.contractId;
+      const effectiveDegenMode = 
+        fromTokenId === 410811 || fromContractId === 410811 
+          ? true 
+          : degenMode;
+
       const swapR = await ci.swap(acc.addr, pool2.poolId, A, B, [], {
         debug: true,
         slippage: Number(currentSlippage) / 100,
-        degenMode: degenMode,
+        degenMode: effectiveDegenMode,
         skipWithdraw: false,
       });
 
@@ -2050,6 +2058,10 @@ const Swap = () => {
   // Add this near the top of the component with other state declarations
   const [degenMode] = useState(() => {
     const saved = localStorage.getItem("degenMode");
+    if (saved === null) {
+      // Default to false if not set
+      return false;
+    }
     return saved === "true";
   });
 

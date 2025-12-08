@@ -8,7 +8,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store/store";
 import { toggleTheme } from "../../store/themeSlice";
 import { useNotifications } from "../../contexts/NotificationContext";
-import { useMediaQuery, useTheme, Box, Modal, Avatar } from "@mui/material";
+import { useMediaQuery, useTheme, Box, Modal, Avatar, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import {
   ContentCopy as ContentCopyIcon,
   PowerSettingsNew as PowerSettingsNewIcon,
@@ -369,12 +369,33 @@ const DisconnectButtonLarge = styled.button<{ $isDarkTheme?: boolean }>`
   }
 `;
 
+const ClearAppDataButton = styled.button<{ $isDarkTheme?: boolean }>`
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: ${(props) => (props.$isDarkTheme ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)")};
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: underline;
+  margin-top: 8px;
+
+  &:hover {
+    color: ${(props) => (props.$isDarkTheme ? "#FFFFFF" : "#000000")};
+    opacity: 1;
+  }
+`;
+
 function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void }) {
   const navigate = useNavigate();
   const { activeAccount, activeWallet, wallets, activeWalletAccounts } = useWallet();
   const [isWalletModalOpen, setIsWalletModalOpen] = React.useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = React.useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
+  const [isClearDataDialogOpen, setIsClearDataDialogOpen] = React.useState(false);
   const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
   const dispatch = useDispatch();
   const { notificationCount, notifications } = useNotifications();
@@ -395,6 +416,51 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
   const handleDisconnect = () => {
     activeWallet?.disconnect();
     setIsWalletModalOpen(false);
+  };
+
+  const handleClearAppDataClick = () => {
+    setIsClearDataDialogOpen(true);
+  };
+
+  const handleClearAppDataConfirm = async () => {
+    try {
+      // Clear all localStorage
+      localStorage.clear();
+
+      // Clear IndexedDB
+      const dbname = "dexDatabase";
+      const deleteRequest = indexedDB.deleteDatabase(dbname);
+      
+      await new Promise<void>((resolve, reject) => {
+        deleteRequest.onsuccess = () => {
+          console.log("IndexedDB deleted successfully");
+          resolve();
+        };
+        deleteRequest.onerror = () => {
+          console.error("Error deleting IndexedDB:", deleteRequest.error);
+          // Continue even if IndexedDB deletion fails
+          resolve();
+        };
+        deleteRequest.onblocked = () => {
+          console.warn("IndexedDB deletion blocked");
+          // Continue anyway
+          resolve();
+        };
+      });
+
+      toast.success("App data cleared successfully!");
+      setIsClearDataDialogOpen(false);
+      setIsWalletModalOpen(false);
+      // Reload the page to apply changes
+      window.location.reload();
+    } catch (error) {
+      console.error("Error clearing app data:", error);
+      toast.error("Error clearing app data. Please try again.");
+    }
+  };
+
+  const handleClearDataDialogClose = () => {
+    setIsClearDataDialogOpen(false);
   };
 
   const handleClose = () => {
@@ -688,6 +754,9 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
                 <PowerSettingsNewIcon />
                 Disconnect Wallet
               </DisconnectButtonLarge>
+              <ClearAppDataButton $isDarkTheme={isDarkTheme} onClick={handleClearAppDataClick}>
+                Clear App Data
+              </ClearAppDataButton>
             </DisconnectSection>
           )}
         </WalletModalContainer>
@@ -707,6 +776,50 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
         open={isNotificationModalOpen}
         onClose={handleNotificationModalClose}
       />
+
+      {/* Clear App Data Confirmation Dialog */}
+      <Dialog
+        open={isClearDataDialogOpen}
+        onClose={handleClearDataDialogClose}
+        PaperProps={{
+          sx: {
+            backgroundColor: isDarkTheme ? "#20093E" : "#FFFFFF",
+            color: isDarkTheme ? "#FFFFFF" : "#161717",
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: isDarkTheme ? "#FFFFFF" : "#161717" }}>
+          Clear App Data
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: isDarkTheme ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)" }}>
+            Are you sure you want to clear all app data? This will reset your settings, slippage preferences, and other stored data. This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleClearDataDialogClose}
+            sx={{
+              color: isDarkTheme ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleClearAppDataConfirm}
+            variant="contained"
+            sx={{
+              backgroundColor: isDarkTheme ? "#FF6B6B" : "#DC2626",
+              color: "#FFFFFF",
+              "&:hover": {
+                backgroundColor: isDarkTheme ? "#FF5252" : "#B91C1C",
+              },
+            }}
+          >
+            Clear Data
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

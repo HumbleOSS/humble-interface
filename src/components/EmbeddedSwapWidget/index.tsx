@@ -998,10 +998,18 @@ const EmbeddedSwapWidget: React.FC<EmbeddedSwapWidgetProps> = ({
       setProgress(25);
       setMessage("Executing swap...");
 
+      // Override degen mode to true if from token is 410811 (node)
+      const fromTokenId = token?.tokenId;
+      const fromContractId = token?.contractId;
+      const effectiveDegenMode = 
+        fromTokenId === 410811 || fromContractId === 410811 
+          ? true 
+          : true; // Already true, but keeping override logic for consistency
+
       const swapR = await ci.swap(acc.addr, pool2.poolId, A, B, [], {
         debug: true,
-        slippage: 0.01, // 1% slippage
-        degenMode: false,
+        slippage: 0.05, // 5% slippage
+        degenMode: effectiveDegenMode,
         skipWithdraw: false,
       });
 
