@@ -9,6 +9,8 @@ import axios from "axios";
 import { IndexerPoolI, PoolI } from "../../types";
 import ProgressBar from "../ProgressBar";
 
+import { API_BASE_URL } from "../../constants/api";
+
 const TokenRoot = styled.div`
   display: flex;
   /*
@@ -105,48 +107,48 @@ const Pool = () => {
 
   const [pools, setPools] = React.useState<IndexerPoolI[]>();
   useEffect(() => {
-    axios
-      .get(`https://humble-api.voi.nautilus.sh/pools`)
-      .then(({ data }) => {
-        setPools(
-          data.pools.map((p: any) => ({
-            ...p,
-            contractId: Number(p.poolId),
-            poolId: p.poolId,
-            tokAId: p.tokA,
-            tokBId: p.tokB,
-            tvl: p.tvl ? formatter.format(Number(p.tvl)) : "0",
-            vol: p.volA && p.volB ? formatter.format(Number(p.volA) + Number(p.volB)) : "0",
-            volA: p.volA || "0",
-            volB: p.volB || "0",
-            providerId: "01", // Humble DEX
-          } as IndexerPoolI))
-        );
-      });
+    axios.get(`${API_BASE_URL}/pools`).then(({ data }) => {
+      setPools(
+        data.pools.map(
+          (p: any) =>
+            ({
+              ...p,
+              contractId: Number(p.poolId),
+              poolId: p.poolId,
+              tokAId: p.tokA,
+              tokBId: p.tokB,
+              tvl: p.tvl ? formatter.format(Number(p.tvl)) : "0",
+              vol:
+                p.volA && p.volB
+                  ? formatter.format(Number(p.volA) + Number(p.volB))
+                  : "0",
+              volA: p.volA || "0",
+              volB: p.volB || "0",
+              providerId: "01", // Humble DEX
+            } as IndexerPoolI)
+        )
+      );
+    });
   }, []);
 
   const [tokens2, setTokens] = React.useState<any[]>();
   useEffect(() => {
-    axios
-      .get(
-        `https://humble-api.voi.nautilus.sh/tokens`
-      )
-      .then(({ data }) => {
-        // Map the new API structure to the expected format
-        const mappedTokens = data.tokens.map((t: any) => {
-          const assetId = Number(t.assetId);
-          const isVOI = assetId === 0 || assetId === 390001;
-          return {
-            ...t,
-            contractId: assetId,
-            tokenId: assetId,
-            symbol: t.unitName || t.symbol,
-            decimals: Number(t.decimals),
-            verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
-          };
-        });
-        setTokens(mappedTokens);
+    axios.get(`${API_BASE_URL}/tokens`).then(({ data }) => {
+      // Map the new API structure to the expected format
+      const mappedTokens = data.tokens.map((t: any) => {
+        const assetId = Number(t.assetId);
+        const isVOI = assetId === 0 || assetId === 390001;
+        return {
+          ...t,
+          contractId: assetId,
+          tokenId: assetId,
+          symbol: t.unitName || t.symbol,
+          decimals: Number(t.decimals),
+          verified: isVOI ? 2 : 1, // 2 = trusted (gold badge), 1 = verified
+        };
       });
+      setTokens(mappedTokens);
+    });
   }, []);
 
   const combinedTokens = useMemo(() => {

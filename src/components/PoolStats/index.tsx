@@ -1305,7 +1305,7 @@ const PoolStats: React.FC = () => {
         setIsTransitioning(true);
         setLoading(true);
         setError(null);
-        const baseUrl = `${API_BASE_URL}pools/stats`;
+        const baseUrl = `${API_BASE_URL}/pools/stats`;
         const url = `${baseUrl}?sortBy=${sortBy}`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -1353,7 +1353,7 @@ const PoolStats: React.FC = () => {
     const fetchPools = async () => {
       try {
         const { data } = await axios.get(
-          `${API_BASE_URL}pools/stats?sortBy=tvl`
+          `${API_BASE_URL}/pools/stats?sortBy=tvl`
         );
         const poolsStats = data.stats || [];
         const poolsWithStats = poolsStats.map((poolStat: any) => {
@@ -2140,70 +2140,68 @@ const PoolStats: React.FC = () => {
     <Container>
       {activeAccount && fetchedRewardsTotal > 0 && (
         <HeroCard isDarkTheme={isDarkTheme}>
-            <HeroHeadline>
-              <div>
-                <PanelTitle isDarkTheme={isDarkTheme}>
-                  Rewards earned
-                </PanelTitle>
-                <HeroCaption isDarkTheme={isDarkTheme}>
-                  {filteredPositions.length > 0
-                    ? `${filteredPositions.length} active position${
-                        filteredPositions.length !== 1 ? "s" : ""
-                      }`
-                    : "Rewards received from providing liquidity"}
-                </HeroCaption>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <HeroValue isDarkTheme={isDarkTheme}>
-                  {fetchedRewardsTotal > 0
-                    ? formatUSD(fetchedRewardsTotal, true)
-                    : filteredPositions.length > 0
-                    ? formatUSD(rewardsEarned)
-                    : formatUSD(0)}
-                </HeroValue>
-                {fetchedRewardsTotal > 0 && (
-                  <HeroCTA
-                    isDarkTheme={isDarkTheme}
-                    onClick={handleClaimRewards}
-                    disabled={isClaimingRewards}
-                    style={{
-                      opacity: isClaimingRewards ? 0.7 : 1,
-                      cursor: isClaimingRewards ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {isClaimingRewards && (
-                      <CircularProgress size={14} sx={{ color: "#fff" }} />
-                    )}
-                    {isClaimingRewards ? "Claiming..." : "Claim rewards"}
-                  </HeroCTA>
-                )}
-              </div>
-            </HeroHeadline>
-            <HeroCaption isDarkTheme={isDarkTheme}>
-              {fetchedRewardsTotal > 0 && filteredPositions.length > 0
-                ? `You've received ${formatRewardsAmount(
-                    fetchedRewardsTotal
-                  )} ${rewardTokenSymbol} in rewards.`
-                : filteredPositions.length > 0
-                ? "Provide liquidity to pools to start earning fees and on-chain rewards."
-                : fetchedRewardsTotal > 0
-                ? `You've received ${formatRewardsAmount(
-                    fetchedRewardsTotal
-                  )} ${rewardTokenSymbol} in rewards from providing liquidity.`
-                : "Provide liquidity to pools to start earning fees and on-chain rewards."}
-            </HeroCaption>
-          </HeroCard>
-        )}
+          <HeroHeadline>
+            <div>
+              <PanelTitle isDarkTheme={isDarkTheme}>Rewards earned</PanelTitle>
+              <HeroCaption isDarkTheme={isDarkTheme}>
+                {filteredPositions.length > 0
+                  ? `${filteredPositions.length} active position${
+                      filteredPositions.length !== 1 ? "s" : ""
+                    }`
+                  : "Rewards received from providing liquidity"}
+              </HeroCaption>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                flexWrap: "wrap",
+              }}
+            >
+              <HeroValue isDarkTheme={isDarkTheme}>
+                {fetchedRewardsTotal > 0
+                  ? formatUSD(fetchedRewardsTotal, true)
+                  : filteredPositions.length > 0
+                  ? formatUSD(rewardsEarned)
+                  : formatUSD(0)}
+              </HeroValue>
+              {fetchedRewardsTotal > 0 && (
+                <HeroCTA
+                  isDarkTheme={isDarkTheme}
+                  onClick={handleClaimRewards}
+                  disabled={isClaimingRewards}
+                  style={{
+                    opacity: isClaimingRewards ? 0.7 : 1,
+                    cursor: isClaimingRewards ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {isClaimingRewards && (
+                    <CircularProgress size={14} sx={{ color: "#fff" }} />
+                  )}
+                  {isClaimingRewards ? "Claiming..." : "Claim rewards"}
+                </HeroCTA>
+              )}
+            </div>
+          </HeroHeadline>
+          <HeroCaption isDarkTheme={isDarkTheme}>
+            {fetchedRewardsTotal > 0 && filteredPositions.length > 0
+              ? `You've received ${formatRewardsAmount(
+                  fetchedRewardsTotal
+                )} ${rewardTokenSymbol} in rewards.`
+              : filteredPositions.length > 0
+              ? "Provide liquidity to pools to start earning fees and on-chain rewards."
+              : fetchedRewardsTotal > 0
+              ? `You've received ${formatRewardsAmount(
+                  fetchedRewardsTotal
+                )} ${rewardTokenSymbol} in rewards from providing liquidity.`
+              : "Provide liquidity to pools to start earning fees and on-chain rewards."}
+          </HeroCaption>
+        </HeroCard>
+      )}
 
       {activeAccount && (
         <LayoutGrid>
@@ -2383,8 +2381,14 @@ const PoolStats: React.FC = () => {
                           const tokBId = Number(pool.tokBId);
                           const shouldSwap = tokAId > tokBId;
                           return shouldSwap
-                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
-                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                            ? `${normalizeSymbol(
+                                pool.symbolB,
+                                pool.tokBId
+                              )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            : `${normalizeSymbol(
+                                pool.symbolA,
+                                pool.tokAId
+                              )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
                         })()}
                       </SimpleListLabel>
                       <SimpleListValue>
@@ -2413,20 +2417,26 @@ const PoolStats: React.FC = () => {
               </PanelHeader>
               <SimpleList>
                 {topPoolsByTVL.map((pool) => (
-                    <SimpleListRow
-                      key={`tvl-${pool.contractId}`}
-                      isDarkTheme={isDarkTheme}
-                    >
-                      <SimpleListLabel>
-                        {(() => {
-                          const tokAId = Number(pool.tokAId);
-                          const tokBId = Number(pool.tokBId);
-                          const shouldSwap = tokAId > tokBId;
-                          return shouldSwap
-                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
-                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
-                        })()}
-                      </SimpleListLabel>
+                  <SimpleListRow
+                    key={`tvl-${pool.contractId}`}
+                    isDarkTheme={isDarkTheme}
+                  >
+                    <SimpleListLabel>
+                      {(() => {
+                        const tokAId = Number(pool.tokAId);
+                        const tokBId = Number(pool.tokBId);
+                        const shouldSwap = tokAId > tokBId;
+                        return shouldSwap
+                          ? `${normalizeSymbol(
+                              pool.symbolB,
+                              pool.tokBId
+                            )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                          : `${normalizeSymbol(
+                              pool.symbolA,
+                              pool.tokAId
+                            )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                      })()}
+                    </SimpleListLabel>
                     <SimpleListValue>
                       {formatUSD(Number(pool.tvl))}
                     </SimpleListValue>
@@ -2448,20 +2458,26 @@ const PoolStats: React.FC = () => {
               </PanelHeader>
               <SimpleList>
                 {topPoolsByVolume.map((pool) => (
-                    <SimpleListRow
-                      key={`volume-${pool.contractId}`}
-                      isDarkTheme={isDarkTheme}
-                    >
-                      <SimpleListLabel>
-                        {(() => {
-                          const tokAId = Number(pool.tokAId);
-                          const tokBId = Number(pool.tokBId);
-                          const shouldSwap = tokAId > tokBId;
-                          return shouldSwap
-                            ? `${normalizeSymbol(pool.symbolB, pool.tokBId)}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
-                            : `${normalizeSymbol(pool.symbolA, pool.tokAId)}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
-                        })()}
-                      </SimpleListLabel>
+                  <SimpleListRow
+                    key={`volume-${pool.contractId}`}
+                    isDarkTheme={isDarkTheme}
+                  >
+                    <SimpleListLabel>
+                      {(() => {
+                        const tokAId = Number(pool.tokAId);
+                        const tokBId = Number(pool.tokBId);
+                        const shouldSwap = tokAId > tokBId;
+                        return shouldSwap
+                          ? `${normalizeSymbol(
+                              pool.symbolB,
+                              pool.tokBId
+                            )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                          : `${normalizeSymbol(
+                              pool.symbolA,
+                              pool.tokAId
+                            )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                      })()}
+                    </SimpleListLabel>
                     <SimpleListValue>
                       {formatUSD(Number(pool.vol))}
                     </SimpleListValue>
@@ -2565,8 +2581,12 @@ const PoolStats: React.FC = () => {
                 const shouldSwap = tokAId > tokBId;
                 const displayTokenA = shouldSwap ? tokenB : tokenA;
                 const displayTokenB = shouldSwap ? tokenA : tokenB;
-                const displayTokenASymbol = shouldSwap ? tokenBSymbol : tokenASymbol;
-                const displayTokenBSymbol = shouldSwap ? tokenASymbol : tokenBSymbol;
+                const displayTokenASymbol = shouldSwap
+                  ? tokenBSymbol
+                  : tokenASymbol;
+                const displayTokenBSymbol = shouldSwap
+                  ? tokenASymbol
+                  : tokenBSymbol;
                 const displayTokAId = shouldSwap ? tokBId : tokAId;
                 const displayTokBId = shouldSwap ? tokAId : tokBId;
 

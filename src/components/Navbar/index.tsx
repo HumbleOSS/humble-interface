@@ -15,6 +15,8 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PublicIcon from "@mui/icons-material/Public";
+import BoltIcon from "@mui/icons-material/Bolt";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { useNotifications } from "../../contexts/NotificationContext";
 import NotificationModal from "../NotificationModal";
 
@@ -271,6 +273,7 @@ const DropdownMenu = styled.div<{ $isOpen: boolean; $isDarkTheme: boolean }>`
   z-index: 1000;
   opacity: ${(props) => (props.$isOpen ? 1 : 0)};
   visibility: ${(props) => (props.$isOpen ? "visible" : "hidden")};
+  pointer-events: ${(props) => (props.$isOpen ? "auto" : "none")};
   transform: ${(props) =>
     props.$isOpen ? "translateY(0)" : "translateY(-10px)"};
   transition: all 0.2s ease;
@@ -336,6 +339,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
   const [isExploreDropdownOpen, setIsExploreDropdownOpen] = React.useState(false);
+  const [isTradeDropdownOpen, setIsTradeDropdownOpen] = React.useState(false);
   const { notificationCount, notifications } = useNotifications();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -344,16 +348,24 @@ const Navbar = () => {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      // Check if click is on a dropdown item - if so, don't close
+      if (target.closest('[data-dropdown-item]')) {
+        return;
+      }
+      
       if (!target.closest('[data-explore-dropdown]')) {
         setIsExploreDropdownOpen(false);
       }
+      if (!target.closest('[data-trade-dropdown]')) {
+        setIsTradeDropdownOpen(false);
+      }
     };
     
-    if (isExploreDropdownOpen) {
+    if (isExploreDropdownOpen || isTradeDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isExploreDropdownOpen]);
+  }, [isExploreDropdownOpen, isTradeDropdownOpen]);
 
   const menuItems = [
     { path: "/", label: "Home", Icon: HomeIcon },
@@ -369,12 +381,19 @@ const Navbar = () => {
     { path: "/explore/pools", label: "Pools", icon: PoolLogo },
   ];
   
+  const tradeMenuItems = [
+    { path: "/swap", label: "Swap", icon: SwapLogo },
+    { path: "/zap", label: "Zap", icon: BoltIcon },
+  ];
+  
   const isExploreActive = location.pathname === "/explore/tokens" || location.pathname === "/explore/pools" || location.pathname.startsWith("/explore/");
+  const isTradeActive = location.pathname === "/swap" || location.pathname === "/zap" || location.pathname.startsWith("/swap/") || location.pathname.startsWith("/zap/");
 
   const handleMenuClick = (path: string) => {
     navigate(path);
     setIsMobileMenuOpen(false);
     setIsExploreDropdownOpen(false);
+    setIsTradeDropdownOpen(false);
   };
 
   const handleNotificationClick = () => {
@@ -418,25 +437,59 @@ const Navbar = () => {
             </MobileMenuButton>
           </LogoSection>
           <NavButtonGroup sx={{ display: { xs: "none", md: "flex" } }}>
-            {[
-              {
-                label: "Swap",
-                href: "/swap",
-                icon: SwapLogo,
-              },
-            ].map((item) => {
-              const Item = item.icon;
-              return (
-                <StyledLink key={item.label} to={item.href}>
-                  <NavButton active={location.pathname === item.href}>
-                    <Box sx={{ height: "25px" }}>
-                      <Item />
-                    </Box>
-                    <NavButtonLabel>{item.label}</NavButtonLabel>
-                  </NavButton>
-                </StyledLink>
-              );
-            })}
+            <ExploreDropdownContainer data-trade-dropdown>
+              <ExploreButton
+                active={isTradeActive}
+                $isOpen={isTradeDropdownOpen}
+                onClick={() => setIsTradeDropdownOpen(!isTradeDropdownOpen)}
+              >
+                <Box sx={{ height: "25px" }}>
+                  <SwapHorizIcon />
+                </Box>
+                <NavButtonLabel>Trade</NavButtonLabel>
+                <KeyboardArrowDownIcon
+                  sx={{
+                    fontSize: 16,
+                    transition: "transform 0.3s ease",
+                    transform: isTradeDropdownOpen ? "rotate(180deg)" : "rotate(0)",
+                  }}
+                />
+              </ExploreButton>
+              <DropdownMenu
+                $isOpen={isTradeDropdownOpen}
+                $isDarkTheme={isDarkTheme}
+              >
+                {tradeMenuItems.map((item) => {
+                  const Item = item.icon;
+                  const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + "/");
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      data-dropdown-item
+                      $active={isActive}
+                      $isDarkTheme={isDarkTheme}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuClick(item.path);
+                      }}
+                    >
+                      <Box sx={{ height: "20px", width: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Item />
+                      </Box>
+                      <DropdownMenuItemLabel
+                        $active={isActive}
+                        $isDarkTheme={isDarkTheme}
+                      >
+                        {item.label}
+                      </DropdownMenuItemLabel>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenu>
+            </ExploreDropdownContainer>
             <ExploreDropdownContainer data-explore-dropdown>
               <ExploreButton
                 active={isExploreActive}
@@ -465,11 +518,12 @@ const Navbar = () => {
                   return (
                     <DropdownMenuItem
                       key={item.path}
+                      data-dropdown-item
                       $active={isActive}
                       $isDarkTheme={isDarkTheme}
-                      onClick={() => {
-                        navigate(item.path);
-                        setIsExploreDropdownOpen(false);
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuClick(item.path);
                       }}
                     >
                       <Box sx={{ height: "20px", width: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -546,7 +600,6 @@ const Navbar = () => {
           >
             {[
               { path: "/", label: "Home", Icon: HomeIcon },
-              { path: "/swap", label: "Swap", Icon: SwapLogo },
               { path: "/rewards", label: "Incentives", Icon: EmojiEventsIcon },
             ].map(({ path, label, Icon }) => (
               <MenuItem
@@ -581,6 +634,77 @@ const Navbar = () => {
             ))}
             <MenuItem
               $isDarkTheme={isDarkTheme}
+              onClick={() => setIsTradeDropdownOpen(!isTradeDropdownOpen)}
+            >
+              <MenuIconWrapper
+                sx={{
+                  svg: {
+                    color: isDarkTheme ? "#FFFFFF" : "#161717",
+                  },
+                }}
+              >
+                <SwapHorizIcon />
+              </MenuIconWrapper>
+              <MenuItemLabel $isDarkTheme={isDarkTheme}>
+                Trade
+              </MenuItemLabel>
+              <KeyboardArrowDownIcon
+                sx={{
+                  fontSize: 16,
+                  marginLeft: "auto",
+                  transition: "transform 0.3s ease",
+                  transform: isTradeDropdownOpen ? "rotate(180deg)" : "rotate(0)",
+                  color: isDarkTheme ? "#FFFFFF" : "#161717",
+                }}
+              />
+            </MenuItem>
+            {isTradeDropdownOpen && tradeMenuItems.map(({ path, label, icon: Icon }) => {
+              const isActive = location.pathname === path || location.pathname.startsWith(path + "/");
+              return (
+                <MenuItem
+                  key={path}
+                  data-dropdown-item
+                  $active={isActive}
+                  $isDarkTheme={isDarkTheme}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMenuClick(path);
+                  }}
+                  style={{ paddingLeft: "48px", pointerEvents: "auto" }}
+                >
+                  <MenuIconWrapper
+                    sx={{
+                      svg: {
+                        color:
+                          isActive
+                            ? isDarkTheme
+                              ? "#FFBE1D"
+                              : "#9933FF"
+                            : isDarkTheme
+                            ? "#FFFFFF"
+                            : "#161717",
+                      },
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <Icon />
+                  </MenuIconWrapper>
+                  <MenuItemLabel
+                    $active={isActive}
+                    $isDarkTheme={isDarkTheme}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {label}
+                  </MenuItemLabel>
+                </MenuItem>
+              );
+            })}
+            <MenuItem
+              $isDarkTheme={isDarkTheme}
               onClick={() => setIsExploreDropdownOpen(!isExploreDropdownOpen)}
             >
               <MenuIconWrapper
@@ -610,10 +734,18 @@ const Navbar = () => {
               return (
                 <MenuItem
                   key={path}
+                  data-dropdown-item
                   $active={isActive}
                   $isDarkTheme={isDarkTheme}
-                  onClick={() => handleMenuClick(path)}
-                  style={{ paddingLeft: "48px" }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMenuClick(path);
+                  }}
+                  style={{ paddingLeft: "48px", pointerEvents: "auto" }}
                 >
                   <MenuIconWrapper
                     sx={{
@@ -627,6 +759,7 @@ const Navbar = () => {
                             ? "#FFFFFF"
                             : "#161717",
                       },
+                      pointerEvents: "none",
                     }}
                   >
                     <Icon />
@@ -634,6 +767,7 @@ const Navbar = () => {
                   <MenuItemLabel
                     $active={isActive}
                     $isDarkTheme={isDarkTheme}
+                    style={{ pointerEvents: "none" }}
                   >
                     {label}
                   </MenuItemLabel>

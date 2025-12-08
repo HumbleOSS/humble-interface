@@ -64,8 +64,9 @@ export const getPools = createAsyncThunk<
     const pools = await poolsTable.toArray();
     const lastRound = pools.reduce((acc, val) => Math.max(acc, val.round), 0);
     //if (pools.length === 0) {
+    const API_BASE_URL = import.meta.env.VITE_HUMBLE_API_BASE_URL || "https://humble-api.voi.nautilus.sh";
     const { data } = await axios.get(
-      `https://humble-api.voi.nautilus.sh/pools`
+      `${API_BASE_URL}/pools`
     );
     console.log("data", data);
     // New API structure: poolId, tokA, tokB, lastRound, txid

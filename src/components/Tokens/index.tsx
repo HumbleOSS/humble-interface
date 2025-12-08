@@ -514,7 +514,7 @@ const Tokens: React.FC = () => {
         setIsTransitioning(true);
         setLoading(true);
         setError(null);
-        const baseUrl = `${API_BASE_URL}tokens/stats`;
+        const baseUrl = `${API_BASE_URL}/tokens/stats`;
         const url = `${baseUrl}?sortBy=${sortBy}`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -538,7 +538,7 @@ const Tokens: React.FC = () => {
 
     const fetchProtocolStats = async () => {
       try {
-        const url = `${API_BASE_URL}protocol/stats`;
+        const url = `${API_BASE_URL}/protocol/stats`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Failed to fetch protocol stats");
