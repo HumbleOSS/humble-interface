@@ -637,8 +637,8 @@ const PoolDetail: React.FC = () => {
         setLoading(true);
         // Try different API endpoint patterns
         const endpoints = [
-          `${API_BASE_URL}pools/${id}/stats`,
-          `${API_BASE_URL}pools/stats?poolId=${id}`,
+          `${API_BASE_URL}/pools/${id}/stats`,
+          `${API_BASE_URL}/pools/stats?poolId=${id}`,
         ];
 
         let data: PoolStatData | null = null;
@@ -757,7 +757,7 @@ const PoolDetail: React.FC = () => {
     const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
     const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
     const shouldSwap = Number(originalTokAId) > Number(originalTokBId);
-    
+
     // If swapped, the display order is reversed, so we need to invert the rate
     if (shouldSwap) {
       const rate = balA / balB;
@@ -822,7 +822,7 @@ const PoolDetail: React.FC = () => {
   const tokenB = poolData.tokens?.tokenB || {};
   const tokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
   const tokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
-  
+
   // Order pair so asset with lower contractId is on left
   const tokAIdNum = Number(tokAId);
   const tokBIdNum = Number(tokBId);
@@ -831,7 +831,7 @@ const PoolDetail: React.FC = () => {
   const displayTokBId = shouldSwap ? tokAId : tokBId;
   const displayTokenA = shouldSwap ? tokenB : tokenA;
   const displayTokenB = shouldSwap ? tokenA : tokenB;
-  
+
   const symbolA = normalizeSymbol(
     displayTokenA.unitName || displayTokenA.symbol || "",
     displayTokAId
@@ -872,8 +872,7 @@ const PoolDetail: React.FC = () => {
   const originalTokAId = poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
   const originalTokBId = poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
   const tokAValues = [Number(originalTokAId), Number(originalTokBId)];
-  const isVOIPair =
-    tokAValues.includes(0) || tokAValues.includes(TOKEN_WVOI1);
+  const isVOIPair = tokAValues.includes(0) || tokAValues.includes(TOKEN_WVOI1);
 
   // Apply block reward adjustment for VOI pairs
   let blockReward = reward.blockReward || 0;
@@ -905,33 +904,33 @@ const PoolDetail: React.FC = () => {
   const originalTokenB = poolData.tokens?.tokenB || {};
   const originalTvlA = poolData.tvl?.tokenA || {};
   const originalTvlB = poolData.tvl?.tokenB || {};
-  
+
   const tokenADecimals = Number(displayTokenA.decimals || "6");
   const tokenBDecimals = Number(displayTokenB.decimals || "6");
-  
+
   // Get locked amounts - if swapped, use the opposite TVL values
   const lockedAmountA = shouldSwap
-    ? (originalTvlB.amount
-        ? new BigNumber(originalTvlB.amount)
-            .dividedBy(new BigNumber(10).pow(tokenADecimals))
-            .toNumber()
-        : 0)
-    : (originalTvlA.amount
-        ? new BigNumber(originalTvlA.amount)
-            .dividedBy(new BigNumber(10).pow(tokenADecimals))
-            .toNumber()
-        : 0);
+    ? originalTvlB.amount
+      ? new BigNumber(originalTvlB.amount)
+          .dividedBy(new BigNumber(10).pow(tokenADecimals))
+          .toNumber()
+      : 0
+    : originalTvlA.amount
+    ? new BigNumber(originalTvlA.amount)
+        .dividedBy(new BigNumber(10).pow(tokenADecimals))
+        .toNumber()
+    : 0;
   const lockedAmountB = shouldSwap
-    ? (originalTvlA.amount
-        ? new BigNumber(originalTvlA.amount)
-            .dividedBy(new BigNumber(10).pow(tokenBDecimals))
-            .toNumber()
-        : 0)
-    : (originalTvlB.amount
-        ? new BigNumber(originalTvlB.amount)
-            .dividedBy(new BigNumber(10).pow(tokenBDecimals))
-            .toNumber()
-        : 0);
+    ? originalTvlA.amount
+      ? new BigNumber(originalTvlA.amount)
+          .dividedBy(new BigNumber(10).pow(tokenBDecimals))
+          .toNumber()
+      : 0
+    : originalTvlB.amount
+    ? new BigNumber(originalTvlB.amount)
+        .dividedBy(new BigNumber(10).pow(tokenBDecimals))
+        .toNumber()
+    : 0;
 
   return (
     <Container>
@@ -1063,9 +1062,13 @@ const PoolDetail: React.FC = () => {
               </Tooltip>
               <APYDescription isDarkTheme={isDarkTheme}>
                 This shows the 7-day average APY value of the pool.
-                {(isVOIPair || aprBreakdown.aprBoost > 0 || aprBreakdown.additionalAprBoost > 0) && (
+                {(isVOIPair ||
+                  aprBreakdown.aprBoost > 0 ||
+                  aprBreakdown.additionalAprBoost > 0) && (
                   <span style={{ display: "block", marginTop: "4px" }}>
-                    {isVOIPair && (aprBreakdown.aprBoost > 0 || aprBreakdown.additionalAprBoost > 0)
+                    {isVOIPair &&
+                    (aprBreakdown.aprBoost > 0 ||
+                      aprBreakdown.additionalAprBoost > 0)
                       ? "Includes defi incentives and block rewards."
                       : isVOIPair
                       ? "Includes block rewards."
@@ -1152,10 +1155,22 @@ const PoolDetail: React.FC = () => {
               onClick={() => {
                 // Navigate to tokenA detail page with tokenB as swapTo parameter
                 // Use display order for navigation
-                const tokenAId = displayTokAId || poolData.pool?.tokA || poolData.poolInfo?.tokA || "";
-                const tokenBId = displayTokBId || poolData.pool?.tokB || poolData.poolInfo?.tokB || "";
+                const tokenAId =
+                  displayTokAId ||
+                  poolData.pool?.tokA ||
+                  poolData.poolInfo?.tokA ||
+                  "";
+                const tokenBId =
+                  displayTokBId ||
+                  poolData.pool?.tokB ||
+                  poolData.poolInfo?.tokB ||
+                  "";
                 if (tokenAId) {
-                  navigate(`/explore/tokens/${tokenAId}${tokenBId ? `?swapTo=${tokenBId}` : ""}`);
+                  navigate(
+                    `/explore/tokens/${tokenAId}${
+                      tokenBId ? `?swapTo=${tokenBId}` : ""
+                    }`
+                  );
                 } else {
                   navigate(`/swap?poolId=${id}`);
                 }
@@ -1204,7 +1219,7 @@ const PoolDetail: React.FC = () => {
           </ExternalLinks>*/}
 
           <SwapPanel isDarkTheme={isDarkTheme}>
-            <EmbeddedSwapWidget 
+            <EmbeddedSwapWidget
               defaultToken={tokenAInStore || undefined}
               defaultToken2={tokenBInStore || undefined}
             />
@@ -1222,7 +1237,9 @@ const PoolDetail: React.FC = () => {
                 </IBuyVOIButton>
               ) : (
                 <IBuyVOIIframe
-                  src={`https://ibuyvoi.com/widget?destination=${activeAccount.address}&theme=${isDarkTheme ? "dark" : "light"}`}
+                  src={`https://ibuyvoi.com/widget?destination=${
+                    activeAccount.address
+                  }&theme=${isDarkTheme ? "dark" : "light"}`}
                   title="VOI Purchase Widget"
                   allow="payment"
                 />

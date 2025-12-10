@@ -657,7 +657,7 @@ const TokenDetail: React.FC = () => {
     const fetchTokenData = async () => {
       try {
         setLoading(true);
-        const url = `${API_BASE_URL}tokens/${id}/stats`;
+        const url = `${API_BASE_URL}/tokens/${id}/stats`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Failed to fetch token data");
@@ -710,7 +710,7 @@ const TokenDetail: React.FC = () => {
       if (!id || activeTab !== "pools") return;
       try {
         setPoolsLoading(true);
-        const url = `${API_BASE_URL}tokens/${id}/pools?sortBy=tvl`;
+        const url = `${API_BASE_URL}/tokens/${id}/pools?sortBy=tvl`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Failed to fetch pools data");
