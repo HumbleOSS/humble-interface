@@ -28,6 +28,12 @@ export interface RewardsState {
   newRewards: RewardTransfer[]; // New rewards that haven't been seen yet
 }
 
+// Reward owner addresses - can be multiple addresses that distribute rewards
+export const REWARD_OWNER_ADDRESSES = [
+  "P3ODBTMBYB6UAN3NTYPAKEQOOZJMMT3JHZRT5ONSBTFPQDJ36JUQZVDR2I", // prior payout
+  "TWDHSG5BQHXGMDAQ4QJHUQ4TPBJ26ISJX62KNMH7KAEDRNPAYRKN6RAH34", // 25.12.10 reward payout
+];
+
 // Helper to get a unique ID for a reward
 const getRewardId = (reward: RewardTransfer): string => {
   // For allowance-based rewards, use owner-spender-amount combination
@@ -44,69 +50,82 @@ export const fetchRewards = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >("rewards/fetchRewards", async ({ userAddress }, { rejectWithValue }) => {
   try {
-    const rewardOwnerAddress = "P3ODBTMBYB6UAN3NTYPAKEQOOZJMMT3JHZRT5ONSBTFPQDJ36JUQZVDR2I";
     const contractId = 47138068; // WAD token contract ID
     
-    // Fetch approvals from API
-    // owner is the reward address, spender is the user's address
-    const url = `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/approvals?contractId=${contractId}&owner=${rewardOwnerAddress}&spender=${userAddress}`;
+    // Fetch approvals from all reward owner addresses
+    const allRewards: RewardTransfer[] = [];
     
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Failed to fetch rewards data");
-    }
-    
-    const data = await response.json();
-    console.log("Rewards API Response:", data);
-    
-    // Parse approvals from response
-    const approvals = data.approvals || [];
-    
-    if (approvals.length === 0) {
-      return [];
-    }
-    
-    // Sum up all approval amounts and create reward entries
-    let totalAmount = BigInt(0);
-    const rewards: RewardTransfer[] = [];
-    
-    approvals.forEach((approval: any) => {
-      const amount = BigInt(approval.amount || "0");
-      if (amount > 0) {
-        totalAmount += amount;
-        rewards.push({
-          amount: approval.amount,
-          value: approval.amount,
-          allowance: approval.amount,
-          owner: approval.owner,
-          spender: approval.spender,
-          decimals: 6, // WAD token has 6 decimals
-          timestamp: approval.timestamp,
-          txId: approval.transactionId,
-          transactionId: approval.transactionId,
-          roundTime: approval.round,
+    // Fetch from each reward owner address in parallel
+    const fetchPromises = REWARD_OWNER_ADDRESSES.map(async (rewardOwnerAddress) => {
+      try {
+        const url = `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/approvals?contractId=${contractId}&owner=${rewardOwnerAddress}&spender=${userAddress}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`Failed to fetch rewards from ${rewardOwnerAddress}:`, response.statusText);
+          return [];
+        }
+        
+        const data = await response.json();
+        console.log(`Rewards API Response for ${rewardOwnerAddress}:`, data);
+        
+        // Parse approvals from response
+        const approvals = data.approvals || [];
+        
+        if (approvals.length === 0) {
+          return [];
+        }
+        
+        // Create reward entries for this owner address
+        const rewards: RewardTransfer[] = [];
+        
+        approvals.forEach((approval: any) => {
+          const amount = BigInt(approval.amount || "0");
+          if (amount > 0) {
+            rewards.push({
+              amount: approval.amount,
+              value: approval.amount,
+              allowance: approval.amount,
+              owner: approval.owner || rewardOwnerAddress,
+              spender: approval.spender || userAddress,
+              decimals: 6, // WAD token has 6 decimals
+              timestamp: approval.timestamp,
+              txId: approval.transactionId,
+              transactionId: approval.transactionId,
+              roundTime: approval.round,
+            });
+          }
         });
+        
+        return rewards;
+      } catch (error: any) {
+        console.error(`Error fetching rewards from ${rewardOwnerAddress}:`, error);
+        // Don't fail the entire operation if one address fails
+        return [];
       }
     });
     
-    // If there's a total amount, return the rewards
-    if (totalAmount > 0) {
-      const totalAmountStr = totalAmount.toString();
-      console.log("Total allowance:", totalAmountStr);
-      
-      // Return individual approvals (or a summary if preferred)
-      return rewards.length > 0 ? rewards : [{
-        amount: totalAmountStr,
-        value: totalAmountStr,
-        allowance: totalAmountStr,
-        owner: rewardOwnerAddress,
-        spender: userAddress,
-        decimals: 6,
-        timestamp: Date.now() / 1000,
-      }];
+    // Wait for all fetches to complete
+    const results = await Promise.all(fetchPromises);
+    
+    // Aggregate all rewards from all addresses
+    results.forEach((rewards) => {
+      allRewards.push(...rewards);
+    });
+    
+    if (allRewards.length === 0) {
+      return [];
     }
     
-    return [];
+    // Calculate total amount for logging
+    const totalAmount = allRewards.reduce((sum, reward) => {
+      const amount = BigInt(reward.allowance || reward.amount || "0");
+      return sum + amount;
+    }, BigInt(0));
+    
+    console.log("Total allowance from all addresses:", totalAmount.toString());
+    
+    return allRewards;
   } catch (error: any) {
     console.error("Error fetching rewards from API:", error);
     return rejectWithValue(error.message || "Failed to fetch rewards");

@@ -23,6 +23,7 @@ import {
   fetchRewards,
   selectRewards,
   selectRewardsStatus,
+  REWARD_OWNER_ADDRESSES,
 } from "../../store/rewardsSlice";
 import {
   LineChart as RechartsLineChart,
@@ -1604,17 +1605,16 @@ const PoolStats: React.FC = () => {
       !activeAccount ||
       fetchedRewardsTotal <= 0 ||
       isClaimingRewards ||
-      totalRewardAmount === BigInt(0)
+      totalRewardAmount === BigInt(0) ||
+      !fetchedRewards ||
+      fetchedRewards.length === 0
     )
       return;
 
     try {
       setIsClaimingRewards(true);
 
-      const rewardOwnerAddress =
-        "P3ODBTMBYB6UAN3NTYPAKEQOOZJMMT3JHZRT5ONSBTFPQDJ36JUQZVDR2I";
       const wadContractId = 47138068; // WAD token contract ID
-
       const { algodClient, indexerClient } = getAlgorandClients();
 
       // Create CONTRACT instance for WAD token
@@ -1629,57 +1629,77 @@ const PoolStats: React.FC = () => {
         }
       );
 
-      console.log({
-        rewardOwnerAddress,
-        activeAccountAddress: activeAccount.address,
-        totalRewardAmount,
+      // Group rewards by owner address
+      const rewardsByOwner = new Map<string, bigint>();
+      fetchedRewards.forEach((reward) => {
+        const owner = reward.owner || REWARD_OWNER_ADDRESSES[0];
+        const amount = BigInt(reward.allowance || reward.amount || reward.value || "0");
+        if (amount > 0) {
+          const current = rewardsByOwner.get(owner) || BigInt(0);
+          rewardsByOwner.set(owner, current + amount);
+        }
       });
 
-      // Call arc200_transferFrom to transfer rewards from owner to user
-      const transferFromResult = await wadContract.arc200_transferFrom(
-        rewardOwnerAddress, // from: reward owner address
-        activeAccount.address, // to: user's address
-        totalRewardAmount // amount: total reward amount
-      );
+      console.log({
+        rewardsByOwner: Array.from(rewardsByOwner.entries()).map(([owner, amount]) => ({
+          owner,
+          amount: amount.toString(),
+        })),
+        activeAccountAddress: activeAccount.address,
+        totalRewardAmount: totalRewardAmount.toString(),
+      });
 
-      if (!transferFromResult.success) {
-        console.log({ transferFromResult });
-        throw new Error("Failed to create transferFrom transaction");
-      }
+      // Claim from each owner address
+      const claimPromises = Array.from(rewardsByOwner.entries()).map(
+        async ([rewardOwnerAddress, amount]) => {
+          // Call arc200_transferFrom to transfer rewards from owner to user
+          const transferFromResult = await wadContract.arc200_transferFrom(
+            rewardOwnerAddress, // from: reward owner address
+            activeAccount.address, // to: user's address
+            amount // amount: reward amount for this owner
+          );
 
-      // Sign the transaction
-      let signedTxns;
-      try {
-        signedTxns = await signTransactions(
-          transferFromResult.txns.map(
-            (t: string) => new Uint8Array(Buffer.from(t, "base64"))
-          )
-        );
-      } catch (e: any) {
-        console.error("Transaction signing cancelled or failed:", e);
-        toast.error("Transaction signing cancelled or failed");
-        return;
-      }
+          if (!transferFromResult.success) {
+            console.log({ transferFromResult, rewardOwnerAddress, amount });
+            throw new Error(
+              `Failed to create transferFrom transaction for ${rewardOwnerAddress}`
+            );
+          }
 
-      if (!signedTxns) {
-        toast.error("No signed transactions");
-        return;
-      }
+          // Sign the transaction
+          let signedTxns;
+          try {
+            signedTxns = await signTransactions(
+              transferFromResult.txns.map(
+                (t: string) => new Uint8Array(Buffer.from(t, "base64"))
+              )
+            );
+          } catch (e: any) {
+            console.error("Transaction signing cancelled or failed:", e);
+            throw new Error("Transaction signing cancelled or failed");
+          }
 
-      // Send the transaction
-      const res = await algodClient
-        .sendRawTransaction(signedTxns as Uint8Array[])
-        .do();
+          if (!signedTxns) {
+            throw new Error("No signed transactions");
+          }
 
-      // Wait for confirmation and show toast notifications
-      await toast.promise(
-        algosdk.waitForConfirmation(algodClient, res.txId, 10),
-        {
-          pending: "Claiming rewards...",
-          success: "Rewards claimed successfully!",
-          error: "Failed to claim rewards",
+          // Send the transaction
+          const res = await algodClient
+            .sendRawTransaction(signedTxns as Uint8Array[])
+            .do();
+
+          // Wait for confirmation
+          await algosdk.waitForConfirmation(algodClient, res.txId, 10);
+          return res.txId;
         }
       );
+
+      // Execute all claims and show toast notifications
+      await toast.promise(Promise.all(claimPromises), {
+        pending: `Claiming rewards from ${rewardsByOwner.size} source${rewardsByOwner.size !== 1 ? "s" : ""}...`,
+        success: "Rewards claimed successfully!",
+        error: "Failed to claim some rewards",
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
       // Refresh rewards after successful confirmation
@@ -1697,6 +1717,7 @@ const PoolStats: React.FC = () => {
     fetchedRewardsTotal,
     isClaimingRewards,
     totalRewardAmount,
+    fetchedRewards,
     signTransactions,
     dispatch,
   ]);
