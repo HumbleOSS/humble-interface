@@ -48,26 +48,26 @@ const useDefiRewards = () => {
             //   aprBoost: 27,
             //   additionalAprBoost: 0,
             // },
-            {
-              poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
-              aprBoost: 27,
-              additionalAprBoost: 0,
-            },
-            {
-              poolId: 441951, // CORN/VOI CORN TVL 5%
-              aprBoost: 9,
-              additionalAprBoost: 0,
-            },
-            {
-              poolId: 404246, // COOL/VOI COOL TVL
-              aprBoost: 5,
-              additionalAprBoost: 0,
-            },
-            {
-              poolId: 395510, // F/VOI F TVL
-              aprBoost: 8,
-              additionalAprBoost: 0,
-            },
+            // {
+            //   poolId: 395509, // ROCKET/VOI ROCKET TVL 5%
+            //   aprBoost: 27,
+            //   additionalAprBoost: 0,
+            // },
+            // {
+            //   poolId: 441951, // CORN/VOI CORN TVL 5%
+            //   aprBoost: 9,
+            //   additionalAprBoost: 0,
+            // },
+            // {
+            //   poolId: 404246, // COOL/VOI COOL TVL
+            //   aprBoost: 5,
+            //   additionalAprBoost: 0,
+            // },
+            // {
+            //   poolId: 395510, // F/VOI F TVL
+            //   aprBoost: 8,
+            //   additionalAprBoost: 0,
+            // },
             {
               poolId: 8357620, // pix/VOI
               aprBoost: 15,
