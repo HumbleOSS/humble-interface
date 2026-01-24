@@ -37,6 +37,7 @@ export const REWARD_OWNER_ADDRESSES = [
   "XYFNNSZ3PMJGAGRZXCKJLBHS22S56JT67VKIQ4GXYHF2I2MZ6RTASHOGCU", // 25.12.30 reward payout
   "IZTYUP4MT75XCRFN7HFHOGXYATONKDZPXGJKTX3RQHEDDUPPUYKGQCHSTY", // 26.01.06 reward payout
   "PNTT6UNVTMUTCEBM7WXYIBBGPRF6RJAFKGZ7LXT2QEJNCPNS36LKITVCNE", // 26.01.13 reward payout
+  "5LK57Y7MADRW2YTWHD5JPNWURKULXLRNZVWQBJPNIF4O4PYWMNWXAKEYEY" // 26.01.24 reward payout
 ];
 
 // Helper to get a unique ID for a reward
@@ -56,34 +57,34 @@ export const fetchRewards = createAsyncThunk<
 >("rewards/fetchRewards", async ({ userAddress }, { rejectWithValue }) => {
   try {
     const contractId = 47138068; // WAD token contract ID
-    
+
     // Fetch approvals from all reward owner addresses
     const allRewards: RewardTransfer[] = [];
-    
+
     // Fetch from each reward owner address in parallel
     const fetchPromises = REWARD_OWNER_ADDRESSES.map(async (rewardOwnerAddress) => {
       try {
         const url = `https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/approvals?contractId=${contractId}&owner=${rewardOwnerAddress}&spender=${userAddress}`;
-        
+
         const response = await fetch(url);
         if (!response.ok) {
           console.warn(`Failed to fetch rewards from ${rewardOwnerAddress}:`, response.statusText);
           return [];
         }
-        
+
         const data = await response.json();
         console.log(`Rewards API Response for ${rewardOwnerAddress}:`, data);
-        
+
         // Parse approvals from response
         const approvals = data.approvals || [];
-        
+
         if (approvals.length === 0) {
           return [];
         }
-        
+
         // Create reward entries for this owner address
         const rewards: RewardTransfer[] = [];
-        
+
         approvals.forEach((approval: any) => {
           const amount = BigInt(approval.amount || "0");
           if (amount > 0) {
@@ -101,7 +102,7 @@ export const fetchRewards = createAsyncThunk<
             });
           }
         });
-        
+
         return rewards;
       } catch (error: any) {
         console.error(`Error fetching rewards from ${rewardOwnerAddress}:`, error);
@@ -109,27 +110,27 @@ export const fetchRewards = createAsyncThunk<
         return [];
       }
     });
-    
+
     // Wait for all fetches to complete
     const results = await Promise.all(fetchPromises);
-    
+
     // Aggregate all rewards from all addresses
     results.forEach((rewards) => {
       allRewards.push(...rewards);
     });
-    
+
     if (allRewards.length === 0) {
       return [];
     }
-    
+
     // Calculate total amount for logging
     const totalAmount = allRewards.reduce((sum, reward) => {
       const amount = BigInt(reward.allowance || reward.amount || "0");
       return sum + amount;
     }, BigInt(0));
-    
+
     console.log("Total allowance from all addresses:", totalAmount.toString());
-    
+
     return allRewards;
   } catch (error: any) {
     console.error("Error fetching rewards from API:", error);
@@ -190,31 +191,31 @@ const rewardsSlice = createSlice({
       .addCase(fetchRewards.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.lastFetchTime = Date.now();
-        
+
         // Get the address from the action meta (we need to pass it through)
         // For now, we'll use the currentAddress or extract from the first reward
         const address = state.currentAddress || action.meta.arg.userAddress;
         state.currentAddress = address;
-        
+
         // Initialize seenRewardIds for this address if it doesn't exist
         if (!state.seenRewardIds[address]) {
           state.seenRewardIds[address] = [];
         }
-        
+
         const seenIdsSet = new Set(state.seenRewardIds[address]);
         const newRewards: RewardTransfer[] = [];
         const allRewards: RewardTransfer[] = [];
-        
+
         // Check for new rewards
         action.payload.forEach((reward) => {
           const rewardId = getRewardId(reward);
           allRewards.push(reward);
-          
+
           if (!seenIdsSet.has(rewardId)) {
             newRewards.push(reward);
           }
         });
-        
+
         state.rewards = allRewards;
         state.newRewards = newRewards;
       })
