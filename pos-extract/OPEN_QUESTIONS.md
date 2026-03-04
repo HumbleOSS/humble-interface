@@ -30,7 +30,7 @@ Items that could not be fully determined from the codebase or that require produ
 ## Indexing / APIs
 
 - **Volume:** volumeSlice uses `/api/volumes.json` (relative URL). Is this a local static file or a backend? TBD for POS analytics.
-- **Tickers API:** VITE_HUMBLE_TICKERS_API (e.g. api.humble.sh/integrations/coingecko/tickers). TBD: rate limits, fallbacks, and whether POS should proxy or call directly.
+- **Tickers API:** VITE_HUMBLE_TICKERS_API (e.g. api.humble.sh/integrations/coingecko/tickers). **Decision:** Call directly for now (no proxy). Rate limits and fallbacks remain TBD.
 - **NFT/MP endpoints:** Multiple hosts (voirewards, nftnavigator). TBD: canonical list and which are required for core DEX vs. optional NFT features.
 
 ---

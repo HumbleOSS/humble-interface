@@ -101,6 +101,32 @@ Token selection ensures **from** and **to** always have at least one common pool
 - **Display:** VOI and wVOI both show as "VOI"; use `tokenId` 0 and `contractId` TOKEN_WVOI1 (390001) consistently. `getIconId()` maps 390001 → 0 for icon URLs.
 - **Matching:** When comparing with `pool.tokA` / `pool.tokB`, treat both 0 and TOKEN_WVOI1 as the same asset (VOI). The pool may store either; the app normalizes to one representation in the UI.
 
+### 1.5 Token select UI component
+
+How the token selector is wired in the source app (Swap uses **TokenInput**, which embeds **TokenSelect**). POS can replicate this with any equivalent combo (dropdown, modal, or inline list).
+
+#### TokenInput (combined row)
+
+- **Role:** One row for “Swap from” or “Swap to”: label + token selector + optional balance (“Max”) + amount input.
+- **Props (representative):** `label`, `amount`, `setAmount`, `token` (selected), `token2` (other side, for exclusion in options), `setToken`, `options` (ARC200TokenI[]), `balance`, `onFocus`, `displayId` (for icon), `tokInfo` (symbol/name/verified), `compact`.
+- **Behavior:** Renders the selected token (icon + symbol) and the amount input; clicking the token opens TokenSelect. “Max” sets amount to balance. `onFocus("from" | "to")` tells the swap form which field is driving simulation.
+
+#### TokenSelect (picker)
+
+- **Props:** `token` (currently selected), `options` (list to show), `onSelect: (token: ARC200TokenI) => void`, `compact?: boolean`.
+- **Open/close:** Click on the token button (or selector area) sets anchor; menu/modal opens. On pick: `onSelect(selected)` then close. No selection → just close.
+- **Content:** List of tokens from `options`. Each row: **icon** (e.g. `getIconId(contractId|tokenId)` → asset-verification URL), **symbol** (e.g. `tokenSymbol(token)`), **name**, optional **balance** and **balance value (USD)** when wallet is connected.
+- **Search:** Optional text field; filter options by symbol/name (e.g. debounced 200 ms). Source app uses `searchTerm` / `debouncedSearchTerm`.
+- **Sort (optional):** Source app supports sort by name, marketCap, volume, price, balance, balanceValue, liquidity; asc/desc. Default sort “balanceValue” desc. Not required for minimal POS; a simple sorted-by-tokenId list is enough.
+- **Display categories (optional):** e.g. “Your tokens” vs “By volume”. For swap, passing a pre-filtered `options` list (from- or to-options) is enough; no need for tabs inside the picker.
+- **Icon URL:** e.g. `https://asset-verification.nautilus.sh/icons/${getIconId(tokenId|contractId)}.png`; fallback to `0.png` for VOI.
+
+#### Minimal POS token select
+
+- **Inputs:** `options: ARC200TokenI[]`, `selected: ARC200TokenI | undefined`, `onSelect: (t: ARC200TokenI) => void`.
+- **UI:** Button or row showing selected token (icon + symbol) or “Select token”; on click open a modal or dropdown listing `options`. Each item: icon + symbol (and optionally name). On item click: `onSelect(item)`, close.
+- **No direct algod/indexer:** Options and balance come from parent (token service / hooks). TokenSelect in the app does fetch balances and DEX prices for display; in POS those should be provided by the data layer so the component stays a pure UI.
+
 ---
 
 ## 2. How to simulate swap (no transaction sent)
@@ -190,6 +216,7 @@ Same pattern: CONTRACT(poolId, algod, indexer, spec, dummyAcc), setFee, then cal
 - [ ] **Initial selection:** Optional URL `poolId` → set token from pool.tokA, token2 from pool.tokB (VOI normalized).
 - [ ] **Reset:** If eligible pools for (token, token2) is empty and no URL poolId, clear token2.
 - [ ] **Swap-direction button:** Swap token ↔ token2 and fromAmount ↔ toAmount.
+- [ ] **Token select UI:** TokenInput row (label + selector + balance + amount); TokenSelect receives options, selected, onSelect; opens on click; list shows icon + symbol (and optionally name, balance); on pick call onSelect and close. See §1.5.
 - [ ] Eligible pool for (token, token2) = single pool with max lpMinted.
 - [ ] Pool Info() and rate (spot) from pool balances.
 - [ ] **Simulate exact input:** Trader_swapAForB or Trader_swapBForA(1, amountIn, 0) → set toAmount/actualOutcome.
