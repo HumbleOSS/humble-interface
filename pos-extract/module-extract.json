@@ -1,0 +1,316 @@
+{
+  "source_app": "voi-humble-pact",
+  "target": "Algorand POS v0",
+  "modules": [
+    {
+      "name": "amm",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "swap",
+          "called_from": "src/components/Swap/index.tsx :: handleConfirmedSwap",
+          "inputs": "acc (addr), poolId, token A/B (amount, decimals, tokenId/contractId), eligiblePools, slippage (0-1), degenMode, skipWithdraw",
+          "tx_pattern": "atomic_group",
+          "constraints": "slippage (currentSlippage %), high-slippage cancels build; optional setOptins for MBR"
+        },
+        {
+          "function": "Trader_swapAForB / Trader_swapBForA (via ulujs swap)",
+          "called_from": "src/components/Swap/index.tsx, EmbeddedSwapWidget, Router, ArbitrageTriangular",
+          "inputs": "byte (pool selector), amountIn, minAmountOut (slippage)",
+          "tx_pattern": "atomic_group"
+        }
+      ],
+      "queries": [
+        {
+          "name": "Info",
+          "source": "ulujs swap(poolId, algodClient, indexerClient).Info()",
+          "where": "store/poolSlice.ts fetchPool, components Swap/PoolAdd/PoolRemove/Zap/Router",
+          "refresh": "on pool load / before build"
+        },
+        {
+          "name": "SwapEvents",
+          "source": "ci.SwapEvents({ minRound, sender })",
+          "where": "Swap/index.tsx after confirmation",
+          "refresh": "after send for tx confirmation"
+        },
+        {
+          "name": "selectPool",
+          "source": "ci.selectPool(eligiblePools, tokenA, tokenB, 'poolId')",
+          "where": "Swap, Router",
+          "refresh": "when route/pool selection changes"
+        }
+      ],
+      "events": ["Swap (ARC4/logs via ulujs SwapEvents)"],
+      "uiBlocks": ["Swap (Swap/index.tsx)", "EmbeddedSwapWidget", "SwapOptionsModal (slippage)", "SwapConfirmationModal", "SwapSuccessfulModal"],
+      "dependencies": ["arc200-token", "wallet runtime", "pool list"],
+      "config": {
+        "app_ids": ["pool ids from API / getPools"],
+        "token_ids": ["from constants/tokens.ts and tokenSlice"],
+        "network": "voi-mainnet / voi-testnet / algorand / algorand-testnet / custom via localStorage node"
+      }
+    },
+    {
+      "name": "pool",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "Provider_deposit (deposit single or dual)",
+          "called_from": "src/components/PoolAdd/index.tsx",
+          "inputs": "poolId, amounts A/B, acc; optional createBalanceBox/createAllowanceBox for MBR",
+          "tx_pattern": "atomic_group",
+          "constraints": "MBR funding via box creation"
+        },
+        {
+          "function": "Provider_withdraw",
+          "called_from": "src/components/PoolRemove/index.tsx, hooks/usePoolRemove.ts",
+          "inputs": "poolId, LP amount, (minA, minB) or proportional; condOptin for arc200/boxes",
+          "tx_pattern": "atomic_group",
+          "constraints": "conditional opt-ins (setOptins) for tokens/boxes"
+        }
+      ],
+      "queries": [
+        {
+          "name": "Info",
+          "source": "swap(poolId, algodClient, indexerClient).Info()",
+          "where": "poolSlice fetchPool, PoolAdd, PoolRemove, usePoolRemove"
+        },
+        {
+          "name": "arc200_balanceOf (LP)",
+          "source": "arc200(pool.poolId, algodClient, indexerClient).arc200_balanceOf(addr)",
+          "where": "usePoolRemove, PoolRemove, PoolAdd"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["PoolAdd", "PoolRemove", "PoolRemoveForm", "PoolRemoveDialog", "PoolCard", "PoolList", "PoolDetail", "PoolStats", "PoolPosition"],
+      "dependencies": ["arc200-token", "wallet runtime", "amm (swap Info)"],
+      "config": {
+        "app_ids": ["pool contract ids from API and constants/dex.ts CTCINFO_*"],
+        "token_ids": [],
+        "network": "from getCurrentNodeEnv()"
+      }
+    },
+    {
+      "name": "router",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "Multi-hop swap",
+          "called_from": "src/components/Router/index.tsx",
+          "inputs": "route (pools), amounts, slippage, acc",
+          "tx_pattern": "atomic_group",
+          "constraints": "slippage per hop"
+        }
+      ],
+      "queries": [
+        {
+          "name": "Route/pool selection",
+          "source": "swap/selectPool and pool list",
+          "where": "Router/index.tsx"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["Router/index.tsx"],
+      "dependencies": ["amm", "arc200-token", "wallet runtime"],
+      "config": {
+        "app_ids": [],
+        "token_ids": [],
+        "network": "same as amm"
+      }
+    },
+    {
+      "name": "arc200-token",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "arc200_approve",
+          "called_from": "Implicit in ulujs swap/deposit/withdraw flows",
+          "inputs": "spender, value",
+          "tx_pattern": "part of atomic_group"
+        },
+        {
+          "function": "createBalanceBox / createAllowanceBox",
+          "called_from": "PoolAdd, Swap, PoolRemove (conditional)",
+          "inputs": "address(es)",
+          "tx_pattern": "part of atomic_group",
+          "constraints": "MBR funding"
+        }
+      ],
+      "queries": [
+        {
+          "name": "arc200_balanceOf",
+          "source": "arc200(contractId, algodClient, indexerClient).arc200_balanceOf(addr)",
+          "where": "EmbeddedSwapWidget (accountInfo + balance), PoolRemove, usePoolRemove, TokenCard"
+        },
+        {
+          "name": "arc200_name, arc200_symbol, arc200_decimals, arc200_totalSupply",
+          "source": "arc200(ctcInfo, algodClient, indexerClient)",
+          "where": "store/tokenSlice.ts fetchToken"
+        },
+        {
+          "name": "allowance (approvals API)",
+          "source": "https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/approvals?contractId=&owner=&spender=",
+          "where": "rewardsSlice fetchRewards"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["TokenInput", "TokenSelect", "TokenCard", "TokenList", "TokenDetail", "CurrencyInputPanel"],
+      "dependencies": ["wallet runtime"],
+      "config": {
+        "app_ids": [],
+        "token_ids": ["constants/tokens.ts TOKEN_*", "config/arc200AsaMapping.ts ARC200_ASSET_ID_MAPPING"],
+        "network": "same"
+      }
+    },
+    {
+      "name": "farm",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "stake / unstake / harvest (CONTRACT methods)",
+          "called_from": "src/components/FarmCard/index.tsx, FarmCreate",
+          "inputs": "farm poolId, amount, acc; createBalanceBox for MBR",
+          "tx_pattern": "atomic_group",
+          "constraints": "STAKR_200 ABI"
+        }
+      ],
+      "queries": [
+        {
+          "name": "Pool (farm events)",
+          "source": "CONTRACT(CTCINFO_STAKR_200, algodClient, indexerClient, abi.stakr200).Pool({ minRound })",
+          "where": "store/farmSlice.ts getFarms"
+        },
+        {
+          "name": "Stake (stake events)",
+          "source": "CONTRACT(..., abi.stakr200).Stake({ minRound })",
+          "where": "store/stakeSlice.ts getStake"
+        }
+      ],
+      "events": ["Pool", "Stake (ARC4 via ulujs)"],
+      "uiBlocks": ["FarmCard", "FarmList", "FarmCreate", "FarmLiquidity", "CreateFarmModal"],
+      "dependencies": ["pool", "arc200-token", "wallet runtime"],
+      "config": {
+        "app_ids": [36898212],
+        "token_ids": [],
+        "network": "same"
+      }
+    },
+    {
+      "name": "rewards",
+      "version": "0.1.0",
+      "actions": [],
+      "queries": [
+        {
+          "name": "fetchRewards",
+          "source": "REST arc200/approvals for WAD contract (47138068), multiple REWARD_OWNER_ADDRESSES, spender=userAddress",
+          "where": "store/rewardsSlice.ts",
+          "refresh": "on address change / periodic"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["RewardsWatcher", "RewardsModal", "RewardsAddress page"],
+      "dependencies": ["wallet runtime"],
+      "config": {
+        "app_ids": [47138068],
+        "token_ids": [],
+        "network": "voi-mainnet (voi-mainnet-mimirapi.nftnavigator.xyz)"
+      }
+    },
+    {
+      "name": "zap",
+      "version": "0.1.0",
+      "actions": [
+        {
+          "function": "Zap in/out (single-asset add/remove)",
+          "called_from": "src/components/Zap/index.tsx",
+          "inputs": "poolId, token, amount, slippage (e.g. 0.1), acc",
+          "tx_pattern": "atomic_group",
+          "constraints": "slippage"
+        }
+      ],
+      "queries": [
+        {
+          "name": "Pool info",
+          "source": "swap(poolId, algodClient, indexerClient)"
+        },
+        {
+          "name": "DEX prices",
+          "source": "https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices",
+          "where": "Zap/index.tsx, TokenSelect"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["Zap/index.tsx"],
+      "dependencies": ["amm", "pool", "arc200-token", "wallet runtime"],
+      "config": {
+        "app_ids": [],
+        "token_ids": [],
+        "network": "same"
+      }
+    },
+    {
+      "name": "tokens",
+      "version": "0.1.0",
+      "actions": [],
+      "queries": [
+        {
+          "name": "getTokens",
+          "source": "Humble API VITE_HUMBLE_API_BASE_URL/tokens, then Dexie cache",
+          "where": "store/tokenSlice.ts"
+        },
+        {
+          "name": "getTickers",
+          "source": "VITE_HUMBLE_TICKERS_API (e.g. api.humble.sh/integrations/coingecko/tickers)",
+          "where": "store/tokenSlice.ts"
+        },
+        {
+          "name": "fetchToken (single)",
+          "source": "arc200(ctcInfo).arc200_name/symbol/decimals/totalSupply + getAssetType",
+          "where": "tokenSlice fetchToken, getToken"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["TokenSelect", "TokenList", "TokenCard", "TokenDetail", "Tokens page"],
+      "dependencies": ["arc200-token (read)"],
+      "config": {
+        "app_ids": [],
+        "token_ids": ["constants/tokens.ts", "config/arc200AsaMapping.ts"],
+        "network": "same"
+      }
+    },
+    {
+      "name": "indexing",
+      "version": "0.1.0",
+      "actions": [],
+      "queries": [
+        {
+          "name": "Pools list",
+          "source": "Humble API /pools, Dexie pools table",
+          "where": "poolSlice getPools"
+        },
+        {
+          "name": "Indexer search",
+          "source": "indexerClient (algosdk.Indexer) lookupAccountAssets etc.",
+          "where": "PoolStats, usePoolRemove (accountAssets), EmbeddedSwapWidget, PoolCreate"
+        },
+        {
+          "name": "DEX prices",
+          "source": "mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices",
+          "where": "Zap, TokenSelect, TokenInput, Analytics, AnalyticsPair, AnalyticsToken"
+        },
+        {
+          "name": "NFT/sales/collections",
+          "source": "mainnet-idx.voirewards.com/nft-indexer/v1/*, mainnet-idx.nftnavigator.xyz/nft-indexer/v1/mp/*",
+          "where": "saleSlice, collectionSlice, Account, Listings, Collections, Collection, Activity"
+        }
+      ],
+      "events": [],
+      "uiBlocks": ["PoolStats", "Analytics", "AnalyticsPair", "AnalyticsToken", "Account", "Listings", "Collections", "Activity"],
+      "dependencies": ["algod/indexer clients"],
+      "config": {
+        "app_ids": [],
+        "token_ids": [],
+        "network": "from getCurrentNodeEnv() ALGO_SERVER, ALGO_INDEXER_SERVER"
+      }
+    }
+  ]
+}

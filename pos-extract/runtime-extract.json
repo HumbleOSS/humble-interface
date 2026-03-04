@@ -1,0 +1,37 @@
+{
+  "wallet": {
+    "library": "@txnlab/use-wallet-react",
+    "supported_wallets": [
+      "Kibisis (WalletId.KIBISIS)",
+      "Lute (WalletId.LUTE, options: { siteName: 'HumbleSwap' })",
+      "Biatec (WalletId.BIATEC, WalletConnect projectId + metadata)",
+      "WalletConnect (WalletId.WALLETCONNECT, projectId + metadata)"
+    ],
+    "connection_flow": "App.tsx creates WalletManager with wallets array and NetworkId.VOIMAIN; WalletProvider wraps app. User connects via ConnectWallet component or WalletModal; activeWallet/activeAccount from useWallet().",
+    "signing_api": "useWallet() exposes signTransactions(unsignedTxns: Uint8Array[]) => Promise<Uint8Array[] | undefined>. Components pass base64-decoded txn bytes (Buffer.from(t, 'base64')) to signTransactions.",
+    "account_switching": "activeWalletAccounts, activeAccount; UI shows account list in ConnectWallet/WalletModal; switching updates activeAccount used for acc.addr in tx building.",
+    "no_send_from_hook": "sendTransactions is commented out; broadcast is algodClient.sendRawTransaction(stxns).do() after signing.",
+    "config_location": "src/App.tsx (WalletManager), src/wallets.ts (getProviderInit commented; getCurrentNodeEnv for network), src/components/ConnectWallet/index.tsx, src/components/modals/WalletModal/index.tsx"
+  },
+  "transactions": {
+    "atomic_group_builder": "ulujs (swap, arc200, CONTRACT) in components/hooks. No single shared 'atomic group builder' module; each flow (Swap, PoolAdd, PoolRemove, Router, Zap, FarmCard, etc.) calls ulujs with algodClient + indexerClient + acc, gets back .txns (base64 strings) or equivalent.",
+    "fee_funding": "Default fee in constants (TXN_CONFIG.DEFAULT_FEE 4000); ulujs/algosdk handle fee; no explicit fee payer extraction in codebase.",
+    "mbr_handling": "createBalanceBox(address), createAllowanceBox(owner, spender) used in pool/split flows; conditional opt-ins (condOptin, setOptins) e.g. Account/index.tsx setOptins([29103397]), PoolRemove/usePoolRemove condOptin for token/box opt-in.",
+    "slippage_enforcement": "Swap: currentSlippage from localStorage (SwapOptionsModal), passed as slippage (0-1) to ci.swap(..., { slippage }). Swap build can return success: false on high slippage; UI shows toast. EmbeddedSwapWidget uses fixed 0.05. Zap uses 0.1. Router/ArbitrageTriangular compute slippage from expected vs actual.",
+    "confirmation_tracking": "algosdk.waitForConfirmation(algodClient, res.txId, 1000) after sendRawTransaction. Swap then polls ci.SwapEvents({ minRound, sender }) until event appears.",
+    "retry_error_logic": "TXN_CONFIG MAX_RETRIES 3, RETRY_DELAY 1000 in constants; explicit retry loops not fully traced in components. User rejection in signTransactions caught in try/catch; toast and setOn(false)/setShowConfirmation(false)."
+  },
+  "indexing": {
+    "indexer_endpoints": "From getCurrentNodeEnv(): voi mainnet mainnet-idx.voi.nodely.dev, voi-testnet testnet-idx.voi.nodely.io, algorand mainnet/testnet algonode indexer. getAlgorandClients() returns algosdk.Indexer(token, indexerServer, port).",
+    "external_apis": [
+      "Humble API: VITE_HUMBLE_API_BASE_URL (default https://humble-api.voi.nautilus.sh) /pools, /tokens",
+      "Nautilus DEX: https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices, /dex/stubs/pool",
+      "Voirewards: https://mainnet-idx.voirewards.com/nft-indexer/v1/mp/sales, /collections, /tokens",
+      "NFT Navigator: https://mainnet-idx.nftnavigator.xyz/nft-indexer/v1/mp/listings",
+      "Mimirapi: https://voi-mainnet-mimirapi.nftnavigator.xyz/arc200/approvals"
+    ],
+    "history_views": "Stake/farm events via CONTRACT.Pool/Stake; swap events via SwapEvents; rewards via approvals API. Activity/Account pages use indexer/API for listings and history.",
+    "analytics_queries": "Analytics pages fetch mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices; volume from /api/volumes.json (static or TBD).",
+    "local_cache": "Dexie (db.ts): tables pools, tokens, farms, stake, volumes. getPools/getTokens/getFarms/getStake/getVolume read/write Dexie."
+  }
+}
