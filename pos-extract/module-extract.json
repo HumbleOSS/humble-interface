@@ -38,10 +38,29 @@
           "source": "ci.selectPool(eligiblePools, tokenA, tokenB, 'poolId')",
           "where": "Swap, Router",
           "refresh": "when route/pool selection changes"
+        },
+        {
+          "name": "simulate (quote)",
+          "source": "CONTRACT(poolId, algod, indexer, poolSpec, dummyAcc).Trader_swapAForB(1, amountIn, 0) or Trader_swapBForA(1, amountIn, 0) for exact-in; Trader_exactSwapAForB / Trader_exactSwapBForA(1, MAX_SAFE_INTEGER, amountOut) for exact-out. Read-only, no tx.",
+          "where": "Swap/index.tsx (useEffect on fromAmount/toAmount by focus), Router simulateSwapPath, ArbitrageTriangular simulateArbitrageForAmount",
+          "refresh": "on fromAmount or toAmount change"
         }
       ],
       "events": ["Swap (ARC4/logs via ulujs SwapEvents)"],
       "uiBlocks": ["Swap (Swap/index.tsx)", "EmbeddedSwapWidget", "SwapOptionsModal (slippage)", "SwapConfirmationModal", "SwapSuccessfulModal"],
+      "swap_ui": {
+        "state": "fromAmount, toAmount, focus (from|to), token, token2, tokenOptions, balance, balance2, eligiblePools, info, rate, expectedOutcome, actualOutcome (from simulate), fee, slippage %, currentSlippage %, minRecieved, showConfirmation, success modal state",
+        "flow": "Pools/tokens from Redux; token options = tokens in any pool; eligible pool = single pool with max lpMinted for (token,token2); Info() for rate and fee; on amount change run simulate to set other amount; user clicks Swap → confirmation modal → handleConfirmedSwap → ci.swap → sign → send → waitForConfirmation + SwapEvents → success modal",
+        "summary_doc": "SWAP_UI_AND_SIMULATION.md"
+      },
+      "simulate_swap": {
+        "purpose": "Get expected output (or required input) without sending a transaction",
+        "method": "CONTRACT(poolId, algodClient, indexerClient, poolSpec, dummyAcc).setFee(4000); then call read-only (simulate):",
+        "exact_input": "If from-token is tokA: Trader_swapAForB(1, fromAmountSmallestUnit, 0) → returnValue[1] is tokB out. If from-token is tokB: Trader_swapBForA(1, fromAmountSmallestUnit, 0) → returnValue[0] is tokA out. Convert to human units (divide by 10^decimals).",
+        "exact_output": "If to-token is tokA: Trader_exactSwapBForA(1, Number.MAX_SAFE_INTEGER, toAmountSmallestUnit) → fromAmount = (MAX_SAFE_INTEGER - returnValue[1]) / 10^fromDecimals. If to-token is tokB: Trader_exactSwapAForB(1, MAX_SAFE_INTEGER, toAmountSmallestUnit) → fromAmount = (MAX_SAFE_INTEGER - returnValue[0]) / 10^fromDecimals.",
+        "no_tx": "No transaction is built or signed; dummy acc (any addr, sk empty) is sufficient.",
+        "summary_doc": "SWAP_UI_AND_SIMULATION.md"
+      },
       "dependencies": ["arc200-token", "wallet runtime", "pool list"],
       "config": {
         "app_ids": ["pool ids from API / getPools"],

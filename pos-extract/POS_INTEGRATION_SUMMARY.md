@@ -16,7 +16,7 @@ The codebase is an Algorand DEX frontend (Voi/Humble) built with React, Redux, V
 
 | Module       | Actions (representative)                    | Queries (representative)     | Key config / deps      |
 |-------------|---------------------------------------------|-----------------------------|------------------------|
-| **amm / swap** | swap (A↔B), exactSwap                      | pool Info, SwapEvents       | pool app ids, ulujs swap |
+| **amm / swap** | swap (A↔B), exactSwap                      | pool Info, SwapEvents, **simulate (Trader_swap* read-only)** | pool app ids, ulujs swap; see SWAP_UI_AND_SIMULATION.md |
 | **pool**    | Provider_deposit, Provider_withdraw         | Info, LP balance            | pool spec, arc200 LP   |
 | **router**  | Multi-hop swap                              | Route selection, pool list  | swap, arc200            |
 | **arc200-token** | approve, transfer, createBalanceBox(es)  | balanceOf, allowance, name/symbol/decimals/totalSupply | token ids, arc200AsaMapping |
@@ -38,8 +38,9 @@ The codebase is an Algorand DEX frontend (Voi/Humble) built with React, Redux, V
 
 ## Artifacts in this pack
 
-- `module-extract.json` — Module candidates with actions, queries, events, uiBlocks, dependencies, config.
+- `module-extract.json` — Module candidates with actions, queries, events, uiBlocks, dependencies, config; amm includes swap_ui and simulate_swap.
 - `runtime-extract.json` — Wallet, transactions, indexing.
+- `SWAP_UI_AND_SIMULATION.md` — Swap UI state, data flow, and **how to simulate swap** (read-only Trader_swap* / Trader_exactSwap*; no tx sent).
 - `acr-docs/` — Capabilities (wallet, transactions, indexing, tokens), protocols (atomic-groups, arc200), skills (bind-action-form, add-query-hook, add-indexer-query).
 - `OPEN_QUESTIONS.md` — TBDs and unknowns.
 - `POS_IMPORT_PLAN.md` — Step-by-step POS import and validation plan.

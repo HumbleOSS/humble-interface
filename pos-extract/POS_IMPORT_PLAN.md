@@ -65,6 +65,7 @@ Use these as mandatory boundaries in code review and lint rules (e.g. “UI must
 - [ ] **Wallet:** Connect with at least one provider (e.g. Kibisis/Lute); get activeAccount; sign one txn group; do not send from wallet module.
 - [ ] **Send flow:** Transaction service receives signed group; sends via algod; waits for confirmation; returns txId or error.
 - [ ] **Swap:** Build swap with poolId, A/B amounts, slippage; sign via wallet service; send via transaction service; confirm via SwapEvents or waitForConfirmation.
+- [ ] **Swap UI and simulate:** Swap form has from/to amounts and focus; eligible pool = single pool (max lpMinted); simulate via CONTRACT Trader_swapAForB/BForA (exact-in) or Trader_exactSwap* (exact-out) read-only; min received = actualOutcome * (1 - slippage/100). See SWAP_UI_AND_SIMULATION.md.
 - [ ] **Pool add:** Build deposit; sign and send; no direct indexer/algod in the component.
 - [ ] **Pool remove:** Build withdraw with optional condOptin; sign and send.
 - [ ] **Token list and balance:** Token service returns list and balance for a given (contractId, address); UI uses only the service/hook.
