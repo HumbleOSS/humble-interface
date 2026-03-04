@@ -48,6 +48,59 @@ Extracted from `src/components/Swap/index.tsx` and related components. Use this 
 - Confirmation modal: same summary + "Confirm" / "Cancel".
 - Success modal: amounts, tokens, tx link.
 
+### 1.4 How to select tokens (from and to)
+
+Token selection ensures **from** and **to** always have at least one common pool so a swap is possible. Options are derived from the pool list and the current selection; VOI is normalized (tokenId 0, contractId TOKEN_WVOI1, display "VOI"; wVOI symbol is filtered out from dropdowns).
+
+#### From-token options (`tokenOptions`)
+
+- **Source:** All tokens that appear in **any** pool as `tokA` or `tokB` (from the pools list returned by `getPools()`).
+- **Build steps:**
+  1. Collect every `pool.tokA` and `pool.tokB` into a set of token IDs.
+  2. Start the list with **VOI**: `{ tokenId: 0, contractId: TOKEN_WVOI1, name: "Voi", symbol: "VOI", decimals: 6, totalSupply }`.
+  3. Add every token from the app token list (Redux `tokens`) whose `tokenId` or `contractId` is in that set.
+  4. **Exclude from the list:**  
+     - The current **to-token** (`token2`): from and to must differ (by `tokenId` and `contractId`).  
+     - If `token2` is VOI (tokenId 0 or contractId TOKEN_WVOI1), also exclude VOI from from-options so the pair is not VOI/VOI.  
+     - Any token with `symbol === "wVOI"` (show only "VOI" as above).
+  5. Sort by `tokenId` (ascending).
+- **Used by:** The "Swap from" input; `TokenInput` receives `options={tokenOptions}` and `setToken={setToken}`. When user picks a token, `token` updates and **to-token options** are recomputed (see below).
+
+#### To-token options (`tokenOptions2`)
+
+- **Source:** Depends on the **selected from-token** (`token`). Only tokens that share at least one pool with `token` are valid "to" choices.
+- **Build steps:**
+  1. For each pool in `pools`, check if the pool contains `token`: `pool.tokA === tokenId(token)` or `pool.tokB === tokenId(token)` (using `tokenId(token)` helper; for VOI this maps to the pool’s representation 0 or TOKEN_WVOI1).
+  2. If the pool contains `token`, add the **other** side to a set: if `token` is tokA, add the token matching `pool.tokB`; if `token` is tokB, add the token matching `pool.tokA`. Resolve from the app token list by `tokenId`.
+  3. If the set contains wVOI (tokenId TOKEN_WVOI1), add the canonical VOI entry (tokenId 0, symbol "VOI") and remove any entry with `symbol === "wVOI"`.
+  4. Sort by `tokenId`.
+- **Used by:** The "Swap to" input; `TokenInput` receives `options={tokenOptions2}` and `setToken={setToken2}`. When user picks a token, `token2` updates; **eligible pools** (and then simulation) run for the pair `(token, token2)`.
+
+#### Initial selection from URL
+
+- **Query param:** `poolId` from search params (e.g. `?poolId=395553`); if missing, default to `CTCINFO_DEFAULT_LP` (e.g. WVOI/AUSD pool).
+- **Logic:** Find the pool in `pools` where `pool.poolId === paramPoolId`. If found:
+  - **From-token:** If `pool.tokA` is 0 or TOKEN_WVOI1, set `token = { ...NETWORK_TOKEN.VOI, contractId: TOKEN_WVOI1 }`; else set `token` to the token in `tokens` with `tokenId` or `contractId` equal to `pool.tokA`.
+  - **To-token:** Same for `pool.tokB` → `token2`.
+- This runs only when `token` and `token2` are not already set (so URL applies on first load or when coming from a pool link).
+
+#### Reset when no eligible pool
+
+- After **eligible pools** are computed (pools that contain both `token` and `token2`, then pick one with max `lpMinted`), if the result is **empty** and there is no `paramPoolId` in the URL:
+  - Set `token2` to `undefined` and clear `balance2`.
+- So if the user selects a from-token that has no pool with any other token, the to-field is cleared (no invalid pair).
+
+#### Swap-direction button
+
+- A control (e.g. swap icon) between the two inputs does:  
+  `token ↔ token2` and `fromAmount ↔ toAmount`.  
+  So the user can flip the pair without re-selecting tokens; amounts swap as well.
+
+#### Token identity (VOI / wVOI)
+
+- **Display:** VOI and wVOI both show as "VOI"; use `tokenId` 0 and `contractId` TOKEN_WVOI1 (390001) consistently. `getIconId()` maps 390001 → 0 for icon URLs.
+- **Matching:** When comparing with `pool.tokA` / `pool.tokB`, treat both 0 and TOKEN_WVOI1 as the same asset (VOI). The pool may store either; the app normalizes to one representation in the UI.
+
 ---
 
 ## 2. How to simulate swap (no transaction sent)
@@ -132,7 +185,11 @@ Same pattern: CONTRACT(poolId, algod, indexer, spec, dummyAcc), setFee, then cal
 
 ## 4. POS checklist for swap UI + simulation
 
-- [ ] Token options filtered by “appears in at least one pool”.
+- [ ] **From-token options:** All tokens that appear as tokA/tokB in any pool; include VOI (tokenId 0, contractId TOKEN_WVOI1); exclude current to-token and wVOI symbol.
+- [ ] **To-token options:** For selected from-token, all tokens that share at least one pool (other side of each pool containing from-token); normalize VOI/wVOI; exclude wVOI symbol.
+- [ ] **Initial selection:** Optional URL `poolId` → set token from pool.tokA, token2 from pool.tokB (VOI normalized).
+- [ ] **Reset:** If eligible pools for (token, token2) is empty and no URL poolId, clear token2.
+- [ ] **Swap-direction button:** Swap token ↔ token2 and fromAmount ↔ toAmount.
 - [ ] Eligible pool for (token, token2) = single pool with max lpMinted.
 - [ ] Pool Info() and rate (spot) from pool balances.
 - [ ] **Simulate exact input:** Trader_swapAForB or Trader_swapBForA(1, amountIn, 0) → set toAmount/actualOutcome.
