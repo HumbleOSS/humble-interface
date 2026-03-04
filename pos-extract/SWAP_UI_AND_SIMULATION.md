@@ -200,7 +200,98 @@ Pool `spec` in the app is the pool ABI (Info, Provider_*, Trader_swap*, Trader_e
 
 ---
 
-## 3. Router / multi-hop simulation (reference)
+## 3. ulujs swap implementation (simulate + build)
+
+Enough detail for a POS importer to simulate quotes and build/sign/send swap transactions using the same stack as the source app.
+
+### 3.1 Dependency and imports
+
+- **Package:** `ulujs` (source app uses `^0.12.15`). Install: `ulujs`.
+- **Imports for swap flow:**
+  - `swap` — pool contract helper: constructor, `.Info()`, `.selectPool()`, `.swap()`, `.SwapEvents()`.
+  - `CONTRACT` — low-level contract wrapper for **read-only** simulate (Trader_swap*, Trader_exactSwap*).
+  - `arc200` — token reads (e.g. balanceOf) if needed; not required for swap build itself.
+  - `abi` — used elsewhere (e.g. farm STAKR_200); not for the pool swap.
+- **Other:** `getAlgorandClients` from app’s `wallets` (or equivalent) → `algodClient`, `indexerClient`. `algosdk` for `waitForConfirmation`.
+
+### 3.2 Clients and pool ABI (spec)
+
+- **Clients:** `const { algodClient, indexerClient } = getAlgorandClients();` (network from config/localStorage).
+- **Pool ABI (spec):** Required for `CONTRACT`-based simulate. The app uses an inline `spec` in `Swap/index.tsx`; the same shape is in `src/constants/poolSpec.ts` as `POOL_SPEC`. It must include at least:
+  - `Info` (readonly)
+  - `Trader_swapAForB(byte, uint256, uint256) → (uint256, uint256)`
+  - `Trader_swapBForA(byte, uint256, uint256) → (uint256, uint256)`
+  - `Trader_exactSwapAForB(byte, uint256, uint256) → (uint256, uint256)`
+  - `Trader_exactSwapBForA(byte, uint256, uint256) → (uint256, uint256)`
+  - Plus arc200_*, createBalanceBox, createAllowanceBox, etc., if the CONTRACT instance is used for other calls. For **simulate-only** you only need the Trader_* methods and Info.
+
+### 3.3 Simulate (read-only, no tx built)
+
+- **Constructor:** `new CONTRACT(poolId, algodClient, indexerClient, spec, acc)`.
+  - `acc`: any account object, e.g. `{ addr: "<any>", sk: new Uint8Array(0) }`; used for read-only/simulate, no signing.
+- **Fee (optional but consistent):** `ci.setFee(4000)`.
+- **Exact input (from → to):**
+  - If from-token is pool tokA: `await ci.Trader_swapAForB(1, fromAmountSmallestUnit, 0)`. Use `r.returnValue[1]` as tokB out (smallest units).
+  - If from-token is pool tokB: `await ci.Trader_swapBForA(1, fromAmountSmallestUnit, 0)`. Use `r.returnValue[0]` as tokA out.
+  - Convert to human: divide by `10^token2.decimals`, round down.
+- **Exact output (to → from):**
+  - If to-token is pool tokA: `await ci.Trader_exactSwapBForA(1, Number.MAX_SAFE_INTEGER, toAmountSmallestUnit)`. Then `fromAmountSmallestUnit = BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[1]`.
+  - If to-token is pool tokB: `await ci.Trader_exactSwapAForB(1, Number.MAX_SAFE_INTEGER, toAmountSmallestUnit)`. Then `fromAmountSmallestUnit = BigInt(Number.MAX_SAFE_INTEGER) - r.returnValue[0]`.
+  - Convert to human: divide by `10^token.decimals`.
+- **Token ↔ pool side:** Match `pool.tokA` / `pool.tokB` with `tokenId(token)` and `token.contractId`; treat VOI as 0 or TOKEN_WVOI1 (390001) as the same asset.
+
+### 3.4 Build swap transaction (ulujs `swap`)
+
+- **Constructor:** `new swap(poolId, algodClient, indexerClient, { acc })`.
+  - `acc`: signer; `{ addr: activeAccount.address, sk: new Uint8Array(0) }` (wallet holds the real key).
+- **Pool selection:** `const pool2 = await ci.selectPool(eligiblePools, tokenA, tokenB, "poolId");`  
+  - `tokenA` / `tokenB`: token objects with `tokenId` set (use `tokenId(token)` helper so VOI is represented correctly).  
+  - Use `pool2.poolId` in the swap call (may equal initial poolId when there is a single eligible pool).
+- **Token A/B objects for `ci.swap`:**  
+  Build two objects (A = from-token, B = to-token in the UI). For each:
+  - Spread the token (name, symbol, decimals, contractId, tokenId, assetType, etc.).
+  - `amount`: string, **no commas** (e.g. `fromAmount.replace(/,/g, "")` for A, `toAmount.replace(/,/g, "")` for B).
+  - `decimals`: string, e.g. `"6"`.
+  - `tokenId`: string (token’s tokenId or ASA id). **For ARC200 tokens set `assetType === "arc200"` and omit `tokenId`** (the app deletes `A.tokenId` / `B.tokenId` when `assetType === "arc200"`).  
+  - **ASA id for non-ARC200:** Use `getAsaIdFromArc200Contract(contractId)` from `config/arc200AsaMapping` when the token has an ASA mapping; else use `token.tokenId` or `contractId` as string.
+- **Call:**  
+  `const swapR = await ci.swap(acc.addr, pool2.poolId, A, B, [], { debug: true, slippage: Number(currentSlippage)/100, degenMode: boolean, skipWithdraw: false });`  
+  - Fifth arg `[]`: optional opt-ins (app often passes empty array).  
+  - **slippage:** 0–1 (e.g. 0.05 for 5%).  
+  - **degenMode:** app may force `true` for certain tokens (e.g. 410811); otherwise from user/localStorage.  
+  - **skipWithdraw:** `false` for normal swap.
+- **Result:**  
+  - `swapR.success`: if `false`, do not sign; show message (e.g. “high slippage”) and optionally retrigger amount calculation.  
+  - `swapR.txns`: **array of base64-encoded transaction bytes** (strings). This is the atomic group.
+
+### 3.5 Sign, send, confirm
+
+1. **Decode:**  
+   `const unsignedTxns = swapR.txns.map((t: string) => new Uint8Array(Buffer.from(t, "base64")));`
+2. **Sign:**  
+   `const stxns = await signTransactions(unsignedTxns);` (from wallet hook/service). Handle rejection (user cancel).
+3. **Send:**  
+   `const res = await algodClient.sendRawTransaction(stxns).do();`  
+   Use `res.txId` (or first tx id of the group) for confirmation.
+4. **Wait for confirmation:**  
+   `await algosdk.waitForConfirmation(algodClient, res.txId, 1000);`
+5. **Optional — confirm via events:**  
+   `let swapEvents = await ci.SwapEvents({ minRound: lastRound, sender: activeAccount.address });` in a loop until `swapEvents.length > 0`. Then e.g. `const confirmedTxId = swapEvents[0][0];` (first event’s tx id). Use `lastRound` from `algodClient.status().do()` before building the swap.
+
+### 3.6 Summary for POS importer
+
+| Step | Use | Notes |
+|------|-----|--------|
+| Simulate (exact-in) | `CONTRACT` + `Trader_swapAForB` / `Trader_swapBForA`(1, amountIn, 0) | Read-only; dummy acc; setFee(4000). |
+| Simulate (exact-out) | `CONTRACT` + `Trader_exactSwap*`(1, MAX_SAFE_INTEGER, amountOut) | Derive from-amount from return value. |
+| Pool info / rate | `new swap(poolId, algod, indexer).Info()` | No acc needed for Info(). |
+| Build tx | `new swap(poolId, algod, indexer, { acc })` then `ci.selectPool(...)`, build A/B, `ci.swap(addr, pool2.poolId, A, B, [], { slippage, degenMode, skipWithdraw })` | A/B: amount (string), decimals, tokenId (omit if arc200). Use arc200AsaMapping for ASA id. |
+| Sign/send | Decode base64 → signTransactions → sendRawTransaction → waitForConfirmation | swapR.txns is base64 string[]. |
+| Confirm (optional) | `ci.SwapEvents({ minRound, sender })` | Poll until length > 0. |
+
+---
+
+## 4. Router / multi-hop simulation (reference)
 
 - **Router** (`Router/index.tsx`): `simulateSwapPath` builds a chain of CONTRACTs per pool and calls `Trader_swapAForB` / `Trader_swapBForA` with `amountIn` at each step; output of step N is input of step N+1. Returns final `expectedOutput` and per-step amounts.
 - **ArbitrageTriangular** (`ArbitrageTriangular/index.tsx`): Same idea: `simulateArbitrageForAmount` runs multiple CONTRACT simulate calls along the triangle and computes expected output and slippage.
@@ -209,7 +300,7 @@ Same pattern: CONTRACT(poolId, algod, indexer, spec, dummyAcc), setFee, then cal
 
 ---
 
-## 4. POS checklist for swap UI + simulation
+## 5. POS checklist for swap UI + simulation
 
 - [ ] **From-token options:** All tokens that appear as tokA/tokB in any pool; include VOI (tokenId 0, contractId TOKEN_WVOI1); exclude current to-token and wVOI symbol.
 - [ ] **To-token options:** For selected from-token, all tokens that share at least one pool (other side of each pool containing from-token); normalize VOI/wVOI; exclude wVOI symbol.
@@ -222,5 +313,6 @@ Same pattern: CONTRACT(poolId, algod, indexer, spec, dummyAcc), setFee, then cal
 - [ ] **Simulate exact input:** Trader_swapAForB or Trader_swapBForA(1, amountIn, 0) → set toAmount/actualOutcome.
 - [ ] **Simulate exact output:** Trader_exactSwapAForB or Trader_exactSwapBForA(1, MAX_SAFE_INTEGER, amountOut) → set fromAmount.
 - [ ] Fee = fromAmount * totFee/10000; min received = actualOutcome * (1 - slippage/100).
+- [ ] **ulujs swap:** Use `swap` for Info/selectPool/build; use `CONTRACT` + pool spec for simulate (Trader_swap*, Trader_exactSwap*). Build A/B with amount (string), decimals, tokenId (omit for arc200); use getAsaIdFromArc200Contract for ASA id. ci.swap(addr, poolId, A, B, [], { slippage, degenMode, skipWithdraw }); decode base64 txns → sign → sendRawTransaction → waitForConfirmation; optional SwapEvents. See §3.
 - [ ] Confirmation modal then build ci.swap(), sign, send, waitForConfirmation, SwapEvents, success modal.
 - [ ] Slippage from settings (e.g. localStorage or POS settings) and passed to ci.swap(..., { slippage }).

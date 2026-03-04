@@ -40,7 +40,7 @@ The codebase is an Algorand DEX frontend (Voi/Humble) built with React, Redux, V
 
 - `module-extract.json` — Module candidates with actions, queries, events, uiBlocks, dependencies, config; amm includes swap_ui and simulate_swap.
 - `runtime-extract.json` — Wallet, transactions, indexing.
-- `SWAP_UI_AND_SIMULATION.md` — Swap UI state, data flow, and **how to simulate swap** (read-only Trader_swap* / Trader_exactSwap*; no tx sent).
+- `SWAP_UI_AND_SIMULATION.md` — Swap UI state, data flow, token selection (§1.4–1.5), **simulate** (read-only CONTRACT Trader_swap* / Trader_exactSwap*), and **ulujs swap implementation** (§3: dependency, pool spec, simulate, build A/B, ci.swap, sign/send/confirm).
 - `acr-docs/` — Capabilities (wallet, transactions, indexing, tokens), protocols (atomic-groups, arc200), skills (bind-action-form, add-query-hook, add-indexer-query).
 - `OPEN_QUESTIONS.md` — TBDs and unknowns.
 - `POS_IMPORT_PLAN.md` — Step-by-step POS import and validation plan.

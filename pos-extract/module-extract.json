@@ -63,6 +63,14 @@
         "no_tx": "No transaction is built or signed; dummy acc (any addr, sk empty) is sufficient.",
         "summary_doc": "SWAP_UI_AND_SIMULATION.md"
       },
+      "ulujs_swap_implementation": {
+        "dependency": "ulujs ^0.12.15",
+        "imports": "swap, CONTRACT, arc200 (optional), pool spec from constants/poolSpec or inline",
+        "simulate": "CONTRACT(poolId, algod, indexer, spec, dummyAcc).setFee(4000); Trader_swapAForB(1, amountIn, 0) or Trader_swapBForA; Trader_exactSwap* for exact-out. Read-only.",
+        "build": "swap(poolId, algod, indexer, { acc }); selectPool(eligiblePools, tokenA, tokenB, 'poolId'); A/B objects: amount (string), decimals, tokenId (omit if arc200); getAsaIdFromArc200Contract for ASA; ci.swap(addr, pool2.poolId, A, B, [], { slippage, degenMode, skipWithdraw })",
+        "sign_send": "swapR.txns (base64[]) → decode → signTransactions → sendRawTransaction → waitForConfirmation; optional SwapEvents({ minRound, sender })",
+        "summary_doc": "SWAP_UI_AND_SIMULATION.md §3"
+      },
       "dependencies": ["arc200-token", "wallet runtime", "pool list"],
       "config": {
         "app_ids": ["pool ids from API / getPools"],
