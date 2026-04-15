@@ -4,12 +4,14 @@ import { useWallet } from "@txnlab/use-wallet-react";
 import { RootState } from "../../store/store";
 import {
   fetchRewards,
+  getRewardId,
   selectNewRewards,
   selectHasNewRewards,
 } from "../../store/rewardsSlice";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { selectTokens } from "../../store/tokenSlice";
 import { tokenSymbol } from "../../utils/dex";
+import BigNumber from "bignumber.js";
 import RewardsModal from "../modals/RewardsModal";
 
 const REWARDS_FETCH_INTERVAL = 60000; // Fetch every 60 seconds
@@ -25,45 +27,56 @@ const RewardsWatcher: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const processedRewardIdsRef = useRef<Set<string>>(new Set());
 
+  useEffect(() => {
+    processedRewardIdsRef.current = new Set();
+  }, [activeAccount?.address]);
+
   // Get WAD token info (contractId 47138068)
-  const rewardToken = tokens.find((t) => t.contractId === 47138068);
+  //const rewardToken = tokens.find((t) => t.contractId === 47138068);
+  const rewardToken = tokens.find((t) => t.contractId === 390001); // VOI
   const rewardTokenSymbol = rewardToken
     ? tokenSymbol(rewardToken, true)
-    : "WAD";
+    : "VOI";
 
   // Add notifications for new rewards (only for active account)
   useEffect(() => {
     if (!activeAccount?.address || !hasNewRewards || newRewards.length === 0) return;
 
+    const decimals = rewardToken?.decimals ?? 6;
+
     newRewards.forEach((reward) => {
-      const rewardId = reward.txId || reward.transactionId || reward.id || "";
-      
-      // Skip if we've already processed this reward
-      if (!rewardId || processedRewardIdsRef.current.has(rewardId)) {
-        return;
+      const dedupeKey = getRewardId(reward);
+      if (processedRewardIdsRef.current.has(dedupeKey)) return;
+
+      const raw = reward.allowance || reward.amount || reward.value || "0";
+      let formattedAmount: string;
+      try {
+        const dp = Math.min(6, reward.decimals ?? decimals);
+        formattedAmount = new BigNumber(raw)
+          .dividedBy(new BigNumber(10).pow(reward.decimals ?? decimals))
+          .toFormat(dp);
+      } catch {
+        formattedAmount = "0";
       }
 
-      const amount = reward.amount || reward.value || "0";
-      const decimals = reward.decimals || rewardToken?.decimals || 6;
-      const formattedAmount = (
-        parseFloat(amount) / Math.pow(10, decimals)
-      ).toLocaleString(undefined, {
-        maximumFractionDigits: Math.min(6, decimals),
-        minimumFractionDigits: 0,
-      });
-
-      // Add notification for this reward
       addRewardNotification({
         amount: formattedAmount,
         token: rewardTokenSymbol,
-        txId: rewardId,
+        txId: reward.txId || reward.transactionId,
         timestamp: reward.timestamp || reward.time || reward.roundTime,
+        dedupeKey,
       });
 
-      // Mark as processed
-      processedRewardIdsRef.current.add(rewardId);
+      processedRewardIdsRef.current.add(dedupeKey);
     });
-  }, [activeAccount?.address, hasNewRewards, newRewards, addRewardNotification, rewardTokenSymbol, rewardToken]);
+  }, [
+    activeAccount?.address,
+    hasNewRewards,
+    newRewards,
+    addRewardNotification,
+    rewardTokenSymbol,
+    rewardToken?.decimals,
+  ]);
 
   // Show modal when new rewards are detected (optional - can be disabled if only using notifications)
   useEffect(() => {

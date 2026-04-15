@@ -11,10 +11,13 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "../../constants/rewards";
 import useDefiRewards from "@/hooks/useDefiRewards";
 import { toast } from "react-toastify";
 
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
 const formatUSD = (value: number) =>
   new Intl.NumberFormat("en", {
@@ -548,7 +551,10 @@ const PoolCard: FC<PoolCardProps> = ({ pool, balance, tokens }) => {
     blockReward: 0,
     additionalAprBoost: 0,
   };
-  if ([pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)) {
+  if (
+    ENABLE_BLOCK_REWARD_ADJUSTMENT &&
+    [pool.tokAId, pool.tokBId].map(Number).includes(TOKEN_WVOI1)
+  ) {
     reward.blockReward = BLOCK_REWARD_ADJUSTMENT;
   }
   // Find tokens by matching contractId or tokenId

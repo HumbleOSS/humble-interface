@@ -64,11 +64,11 @@ export const routes = [
   },
   {
     path: "/rewards",
-    Component: Page.Rewards,
+    Component: Page.HiddenRouteRedirect,
   },
   {
     path: "/rewards/:address",
-    Component: Page.RewardsAddress,
+    Component: Page.HiddenRouteRedirect,
   },
   {
     path: "/prices",

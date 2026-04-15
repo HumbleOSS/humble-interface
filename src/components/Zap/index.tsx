@@ -45,8 +45,10 @@ import { useWindowSize } from "react-use";
 import axios from "axios";
 import { getAsaIdFromArc200Contract } from "@/config/arc200AsaMapping";
 import useDefiRewards from "@/hooks/useDefiRewards";
-
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "@/constants/rewards";
 
 // Helper function to normalize WVOI to VOI for symbol display
 // Must be defined before components that use it
@@ -2584,7 +2586,7 @@ const Zap: React.FC = () => {
 
       // Apply block reward adjustment for VOI pairs
       let blockReward = reward.blockReward || 0;
-      if (isVOIPair) {
+      if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
         blockReward = BLOCK_REWARD_ADJUSTMENT;
       }
 

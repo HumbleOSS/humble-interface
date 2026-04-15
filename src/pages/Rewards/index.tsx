@@ -22,12 +22,15 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "../../constants/rewards";
 import { getPools } from "../../store/poolSlice";
 import { getTokens } from "../../store/tokenSlice";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { tokenSymbol } from "../../utils/dex";
 
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // match PoolCard logic
 const ESTIMATED_SWAP_APR = 5; // estimated swap APR percentage
 
 export const Rewards: React.FC = () => {
@@ -64,9 +67,11 @@ export const Rewards: React.FC = () => {
       const symbolB =
         tokenSymbol(tokB as any, true) ||
         (tokBId !== undefined ? `${tokBId}` : "?");
-      const blockReward = [tokAId, tokBId].map(Number).includes(TOKEN_WVOI1)
-        ? BLOCK_REWARD_ADJUSTMENT
-        : 0;
+      const blockReward =
+        ENABLE_BLOCK_REWARD_ADJUSTMENT &&
+        [tokAId, tokBId].map(Number).includes(TOKEN_WVOI1)
+          ? BLOCK_REWARD_ADJUSTMENT
+          : 0;
       const additional = r.additionalAprBoost || 0;
       const totalBoost = (r.aprBoost || 0) + blockReward + additional + ESTIMATED_SWAP_APR;
       return {

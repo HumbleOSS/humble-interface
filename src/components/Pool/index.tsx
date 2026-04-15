@@ -12,10 +12,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useDefiRewards from "../../hooks/useDefiRewards";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import { API_BASE_URL } from "../../constants/api";
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "../../constants/rewards";
 
 const formatter = new Intl.NumberFormat("en", { notation: "compact" });
-
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
 
 // Normalize symbol: replace wVOI with VOI
 const normalizeSymbol = (symbol: string, tokenId?: string | number): string => {
@@ -692,7 +694,7 @@ const Pool = () => {
 
       // Apply block reward adjustment for VOI pairs
       let blockReward = reward.blockReward || 0;
-      if (isVOIPair) {
+      if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
         blockReward = BLOCK_REWARD_ADJUSTMENT;
       }
 

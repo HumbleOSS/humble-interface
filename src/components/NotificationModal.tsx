@@ -21,6 +21,18 @@ import { useNotifications } from "../contexts/NotificationContext";
 import { RootState } from "../store/store";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 
+const rewardNotificationLinkLabel = (link: string): string => {
+  if (link.includes("voiager.xyz/transaction")) return "View transaction →";
+  return "Claim rewards →";
+};
+
+const rewardNotificationLinkTarget = (link: string): "_blank" | "_self" => {
+  if (typeof window !== "undefined" && link.startsWith(window.location.origin)) {
+    return "_self";
+  }
+  return "_blank";
+};
+
 // Helper function to format ISO date strings for display
 const formatNotificationDate = (dateString: string): string => {
   try {
@@ -651,11 +663,23 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                       <NotificationLink
                         $isDarkTheme={isDarkTheme}
                         href={notification.link}
-                        target="_blank"
-                        rel="noreferrer"
+                        target={
+                          notification.type === "reward"
+                            ? rewardNotificationLinkTarget(notification.link)
+                            : "_blank"
+                        }
+                        rel={
+                          notification.type === "reward" &&
+                          rewardNotificationLinkTarget(notification.link) ===
+                            "_self"
+                            ? undefined
+                            : "noreferrer"
+                        }
                         onClick={handleClose}
                       >
-                        {notification.type === "reward" ? "View Transaction →" : "Learn more →"}
+                        {notification.type === "reward"
+                          ? rewardNotificationLinkLabel(notification.link)
+                          : "Learn more →"}
                       </NotificationLink>
                     </NotificationBody>
                     <DismissButton
@@ -717,11 +741,23 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                       <NotificationLink
                         $isDarkTheme={isDarkTheme}
                         href={notification.link}
-                        target="_blank"
-                        rel="noreferrer"
+                        target={
+                          notification.type === "reward"
+                            ? rewardNotificationLinkTarget(notification.link)
+                            : "_blank"
+                        }
+                        rel={
+                          notification.type === "reward" &&
+                          rewardNotificationLinkTarget(notification.link) ===
+                            "_self"
+                            ? undefined
+                            : "noreferrer"
+                        }
                         onClick={handleClose}
                       >
-                        {notification.type === "reward" ? "View Transaction →" : "Learn more →"}
+                        {notification.type === "reward"
+                          ? rewardNotificationLinkLabel(notification.link)
+                          : "Learn more →"}
                       </NotificationLink>
                     </NotificationBody>
                     <RestoreButton

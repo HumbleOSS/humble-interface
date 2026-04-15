@@ -7,8 +7,10 @@ import { selectTokens } from "../../store/tokenSlice";
 import { getIconId } from "../../utils/dex";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import { API_BASE_URL } from "../../constants/api";
-
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "../../constants/rewards";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useWallet } from "@txnlab/use-wallet-react";
 import EmbeddedSwapWidget from "../EmbeddedSwapWidget";
@@ -876,7 +878,7 @@ const PoolDetail: React.FC = () => {
 
   // Apply block reward adjustment for VOI pairs
   let blockReward = reward.blockReward || 0;
-  if (isVOIPair) {
+  if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
     blockReward = BLOCK_REWARD_ADJUSTMENT;
   }
 

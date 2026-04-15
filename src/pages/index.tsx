@@ -14,6 +14,7 @@ export { AnalyticsToken } from "./AnalyticsToken";
 export { AnalyticsPair } from "./AnalyticsPair";
 export { Rewards } from "./Rewards";
 export { RewardsAddress } from "./RewardsAddress";
+export { HiddenRouteRedirect } from "./HiddenRouteRedirect";
 export { Prices } from "./Prices";
 export { Tickers } from "./Tickers";
 export { PoolStats } from "./PoolStats";

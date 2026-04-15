@@ -9,6 +9,10 @@ import { useNavigate } from "react-router-dom";
 import useDefiRewards from "../../hooks/useDefiRewards";
 import { TOKEN_WVOI1 } from "../../constants/tokens";
 import { API_BASE_URL } from "../../constants/api";
+import {
+  BLOCK_REWARD_ADJUSTMENT,
+  ENABLE_BLOCK_REWARD_ADJUSTMENT,
+} from "../../constants/rewards";
 import { useWallet } from "@txnlab/use-wallet-react";
 import { CONTRACT, abi } from "ulujs";
 import { getAlgorandClients } from "../../wallets";
@@ -202,9 +206,9 @@ const Panel = styled.div<{ isDarkTheme: boolean }>`
   padding: clamp(20px, 2vw, 28px);
   border: 1px solid
     ${(props) =>
-      props.isDarkTheme
-        ? "rgba(255, 255, 255, 0.15)"
-        : "rgba(41, 88, 255, 0.15)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.15)"
+      : "rgba(41, 88, 255, 0.15)"};
   background: ${(props) => (props.isDarkTheme ? "#050507" : "#ffffff")};
   color: ${(props) => (props.isDarkTheme ? "#fff" : "#0c0c10")};
 `;
@@ -244,7 +248,7 @@ const SimpleListRow = styled.div<{ isDarkTheme: boolean }>`
   padding: 12px 0;
   border-bottom: 1px solid
     ${(props) =>
-      props.isDarkTheme ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)"};
+    props.isDarkTheme ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)"};
   color: inherit;
   &:last-of-type {
     border-bottom: none;
@@ -269,7 +273,7 @@ const EmptyState = styled.div<{ isDarkTheme: boolean }>`
   text-align: center;
   border: 1px dashed
     ${(props) =>
-      props.isDarkTheme ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.15)"};
+    props.isDarkTheme ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.15)"};
   color: ${(props) => (props.isDarkTheme ? "#a5a5c0" : "#56566e")};
 `;
 
@@ -286,9 +290,9 @@ const UserStatsGrid = styled.div<{ isDarkTheme: boolean }>`
       : "rgba(41, 88, 255, 0.05)"};
   border: 1px solid
     ${(props) =>
-      props.isDarkTheme
-        ? "rgba(255, 255, 255, 0.08)"
-        : "rgba(41, 88, 255, 0.15)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(41, 88, 255, 0.15)"};
 `;
 
 const StatItem = styled.div`
@@ -336,9 +340,9 @@ const HeroCard = styled.div<{ isDarkTheme: boolean }>`
   gap: 16px;
   border: 1px solid
     ${(props) =>
-      props.isDarkTheme
-        ? "rgba(255, 255, 255, 0.1)"
-        : "rgba(41, 88, 255, 0.2)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.1)"
+      : "rgba(41, 88, 255, 0.2)"};
   background: ${(props) =>
     props.isDarkTheme
       ? "linear-gradient(135deg, rgba(41, 88, 255, 0.35), rgba(65, 19, 126, 0.4)), #070709"
@@ -395,9 +399,9 @@ const PanelSurface = styled.div<{ isDarkTheme: boolean }>`
   padding: clamp(20px, 2vw, 28px);
   border: 1px solid
     ${(props) =>
-      props.isDarkTheme
-        ? "rgba(255, 255, 255, 0.15)"
-        : "rgba(41, 88, 255, 0.15)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.15)"
+      : "rgba(41, 88, 255, 0.15)"};
   background: ${(props) => (props.isDarkTheme ? "#050507" : "#ffffff")};
   color: ${(props) => (props.isDarkTheme ? "#fff" : "#0c0c10")};
 `;
@@ -433,9 +437,9 @@ const StatsCardWrapper = styled.div<{ isDarkTheme: boolean }>`
   border-radius: 16px;
   border: 1px solid
     ${(props) =>
-      props.isDarkTheme
-        ? "rgba(255, 255, 255, 0.08)"
-        : "rgba(41, 88, 255, 0.12)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(41, 88, 255, 0.12)"};
   background: ${(props) =>
     props.isDarkTheme
       ? "rgba(255, 255, 255, 0.03)"
@@ -548,16 +552,16 @@ const TableBody = styled.tbody<{ isDarkTheme: boolean }>`
   & > tr {
     border-bottom: 1px solid
       ${(props) =>
-        props.isDarkTheme
-          ? "rgba(255, 255, 255, 0.08)"
-          : "rgba(12, 12, 16, 0.08)"};
+    props.isDarkTheme
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(12, 12, 16, 0.08)"};
     transition: all 0.3s ease-in-out;
     opacity: 1;
     transform: translateY(0);
 
     &:hover {
       background-color: ${(props) =>
-        props.isDarkTheme ? "#374151" : "#F3F4F6"};
+    props.isDarkTheme ? "#374151" : "#F3F4F6"};
     }
   }
 `;
@@ -626,11 +630,11 @@ const SortButton = styled.button<{ isDarkTheme: boolean; active: boolean }>`
   border-radius: 0.375rem;
   border: 1px solid
     ${(props) =>
-      props.active
-        ? props.isDarkTheme
-          ? "#6366F1"
-          : "#4F46E5"
-        : props.isDarkTheme
+    props.active
+      ? props.isDarkTheme
+        ? "#6366F1"
+        : "#4F46E5"
+      : props.isDarkTheme
         ? "#374151"
         : "#D1D5DB"};
   background-color: ${(props) =>
@@ -639,8 +643,8 @@ const SortButton = styled.button<{ isDarkTheme: boolean; active: boolean }>`
         ? "#4F46E5"
         : "#6366F1"
       : props.isDarkTheme
-      ? "#1F2937"
-      : "white"};
+        ? "#1F2937"
+        : "white"};
   color: ${(props) =>
     props.active ? "#FFFFFF" : props.isDarkTheme ? "#9CA3AF" : "#4B5563"};
   font-size: 0.875rem;
@@ -650,11 +654,11 @@ const SortButton = styled.button<{ isDarkTheme: boolean; active: boolean }>`
 
   &:hover {
     background-color: ${(props) =>
-      props.active
-        ? props.isDarkTheme
-          ? "#6366F1"
-          : "#4F46E5"
-        : props.isDarkTheme
+    props.active
+      ? props.isDarkTheme
+        ? "#6366F1"
+        : "#4F46E5"
+      : props.isDarkTheme
         ? "#374151"
         : "#F3F4F6"};
   }
@@ -736,26 +740,26 @@ const SparklineContainer = styled.div<{
     inset: -2px;
     border-radius: 8px;
     background: ${(props) => {
-      const apr = props.apr;
-      if (apr > 20)
-        return props.isDarkTheme
-          ? "rgba(16, 185, 129, 0.3)"
-          : "rgba(16, 185, 129, 0.2)";
-      if (apr > 10)
-        return props.isDarkTheme
-          ? "rgba(59, 130, 246, 0.25)"
-          : "rgba(59, 130, 246, 0.15)";
-      if (apr > 5)
-        return props.isDarkTheme
-          ? "rgba(251, 191, 36, 0.2)"
-          : "rgba(251, 191, 36, 0.1)";
-      return "transparent";
-    }};
+    const apr = props.apr;
+    if (apr > 20)
+      return props.isDarkTheme
+        ? "rgba(16, 185, 129, 0.3)"
+        : "rgba(16, 185, 129, 0.2)";
+    if (apr > 10)
+      return props.isDarkTheme
+        ? "rgba(59, 130, 246, 0.25)"
+        : "rgba(59, 130, 246, 0.15)";
+    if (apr > 5)
+      return props.isDarkTheme
+        ? "rgba(251, 191, 36, 0.2)"
+        : "rgba(251, 191, 36, 0.1)";
+    return "transparent";
+  }};
     opacity: ${(props) => (props.apr > 5 ? 0.6 : 0)};
     animation: ${(props) =>
-      props.pulseSpeed > 0
-        ? `pulse ${props.pulseSpeed}s ease-in-out infinite`
-        : "none"};
+    props.pulseSpeed > 0
+      ? `pulse ${props.pulseSpeed}s ease-in-out infinite`
+      : "none"};
     z-index: -1;
   }
 
@@ -1083,9 +1087,8 @@ const SparklineChart: React.FC<SparklineChartProps> = React.memo(
                   <Tooltip
                     contentStyle={{
                       backgroundColor: isDarkTheme ? "#1F2937" : "#FFFFFF",
-                      border: `1px solid ${
-                        isDarkTheme ? "#374151" : "#E5E7EB"
-                      }`,
+                      border: `1px solid ${isDarkTheme ? "#374151" : "#E5E7EB"
+                        }`,
                       borderRadius: "8px",
                       fontSize: "12px",
                       padding: "8px",
@@ -1111,10 +1114,10 @@ const SparklineChart: React.FC<SparklineChartProps> = React.memo(
           aprValue > 20
             ? "#10B981"
             : aprValue > 10
-            ? "#3B82F6"
-            : aprValue > 5
-            ? "#FBBF24"
-            : "#6B7280";
+              ? "#3B82F6"
+              : aprValue > 5
+                ? "#FBBF24"
+                : "#6B7280";
         return (
           <SparklineContainer
             isDarkTheme={isDarkTheme}
@@ -1268,8 +1271,6 @@ const SparklineChart: React.FC<SparklineChartProps> = React.memo(
 
 SparklineChart.displayName = "SparklineChart";
 
-const BLOCK_REWARD_ADJUSTMENT = 17.05 / 2; // block rewards for VOI pairs
-
 const PoolStats: React.FC = () => {
   const dispatch = useDispatch();
   const isDarkTheme = useSelector(
@@ -1281,6 +1282,9 @@ const PoolStats: React.FC = () => {
   const { activeAccount, signTransactions } = useWallet();
   const fetchedRewards = useSelector(selectRewards);
   const rewardsStatus = useSelector(selectRewardsStatus);
+  const rewardsFetchError = useSelector(
+    (state: RootState) => state.rewards.error
+  );
   const [statsData, setStatsData] = useState<PoolStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1435,11 +1439,11 @@ const PoolStats: React.FC = () => {
         );
         const value = pool.unitValue
           ? new BigNumber(bal.balance)
-              .dividedBy(new BigNumber(10).pow(6))
-              .multipliedBy(new BigNumber(pool.unitValue))
-              .toNumber()
+            .dividedBy(new BigNumber(10).pow(6))
+            .multipliedBy(new BigNumber(pool.unitValue))
+            .toNumber()
           : pool.supply && pool.supply !== "0"
-          ? new BigNumber(bal.balance)
+            ? new BigNumber(bal.balance)
               .dividedBy(new BigNumber(10).pow(6))
               .dividedBy(new BigNumber(pool.supply))
               .multipliedBy(
@@ -1448,7 +1452,7 @@ const PoolStats: React.FC = () => {
                   : new BigNumber(pool.tvlA).multipliedBy(2)
               )
               .toNumber()
-          : 0;
+            : 0;
         positions.push({
           ...pool,
           balance: BigInt(bal.balance),
@@ -1525,7 +1529,8 @@ const PoolStats: React.FC = () => {
 
   // Get WAD token info (contractId 47138068) for rewards
   const rewardToken = useMemo(() => {
-    return tokens.find((t) => t.contractId === 47138068);
+    //return tokens.find((t) => t.contractId === 47138068);
+    return tokens.find((t) => t.contractId === 390001); // VOI
   }, [tokens]);
 
   // Calculate total rewards earned from fetched reward allowances
@@ -1614,20 +1619,37 @@ const PoolStats: React.FC = () => {
     try {
       setIsClaimingRewards(true);
 
-      const wadContractId = 47138068; // WAD token contract ID
+      //const wadContractId = 47138068; // WAD token contract ID
+      const contractId = 390001; // VOI token contract ID
       const { algodClient, indexerClient } = getAlgorandClients();
 
       // Create CONTRACT instance for WAD token
-      const wadContract = new CONTRACT(
-        wadContractId,
+      const ci = new CONTRACT(
+        contractId,
         algodClient,
         indexerClient,
-        abi.nt200,
+        abi.custom,
         {
           addr: activeAccount.address,
           sk: new Uint8Array(0),
         }
       );
+
+      const builder = {
+        arc200: new CONTRACT(
+          contractId,
+          algodClient,
+          indexerClient,
+          abi.nt200,
+          {
+            addr: activeAccount.address,
+            sk: new Uint8Array(0),
+          },
+          true,
+          false,
+          true
+        )
+      }
 
       // Group rewards by owner address
       const rewardsByOwner = new Map<string, bigint>();
@@ -1652,25 +1674,44 @@ const PoolStats: React.FC = () => {
       // Claim from each owner address
       const claimPromises = Array.from(rewardsByOwner.entries()).map(
         async ([rewardOwnerAddress, amount]) => {
-          // Call arc200_transferFrom to transfer rewards from owner to user
-          const transferFromResult = await wadContract.arc200_transferFrom(
-            rewardOwnerAddress, // from: reward owner address
-            activeAccount.address, // to: user's address
-            amount // amount: reward amount for this owner
-          );
+          const buildN = [];
 
-          if (!transferFromResult.success) {
-            console.log({ transferFromResult, rewardOwnerAddress, amount });
-            throw new Error(
-              `Failed to create transferFrom transaction for ${rewardOwnerAddress}`
-            );
+          // Call arc200_transferFrom to transfer rewards from owner to user
+          // const transferFromResult = await ci.arc200_transferFrom(
+          //   rewardOwnerAddress, // from: reward owner address
+          //   activeAccount.address, // to: user's address
+          //   amount // amount: reward amount for this owner
+          // );
+
+          {
+            const txnO = (await builder.arc200.arc200_transferFrom(
+              rewardOwnerAddress, // from: reward owner address
+              activeAccount.address, // to: user's address
+              amount // amount: reward amount for this owner
+            )).obj;
+            txnO.note = new TextEncoder().encode(`Transfer ${new BigNumber(amount.toString()).dividedBy(new BigNumber(10).pow(6)).toFixed(6)} VOI from arc200 contract`);
+            buildN.push(txnO);
+          }
+
+          {
+            const txnO = (await builder.arc200.withdraw(amount)).obj;
+            txnO.note = new TextEncoder().encode(`Withdraw ${new BigNumber(amount.toString()).dividedBy(new BigNumber(10).pow(6)).toFixed(6)} VOI from arc200 contract`);
+            buildN.push(txnO);
+          }
+
+          ci.setExtraTxns(buildN);
+          ci.setFee(4000);
+          ci.setEnableGroupResourceSharing(true);
+          const customR = await ci.custom();
+          if (!customR.success) {
+            throw new Error("Failed to create transferFrom transaction");
           }
 
           // Sign the transaction
           let signedTxns;
           try {
             signedTxns = await signTransactions(
-              transferFromResult.txns.map(
+              customR.txns.map(
                 (t: string) => new Uint8Array(Buffer.from(t, "base64"))
               )
             );
@@ -1741,7 +1782,7 @@ const PoolStats: React.FC = () => {
       const isVOIPair =
         tokAValues.includes(0) || tokAValues.includes(TOKEN_WVOI1);
       let blockReward = reward.blockReward || 0;
-      if (isVOIPair) {
+      if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
         blockReward = BLOCK_REWARD_ADJUSTMENT;
       }
       const totalApr =
@@ -1882,7 +1923,7 @@ const PoolStats: React.FC = () => {
 
       // Apply block reward adjustment for VOI pairs
       let blockReward = reward.blockReward || 0;
-      if (isVOIPair) {
+      if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
         blockReward = BLOCK_REWARD_ADJUSTMENT;
       }
 
@@ -1925,7 +1966,7 @@ const PoolStats: React.FC = () => {
         tokAValues.includes(0) || tokAValues.includes(TOKEN_WVOI1);
 
       let blockReward = reward.blockReward || 0;
-      if (isVOIPair) {
+      if (ENABLE_BLOCK_REWARD_ADJUSTMENT && isVOIPair) {
         blockReward = BLOCK_REWARD_ADJUSTMENT;
       }
 
@@ -2159,17 +2200,27 @@ const PoolStats: React.FC = () => {
 
   return (
     <Container>
+      {activeAccount && rewardsStatus === "failed" && rewardsFetchError && (
+        <HeroCaption
+          isDarkTheme={isDarkTheme}
+          style={{
+            color: isDarkTheme ? "#fca5a5" : "#b91c1c",
+            marginBottom: 12,
+          }}
+        >
+          Could not load claimable rewards: {rewardsFetchError}
+        </HeroCaption>
+      )}
       {activeAccount && fetchedRewardsTotal > 0 && (
         <HeroCard isDarkTheme={isDarkTheme}>
           <HeroHeadline>
             <div>
-              <PanelTitle isDarkTheme={isDarkTheme}>Rewards earned</PanelTitle>
+              <PanelTitle isDarkTheme={isDarkTheme}>Claimable rewards</PanelTitle>
               <HeroCaption isDarkTheme={isDarkTheme}>
                 {filteredPositions.length > 0
-                  ? `${filteredPositions.length} active position${
-                      filteredPositions.length !== 1 ? "s" : ""
-                    }`
-                  : "Rewards received from providing liquidity"}
+                  ? `${filteredPositions.length} active position${filteredPositions.length !== 1 ? "s" : ""
+                  }`
+                  : "ARC-200 allowance from the rewards program"}
               </HeroCaption>
             </div>
             <div
@@ -2181,20 +2232,15 @@ const PoolStats: React.FC = () => {
               }}
             >
               <HeroValue isDarkTheme={isDarkTheme}>
-                {fetchedRewardsTotal > 0
-                  ? formatUSD(fetchedRewardsTotal, true)
-                  : filteredPositions.length > 0
-                  ? formatUSD(rewardsEarned)
-                  : formatUSD(0)}
+                {`${formatRewardsAmount(fetchedRewardsTotal)} ${rewardTokenSymbol}`}
               </HeroValue>
               {fetchedRewardsTotal > 0 && (
                 <HeroCTA
+                  type="button"
                   isDarkTheme={isDarkTheme}
                   onClick={handleClaimRewards}
                   disabled={isClaimingRewards}
                   style={{
-                    opacity: isClaimingRewards ? 0.7 : 1,
-                    cursor: isClaimingRewards ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
@@ -2209,17 +2255,9 @@ const PoolStats: React.FC = () => {
             </div>
           </HeroHeadline>
           <HeroCaption isDarkTheme={isDarkTheme}>
-            {fetchedRewardsTotal > 0 && filteredPositions.length > 0
-              ? `You've received ${formatRewardsAmount(
-                  fetchedRewardsTotal
-                )} ${rewardTokenSymbol} in rewards.`
-              : filteredPositions.length > 0
-              ? "Provide liquidity to pools to start earning fees and on-chain rewards."
-              : fetchedRewardsTotal > 0
-              ? `You've received ${formatRewardsAmount(
-                  fetchedRewardsTotal
-                )} ${rewardTokenSymbol} in rewards from providing liquidity.`
-              : "Provide liquidity to pools to start earning fees and on-chain rewards."}
+            {filteredPositions.length > 0
+              ? `You have ${formatRewardsAmount(fetchedRewardsTotal)} ${rewardTokenSymbol} ready to claim.`
+              : `You have ${formatRewardsAmount(fetchedRewardsTotal)} ${rewardTokenSymbol} ready to claim from the rewards program.`}
           </HeroCaption>
         </HeroCard>
       )}
@@ -2282,11 +2320,10 @@ const PoolStats: React.FC = () => {
                         style={{
                           padding: "8px 16px",
                           borderRadius: "8px",
-                          border: `1px solid ${
-                            isDarkTheme
-                              ? "rgba(255, 255, 255, 0.15)"
-                              : "rgba(41, 88, 255, 0.15)"
-                          }`,
+                          border: `1px solid ${isDarkTheme
+                            ? "rgba(255, 255, 255, 0.15)"
+                            : "rgba(41, 88, 255, 0.15)"
+                            }`,
                           background: isDarkTheme ? "#050507" : "#ffffff",
                           color: isDarkTheme ? "#fff" : "#0c0c10",
                           cursor: page2 === 1 ? "not-allowed" : "pointer",
@@ -2319,25 +2356,24 @@ const PoolStats: React.FC = () => {
                             style={{
                               padding: "8px 12px",
                               borderRadius: "8px",
-                              border: `1px solid ${
-                                page2 === pageItem
-                                  ? "#2958ff"
-                                  : isDarkTheme
+                              border: `1px solid ${page2 === pageItem
+                                ? "#2958ff"
+                                : isDarkTheme
                                   ? "rgba(255, 255, 255, 0.15)"
                                   : "rgba(41, 88, 255, 0.15)"
-                              }`,
+                                }`,
                               background:
                                 page2 === pageItem
                                   ? "#2958ff"
                                   : isDarkTheme
-                                  ? "#050507"
-                                  : "#ffffff",
+                                    ? "#050507"
+                                    : "#ffffff",
                               color:
                                 page2 === pageItem
                                   ? "#fff"
                                   : isDarkTheme
-                                  ? "#fff"
-                                  : "#0c0c10",
+                                    ? "#fff"
+                                    : "#0c0c10",
                               cursor: "pointer",
                             }}
                           >
@@ -2351,11 +2387,10 @@ const PoolStats: React.FC = () => {
                         style={{
                           padding: "8px 16px",
                           borderRadius: "8px",
-                          border: `1px solid ${
-                            isDarkTheme
-                              ? "rgba(255, 255, 255, 0.15)"
-                              : "rgba(41, 88, 255, 0.15)"
-                          }`,
+                          border: `1px solid ${isDarkTheme
+                            ? "rgba(255, 255, 255, 0.15)"
+                            : "rgba(41, 88, 255, 0.15)"
+                            }`,
                           background: isDarkTheme ? "#050507" : "#ffffff",
                           color: isDarkTheme ? "#fff" : "#0c0c10",
                           cursor:
@@ -2403,13 +2438,13 @@ const PoolStats: React.FC = () => {
                           const shouldSwap = tokAId > tokBId;
                           return shouldSwap
                             ? `${normalizeSymbol(
-                                pool.symbolB,
-                                pool.tokBId
-                              )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                              pool.symbolB,
+                              pool.tokBId
+                            )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
                             : `${normalizeSymbol(
-                                pool.symbolA,
-                                pool.tokAId
-                              )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                              pool.symbolA,
+                              pool.tokAId
+                            )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
                         })()}
                       </SimpleListLabel>
                       <SimpleListValue>
@@ -2449,13 +2484,13 @@ const PoolStats: React.FC = () => {
                         const shouldSwap = tokAId > tokBId;
                         return shouldSwap
                           ? `${normalizeSymbol(
-                              pool.symbolB,
-                              pool.tokBId
-                            )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            pool.symbolB,
+                            pool.tokBId
+                          )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
                           : `${normalizeSymbol(
-                              pool.symbolA,
-                              pool.tokAId
-                            )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                            pool.symbolA,
+                            pool.tokAId
+                          )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
                       })()}
                     </SimpleListLabel>
                     <SimpleListValue>
@@ -2490,13 +2525,13 @@ const PoolStats: React.FC = () => {
                         const shouldSwap = tokAId > tokBId;
                         return shouldSwap
                           ? `${normalizeSymbol(
-                              pool.symbolB,
-                              pool.tokBId
-                            )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
+                            pool.symbolB,
+                            pool.tokBId
+                          )}/${normalizeSymbol(pool.symbolA, pool.tokAId)}`
                           : `${normalizeSymbol(
-                              pool.symbolA,
-                              pool.tokAId
-                            )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
+                            pool.symbolA,
+                            pool.tokAId
+                          )}/${normalizeSymbol(pool.symbolB, pool.tokBId)}`;
                       })()}
                     </SimpleListLabel>
                     <SimpleListValue>
@@ -2854,34 +2889,34 @@ const PoolStats: React.FC = () => {
                                   "debug",
                                 ].includes(key)
                             ).length > 0 && (
-                              <DebugSection isDarkTheme={isDarkTheme}>
-                                <DebugSectionTitle isDarkTheme={isDarkTheme}>
-                                  Additional Debug Fields
-                                </DebugSectionTitle>
-                                <DebugPre isDarkTheme={isDarkTheme}>
-                                  {JSON.stringify(
-                                    Object.fromEntries(
-                                      Object.entries(stat).filter(
-                                        ([key]) =>
-                                          ![
-                                            "poolId",
-                                            "pool",
-                                            "poolInfo",
-                                            "tokens",
-                                            "tvl",
-                                            "volume",
-                                            "fees",
-                                            "lastUpdated",
-                                            "debug",
-                                          ].includes(key)
-                                      )
-                                    ),
-                                    null,
-                                    2
-                                  )}
-                                </DebugPre>
-                              </DebugSection>
-                            )}
+                                <DebugSection isDarkTheme={isDarkTheme}>
+                                  <DebugSectionTitle isDarkTheme={isDarkTheme}>
+                                    Additional Debug Fields
+                                  </DebugSectionTitle>
+                                  <DebugPre isDarkTheme={isDarkTheme}>
+                                    {JSON.stringify(
+                                      Object.fromEntries(
+                                        Object.entries(stat).filter(
+                                          ([key]) =>
+                                            ![
+                                              "poolId",
+                                              "pool",
+                                              "poolInfo",
+                                              "tokens",
+                                              "tvl",
+                                              "volume",
+                                              "fees",
+                                              "lastUpdated",
+                                              "debug",
+                                            ].includes(key)
+                                        )
+                                      ),
+                                      null,
+                                      2
+                                    )}
+                                  </DebugPre>
+                                </DebugSection>
+                              )}
                           </DebugContent>
                         </TableCell>
                       </ExpandedRow>

@@ -4,7 +4,12 @@ import mstyled from "@emotion/styled";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../store/store";
-import { RewardTransfer, markRewardsAsSeen, selectCurrentAddress } from "../../../store/rewardsSlice";
+import {
+  RewardTransfer,
+  getRewardId,
+  markRewardsAsSeen,
+  selectCurrentAddress,
+} from "../../../store/rewardsSlice";
 import { tokenSymbol } from "../../../utils/dex";
 import { selectTokens } from "../../../store/tokenSlice";
 import { useWallet } from "@txnlab/use-wallet-react";
@@ -220,7 +225,8 @@ const RewardsModal: React.FC<RewardsModalProps> = ({
   const [showConfetti, setShowConfetti] = React.useState(true);
 
   // Get WAD token info (contractId 47138068)
-  const rewardToken = tokens.find((t) => t.contractId === 47138068);
+  //const rewardToken = tokens.find((t) => t.contractId === 47138068);
+  const rewardToken = tokens.find((t) => t.contractId === 390001); // VOI
   const rewardTokenSymbol = rewardToken
     ? tokenSymbol(rewardToken, true)
     : "WAD";
@@ -244,11 +250,7 @@ const RewardsModal: React.FC<RewardsModalProps> = ({
       return;
     }
     
-    // Mark all displayed rewards as seen
-    const rewardIds = rewards.map((reward) => {
-      return reward.txId || reward.transactionId || reward.id || "";
-    }).filter(Boolean);
-    
+    const rewardIds = rewards.map((reward) => getRewardId(reward));
     if (rewardIds.length > 0) {
       dispatch(markRewardsAsSeen({ address, rewardIds }));
     }

@@ -3,6 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useRef,
   ReactNode,
 } from "react";
 
@@ -15,6 +17,8 @@ interface Notification {
   rewardAmount?: string;
   rewardToken?: string;
   rewardTxId?: string;
+  /** Matches `getRewardId` from rewards slice — used for deduplication only */
+  rewardDedupeKey?: string;
 }
 
 interface NotificationContextType {
@@ -30,6 +34,7 @@ interface NotificationContextType {
     token: string;
     txId?: string;
     timestamp?: number;
+    dedupeKey: string;
   }) => void;
   notificationCount: number;
   showPastNotifications: boolean;
@@ -78,6 +83,9 @@ const isNotificationActive = (dateString: string): boolean => {
   }
 };
 
+const SEED_NOTIFICATION_IDS = new Set([1, 2, 3, 4]);
+const REWARD_NOTIFICATION_ID_START = 10_000;
+
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
@@ -89,6 +97,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     []
   );
   const [showPastNotifications, setShowPastNotifications] = useState(false);
+  const nextRewardNotificationIdRef = useRef(REWARD_NOTIFICATION_ID_START);
 
   // Load dismissed notifications from localStorage on component mount
   useEffect(() => {
@@ -229,49 +238,52 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
   };
 
-  // Handler to add reward notifications
-  const addRewardNotification = (reward: {
-    amount: string;
-    token: string;
-    txId?: string;
-    timestamp?: number;
-  }) => {
-    // Generate a unique ID based on timestamp and txId
-    const rewardId = reward.txId 
-      ? parseInt(reward.txId.slice(-8), 16) || Date.now()
-      : Date.now();
-    
-    // Check if this reward notification already exists
-    const existingNotification = notifications.find(
-      (n) => n.type === "reward" && n.rewardTxId === reward.txId
-    );
-    
-    if (existingNotification) {
-      // Don't add duplicate reward notifications
-      return;
-    }
+  const addRewardNotification = useCallback(
+    (reward: {
+      amount: string;
+      token: string;
+      txId?: string;
+      timestamp?: number;
+      dedupeKey: string;
+    }) => {
+      setNotifications((prev) => {
+        if (
+          prev.some(
+            (n) =>
+              n.type === "reward" && n.rewardDedupeKey === reward.dedupeKey
+          )
+        ) {
+          return prev;
+        }
 
-    const now = new Date();
-    const dateString = now.toISOString().split("T")[0]; // Format: YYYY-MM-DD
-    
-    const rewardNotification: Notification = {
-      id: rewardId,
-      title: `🎉 You received ${reward.amount} ${reward.token} in rewards!`,
-      link: reward.txId 
-        ? `https://voiager.xyz/transaction/${reward.txId}/`
-        : "#",
-      date: dateString,
-      type: "reward",
-      rewardAmount: reward.amount,
-      rewardToken: reward.token,
-      rewardTxId: reward.txId,
-    };
+        const id = nextRewardNotificationIdRef.current++;
+        const dateString = new Date().toISOString().split("T")[0];
 
-    // Add to notifications and sort by ID descending (newer first)
-    setNotifications((prev) =>
-      [...prev, rewardNotification].sort((a, b) => b.id - a.id)
-    );
-  };
+        const txId = reward.txId?.trim();
+        const hasExplorerTx = Boolean(txId && txId.length >= 40);
+        const link = hasExplorerTx
+          ? `https://voiager.xyz/transaction/${encodeURIComponent(txId!)}/`
+          : typeof window !== "undefined"
+            ? `${window.location.origin}/pool`
+            : "/pool";
+
+        const rewardNotification: Notification = {
+          id,
+          title: `Claimable rewards: ${reward.amount} ${reward.token}`,
+          link,
+          date: dateString,
+          type: "reward",
+          rewardAmount: reward.amount,
+          rewardToken: reward.token,
+          rewardTxId: txId,
+          rewardDedupeKey: reward.dedupeKey,
+        };
+
+        return [...prev, rewardNotification].sort((a, b) => b.id - a.id);
+      });
+    },
+    []
+  );
 
   // Handle automatic expiration of notifications
   useEffect(() => {
@@ -334,10 +346,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     return () => clearInterval(interval);
   }, [notifications, dismissedNotifications]);
 
-  // Simulating notifications for demonstration purposes
+  // Seed announcement notifications without removing user reward notifications
   useEffect(() => {
     const timer = setTimeout(() => {
-      const allNotifications = [
+      const allNotifications: Notification[] = [
         {
           id: 1,
           title: "Voi DeFi Boost Program Goes Live on October 28th, 2024!",
@@ -365,16 +377,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         },
       ];
 
-      // Filter out already dismissed notifications, only show active notifications (within a week), and sort by ID descending (newer first)
-      const activeNotifications = allNotifications
-        .filter(
-          (notification) =>
-            !dismissedNotifications.has(notification.id) &&
-            isNotificationActive(notification.date)
-        )
-        .sort((a, b) => b.id - a.id);
+      setNotifications((prev) => {
+        const activeSeeds = allNotifications
+          .filter(
+            (notification) =>
+              !dismissedNotifications.has(notification.id) &&
+              isNotificationActive(notification.date)
+          )
+          .sort((a, b) => b.id - a.id);
 
-      setNotifications(activeNotifications);
+        const preserved = prev.filter(
+          (n) => n.type === "reward" || !SEED_NOTIFICATION_IDS.has(n.id)
+        );
+
+        return [...preserved, ...activeSeeds].sort((a, b) => b.id - a.id);
+      });
     }, 2000);
 
     return () => clearTimeout(timer);

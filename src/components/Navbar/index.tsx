@@ -11,9 +11,7 @@ import ConnectWallet from "../ConnectWallet";
 import MenuIcon from "@mui/icons-material/Menu";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import HomeIcon from "@mui/icons-material/Home";
-import BarChartIcon from "@mui/icons-material/BarChart";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PublicIcon from "@mui/icons-material/Public";
 import BoltIcon from "@mui/icons-material/Bolt";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
@@ -367,15 +365,6 @@ const Navbar = () => {
     }
   }, [isExploreDropdownOpen, isTradeDropdownOpen]);
 
-  const menuItems = [
-    { path: "/", label: "Home", Icon: HomeIcon },
-    { path: "/swap", label: "Swap", Icon: SwapLogo },
-    { path: "/tokens/stats", label: "Tokens", Icon: TokenLogo },
-    { path: "/pool", label: "Pools", Icon: PoolLogo },
-    //{ path: "/analytics", label: "Analytics", Icon: BarChartIcon },
-    { path: "/rewards", label: "Incentives", Icon: EmojiEventsIcon },
-  ];
-  
   const exploreMenuItems = [
     { path: "/explore/tokens", label: "Tokens", icon: TokenLogo },
     { path: "/explore/pools", label: "Pools", icon: PoolLogo },
@@ -540,25 +529,6 @@ const Navbar = () => {
                 })}
               </DropdownMenu>
             </ExploreDropdownContainer>
-            {[
-              {
-                label: "Incentives",
-                href: "/rewards",
-                icon: EmojiEventsIcon,
-              },
-            ].map((item) => {
-              const Item = item.icon;
-              return (
-                <StyledLink key={item.label} to={item.href}>
-                  <NavButton active={location.pathname === item.href}>
-                    <Box sx={{ height: "25px" }}>
-                      <Item />
-                    </Box>
-                    <NavButtonLabel>{item.label}</NavButtonLabel>
-                  </NavButton>
-                </StyledLink>
-              );
-            })}
           </NavButtonGroup>
           <AccountButtonGroup>
             {/* 
@@ -598,10 +568,8 @@ const Navbar = () => {
             $isDarkTheme={isDarkTheme}
             onClick={(e) => e.stopPropagation()}
           >
-            {[
-              { path: "/", label: "Home", Icon: HomeIcon },
-              { path: "/rewards", label: "Incentives", Icon: EmojiEventsIcon },
-            ].map(({ path, label, Icon }) => (
+            {[{ path: "/", label: "Home", Icon: HomeIcon }].map(
+              ({ path, label, Icon }) => (
               <MenuItem
                 key={path}
                 $active={location.pathname === path}

@@ -24,10 +24,6 @@ import { toast } from "react-toastify";
 import WalletModal from "../modals/WalletModal";
 import { SwapOptionsModal } from "../modals/SwapOptionsModal";
 import NotificationModal from "../NotificationModal";
-import { selectRewards, selectHasNewRewards } from "../../store/rewardsSlice";
-import { useNavigate } from "react-router-dom";
-import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
-
 const AccountDropdown = styled.div`
   /* Layout */
   display: flex;
@@ -390,7 +386,6 @@ const ClearAppDataButton = styled.button<{ $isDarkTheme?: boolean }>`
 `;
 
 function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void }) {
-  const navigate = useNavigate();
   const { activeAccount, activeWallet, wallets, activeWalletAccounts } = useWallet();
   const [isWalletModalOpen, setIsWalletModalOpen] = React.useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = React.useState(false);
@@ -399,8 +394,6 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
   const isDarkTheme = useSelector((state: RootState) => state.theme.isDarkTheme);
   const dispatch = useDispatch();
   const { notificationCount, notifications } = useNotifications();
-  const rewards = useSelector(selectRewards);
-  const hasNewRewards = useSelector(selectHasNewRewards);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -632,47 +625,6 @@ function BasicMenu({ onMobileSidebarClose }: { onMobileSidebarClose?: () => void
                           </Box>
                         )}
                         <NotificationsIcon
-                          sx={{
-                            fontSize: 20,
-                            color: isDarkTheme ? "#FFBE1D" : "#9933FF",
-                          }}
-                        />
-                      </Box>
-                    </SettingsItem>
-                  </SettingsSection>
-                )}
-
-                {/* Rewards Section */}
-                {activeAccount && (
-                  <SettingsSection $isDarkTheme={isDarkTheme}>
-                    <SettingsTitle $isDarkTheme={isDarkTheme}>Rewards</SettingsTitle>
-                    
-                    <SettingsItem 
-                      $isDarkTheme={isDarkTheme} 
-                      onClick={() => {
-                        setIsWalletModalOpen(false);
-                        navigate(`/rewards/${activeAccount.address}`);
-                      }}
-                    >
-                      <SettingsLabel $isDarkTheme={isDarkTheme}>
-                        {rewards.length > 0 
-                          ? `${rewards.length} reward${rewards.length !== 1 ? 's' : ''} received`
-                          : "View rewards"
-                        }
-                      </SettingsLabel>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {hasNewRewards && (
-                          <Box
-                            sx={{
-                              backgroundColor: isDarkTheme ? "#10B981" : "#059669",
-                              color: "#FFFFFF",
-                              borderRadius: "50%",
-                              width: "8px",
-                              height: "8px",
-                            }}
-                          />
-                        )}
-                        <CardGiftcardIcon
                           sx={{
                             fontSize: 20,
                             color: isDarkTheme ? "#FFBE1D" : "#9933FF",
