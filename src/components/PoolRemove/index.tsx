@@ -698,7 +698,7 @@ const PoolRemove = () => {
       const arc200_balanceOfR = await ci.arc200_balanceOf(
         activeAccount.address
       );
-      if (!arc200_balanceOfR.success) return new Error("Balance failed");
+      if (!arc200_balanceOfR.success) throw new Error("Balance failed");
       const poolShare = arc200_balanceOfR.returnValue;
 
       const withdrawAmount =
@@ -717,7 +717,7 @@ const PoolRemove = () => {
         [0, 0]
       );
       if (!Provider_withdrawR.success)
-        return new Error("Add liquidity simulation failed");
+        throw new Error("Withdraw preview simulation failed");
       const Provider_withdraw = Provider_withdrawR.returnValue;
 
       console.log({
@@ -887,7 +887,7 @@ const PoolRemove = () => {
       const customR = await ci.custom();
       console.log({ customR });
       if (!customR.success)
-        return new Error("Remove liquidity group simulation failed");
+        throw new Error("Remove liquidity group simulation failed");
 
       const stxns = await signTransactions(
         customR.txns.map(

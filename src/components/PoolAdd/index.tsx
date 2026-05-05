@@ -1083,16 +1083,7 @@ const Swap = () => {
             //   Number(toAmount.replace(/,/g, "")) * 10 ** token2.decimals
             // ),
           ]
-        : [
-            toAmountBI,
-            fromAmountBI,
-            Math.round(
-              Number(toAmount.replace(/,/g, "")) * 10 ** token.decimals
-            ),
-            Math.round(
-              Number(fromAmount.replace(/,/g, "")) * 10 ** token2.decimals
-            ),
-          ],
+        : [toAmountBI, fromAmountBI],
       0
     ).then((Provider_depositR: any) => {
       if (Provider_depositR.success) {
@@ -1744,7 +1735,20 @@ const Swap = () => {
       console.log("swapR", swapR);
 
       if (!swapR.success) {
-        return new Error("Add liquidity group simulation failed");
+        const err = swapR as unknown as { message?: unknown; error?: unknown };
+        const detail =
+          typeof err.error === "string"
+            ? err.error
+            : err.error != null
+              ? String(err.error)
+              : typeof err.message === "string"
+                ? err.message
+                : "";
+        throw new Error(
+          detail
+            ? `Add liquidity group simulation failed: ${detail}`
+            : "Add liquidity group simulation failed"
+        );
       }
 
       setProgress(50);
